@@ -171,3 +171,9 @@ cython_debug/
 .pypirc
 
 .envrc
+
+private
+
+# build dir contains the cloned specs
+# from which we generate the pydantic classes
+build
