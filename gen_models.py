@@ -95,7 +95,7 @@ class Generator:
             api_name = "core"
             # core api has a v0.0.1 in the spec but that will change
             # for now use the version provided by a user from the cmd
-            api_version = self.version
+            api_version = self.version.replace(".", "_")
             logger.debug(f"API name: {api_name}, API version: {api_version}")
             self.sanitize_schema_objects(spec_file, api_name, api_version)
             self.generate_classes_for_spec(spec_file, api_name, api_version)
