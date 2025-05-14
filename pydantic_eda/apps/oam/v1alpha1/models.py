@@ -7,14 +7,6 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -84,87 +76,43 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class Mirror(BaseModel):
-    """
-    Mirror is the Schema for the mirrors API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: MirrorMetadata
-    spec: Annotated[
-        MirrorSpec,
-        Field(
-            description="Mirror allows for the configuration of mirroring sources, including interfaces, subinterfaces, and filters, as well as the destination for the mirrored traffic, which can be either local or remote.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[MirrorStatus],
-        Field(
-            description="MirrorStatus defines the observed state of Mirror",
-            title="Status",
-        ),
-    ] = None
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
 
 
-class MirrorDeletedResourceEntry(BaseModel):
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class MirrorDeletedResources(RootModel[List[MirrorDeletedResourceEntry]]):
-    root: List[MirrorDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class MirrorList(BaseModel):
-    """
-    MirrorList is a list of mirrors
-    """
-
-    apiVersion: str
-    items: Optional[List[Mirror]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class MirrorMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class MirrorSpec(BaseModel):
-    """
-    Mirror allows for the configuration of mirroring sources, including interfaces, subinterfaces, and filters, as well as the destination for the mirrored traffic, which can be either local or remote.
-    """
-
-    localDestination: Annotated[
-        Optional[MirrorSpecLocalDestination],
-        Field(
-            description="Local destination for the mirror, there can only be either a remote destination or local destination provisioned for a Mirror.",
-            title="Local Destination",
-        ),
-    ] = None
-    remoteDestination: Annotated[
-        Optional[MirrorSpecRemoteDestination],
-        Field(
-            description="Remote destination for the mirror, there can only be either a remote destination or local destination provisioned for a Mirror.",
-            title="Remote Destination",
-        ),
-    ] = None
-    sources: Annotated[
-        MirrorSpecSources, Field(description="Mirror sources.", title="Sources")
-    ]
+class UIResult(RootModel[str]):
+    root: str
 
 
 class MirrorSpecLocalDestination(BaseModel):
@@ -226,69 +174,33 @@ class MirrorSpecRemoteDestination(BaseModel):
     ] = None
 
 
-class MirrorSpecSources(BaseModel):
+class MirrorSpecSourcesFilterFilterEntryIpEntryRateLimit(BaseModel):
     """
-    Mirror sources.
-    """
-
-    direction: Annotated[
-        Literal["Ingress", "Egress", "IngressEgress"],
-        Field(
-            description="The direction of the traffic being mirrored.",
-            title="Direction",
-        ),
-    ]
-    filters: Annotated[
-        Optional[List[MirrorSpecSourcesFilter]], Field(title="Filters")
-    ] = None
-    interfaces: Annotated[
-        Optional[MirrorSpecSourcesInterfaces],
-        Field(
-            description="Reference to an Interface resource to be mirrored.  Traffic from the entire Interface will be mirrored for any selected Interfaces.",
-            title="Interfaces",
-        ),
-    ] = None
-    subinterfaces: Annotated[
-        Optional[MirrorSpecSourcesSubinterfaces], Field(title="Subinterfaces")
-    ] = None
-
-
-class MirrorSpecSourcesFilter(BaseModel):
-    filter: Annotated[
-        Optional[MirrorSpecSourcesFilterFilter],
-        Field(
-            description="Emittes an MirrorFilter and uses the filter as a source for the Mirror.",
-            title="Filter",
-        ),
-    ] = None
-    subinterfaces: Annotated[
-        Optional[MirrorSpecSourcesFilterSubinterfaces],
-        Field(
-            description="Subinterfaces on which to deploy the IPFilter to use as a source for the Mirror.",
-            title="Subinterfaces",
-        ),
-    ] = None
-
-
-class MirrorSpecSourcesFilterFilter(BaseModel):
-    """
-    Emittes an MirrorFilter and uses the filter as a source for the Mirror.
+    Rate limit to apply when the action is 'RateLimit'.
     """
 
-    entries: Annotated[
-        List[MirrorSpecSourcesFilterFilterEntry],
-        Field(
-            description="Specifies the list of filter entries, in order.",
-            title="Entries",
-        ),
-    ]
-
-
-class MirrorSpecSourcesFilterFilterEntry(BaseModel):
-    ipEntry: Annotated[
-        Optional[MirrorSpecSourcesFilterFilterEntryIpEntry], Field(title="IP Entry")
+    burstSize: Annotated[
+        Optional[int],
+        Field(description="The maximum burst size in bytes.", title="Burst Size"),
     ] = None
-    type: Annotated[Literal["IPV4", "IPV6", "Auto"], Field(title="Type")]
+    entrySpecificPolicer: Annotated[
+        Optional[bool],
+        Field(
+            description="Controls policer instantiation: false for shared instance, true for per-entry instances",
+            title="Entry Specific Policer",
+        ),
+    ] = False
+    peakRate: Annotated[
+        Optional[int],
+        Field(description="The peak rate in kilobytes per second.", title="Peak Rate"),
+    ] = None
+    scope: Annotated[
+        Optional[Literal["Global", "Subinterface"]],
+        Field(
+            description="Determines how the policer is applied across subinterfaces. Global applies the policer across all subinterfaces, while Subinterface applies it individually to each subinterface.",
+            title="Scope",
+        ),
+    ] = "Global"
 
 
 class MirrorSpecSourcesFilterFilterEntryIpEntry(BaseModel):
@@ -826,33 +738,49 @@ class MirrorSpecSourcesFilterFilterEntryIpEntry(BaseModel):
     ] = None
 
 
-class MirrorSpecSourcesFilterFilterEntryIpEntryRateLimit(BaseModel):
+class MirrorSpecSourcesFilterFilterEntry(BaseModel):
+    ipEntry: Annotated[
+        Optional[MirrorSpecSourcesFilterFilterEntryIpEntry], Field(title="IP Entry")
+    ] = None
+    type: Annotated[Literal["IPV4", "IPV6", "Auto"], Field(title="Type")]
+
+
+class MirrorSpecSourcesFilterFilter(BaseModel):
     """
-    Rate limit to apply when the action is 'RateLimit'.
+    Emittes an MirrorFilter and uses the filter as a source for the Mirror.
     """
 
-    burstSize: Annotated[
-        Optional[int],
-        Field(description="The maximum burst size in bytes.", title="Burst Size"),
-    ] = None
-    entrySpecificPolicer: Annotated[
-        Optional[bool],
+    entries: Annotated[
+        List[MirrorSpecSourcesFilterFilterEntry],
         Field(
-            description="Controls policer instantiation: false for shared instance, true for per-entry instances",
-            title="Entry Specific Policer",
+            description="Specifies the list of filter entries, in order.",
+            title="Entries",
         ),
-    ] = False
-    peakRate: Annotated[
+    ]
+
+
+class MirrorSpecSourcesFilterSubinterfacesSubinterface(BaseModel):
+    index: Annotated[
         Optional[int],
-        Field(description="The peak rate in kilobytes per second.", title="Peak Rate"),
-    ] = None
-    scope: Annotated[
-        Optional[Literal["Global", "Subinterface"]],
         Field(
-            description="Determines how the policer is applied across subinterfaces. Global applies the policer across all subinterfaces, while Subinterface applies it individually to each subinterface.",
-            title="Scope",
+            description="Index of the sub-interface. This is ignored on a node running SROS.",
+            title="Subinterface Index",
         ),
-    ] = "Global"
+    ] = None
+    interfaceName: Annotated[
+        str,
+        Field(
+            description="Reference to an Interface resource, the combination of the Interface and the specified subinterface index will build the subinterface to be used as a source of traffic to be mirrored. A combination of VLANs, BridgeInterfaces and subinterfaces can be configured as sources together.",
+            title="Interface Name",
+        ),
+    ]
+    vlan: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the VLAN resource under which the sub-interface is configured. This is mandatory when the sub-interface is on a node running SROS and ignored for all other node operating systems.",
+            title="VLAN",
+        ),
+    ] = None
 
 
 class MirrorSpecSourcesFilterSubinterfaces(BaseModel):
@@ -883,26 +811,19 @@ class MirrorSpecSourcesFilterSubinterfaces(BaseModel):
     ] = None
 
 
-class MirrorSpecSourcesFilterSubinterfacesSubinterface(BaseModel):
-    index: Annotated[
-        Optional[int],
+class MirrorSpecSourcesFilter(BaseModel):
+    filter: Annotated[
+        Optional[MirrorSpecSourcesFilterFilter],
         Field(
-            description="Index of the sub-interface. This is ignored on a node running SROS.",
-            title="Subinterface Index",
+            description="Emittes an MirrorFilter and uses the filter as a source for the Mirror.",
+            title="Filter",
         ),
     ] = None
-    interfaceName: Annotated[
-        str,
+    subinterfaces: Annotated[
+        Optional[MirrorSpecSourcesFilterSubinterfaces],
         Field(
-            description="Reference to an Interface resource, the combination of the Interface and the specified subinterface index will build the subinterface to be used as a source of traffic to be mirrored. A combination of VLANs, BridgeInterfaces and subinterfaces can be configured as sources together.",
-            title="Interface Name",
-        ),
-    ]
-    vlan: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the VLAN resource under which the sub-interface is configured. This is mandatory when the sub-interface is on a node running SROS and ignored for all other node operating systems.",
-            title="VLAN",
+            description="Subinterfaces on which to deploy the IPFilter to use as a source for the Mirror.",
+            title="Subinterfaces",
         ),
     ] = None
 
@@ -926,6 +847,11 @@ class MirrorSpecSourcesInterfaces(BaseModel):
             title="Interfaces",
         ),
     ] = None
+
+
+MirrorSpecSourcesSubinterfacesSubinterface = (
+    MirrorSpecSourcesFilterSubinterfacesSubinterface
+)
 
 
 class MirrorSpecSourcesSubinterfaces(BaseModel):
@@ -952,9 +878,91 @@ class MirrorSpecSourcesSubinterfaces(BaseModel):
     ] = None
 
 
-MirrorSpecSourcesSubinterfacesSubinterface = (
-    MirrorSpecSourcesFilterSubinterfacesSubinterface
-)
+class MirrorSpecSources(BaseModel):
+    """
+    Mirror sources.
+    """
+
+    direction: Annotated[
+        Literal["Ingress", "Egress", "IngressEgress"],
+        Field(
+            description="The direction of the traffic being mirrored.",
+            title="Direction",
+        ),
+    ]
+    filters: Annotated[
+        Optional[List[MirrorSpecSourcesFilter]], Field(title="Filters")
+    ] = None
+    interfaces: Annotated[
+        Optional[MirrorSpecSourcesInterfaces],
+        Field(
+            description="Reference to an Interface resource to be mirrored.  Traffic from the entire Interface will be mirrored for any selected Interfaces.",
+            title="Interfaces",
+        ),
+    ] = None
+    subinterfaces: Annotated[
+        Optional[MirrorSpecSourcesSubinterfaces], Field(title="Subinterfaces")
+    ] = None
+
+
+class MirrorSpec(BaseModel):
+    """
+    Mirror allows for the configuration of mirroring sources, including interfaces, subinterfaces, and filters, as well as the destination for the mirrored traffic, which can be either local or remote.
+    """
+
+    localDestination: Annotated[
+        Optional[MirrorSpecLocalDestination],
+        Field(
+            description="Local destination for the mirror, there can only be either a remote destination or local destination provisioned for a Mirror.",
+            title="Local Destination",
+        ),
+    ] = None
+    remoteDestination: Annotated[
+        Optional[MirrorSpecRemoteDestination],
+        Field(
+            description="Remote destination for the mirror, there can only be either a remote destination or local destination provisioned for a Mirror.",
+            title="Remote Destination",
+        ),
+    ] = None
+    sources: Annotated[
+        MirrorSpecSources, Field(description="Mirror sources.", title="Sources")
+    ]
+
+
+class MirrorStatusSubinterface(BaseModel):
+    configuredSource: Annotated[
+        Literal[
+            "VLAN",
+            "BridgeInterface",
+            "Subinterface",
+            "Interface",
+            "FilterV4",
+            "FilterV6",
+        ],
+        Field(
+            description="Indicates what is driving the particular subinterface to be selected as a mirror source.",
+            title="Configured Source",
+        ),
+    ]
+    interface: Annotated[
+        str, Field(description="Node specific interface name.", title="Interface")
+    ]
+    node: Annotated[str, Field(description="Reference to Node object.", title="Node")]
+    operatingSystem: Annotated[
+        str,
+        Field(description="Operating System of the Node.", title="Operating System"),
+    ]
+    subinterfaceIndex: Annotated[
+        Optional[int],
+        Field(
+            description="Index allocated to the subinterface which is being mirrored. If an interface is used as a source, this will not be set.",
+            title="Subinterface Index",
+        ),
+    ] = None
+    vlanID: Annotated[
+        Optional[str],
+        Field(description="vlan assigned to this subinterface.", title="VLAN ID"),
+    ] = None
 
 
 class MirrorStatus(BaseModel):
@@ -1031,87 +1039,29 @@ class MirrorStatus(BaseModel):
     ] = None
 
 
-class MirrorStatusSubinterface(BaseModel):
-    configuredSource: Annotated[
-        Literal[
-            "VLAN",
-            "BridgeInterface",
-            "Subinterface",
-            "Interface",
-            "FilterV4",
-            "FilterV6",
-        ],
-        Field(
-            description="Indicates what is driving the particular subinterface to be selected as a mirror source.",
-            title="Configured Source",
-        ),
-    ]
-    interface: Annotated[
-        str, Field(description="Node specific interface name.", title="Interface")
-    ]
-    node: Annotated[str, Field(description="Reference to Node object.", title="Node")]
-    operatingSystem: Annotated[
+class MirrorDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class MirrorDeletedResources(RootModel[List[MirrorDeletedResourceEntry]]):
+    root: List[MirrorDeletedResourceEntry]
+
+
+class MirrorMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
         str,
-        Field(description="Operating System of the Node.", title="Operating System"),
-    ]
-    subinterfaceIndex: Annotated[
-        Optional[int],
         Field(
-            description="Index allocated to the subinterface which is being mirrored. If an interface is used as a source, this will not be set.",
-            title="Subinterface Index",
-        ),
-    ] = None
-    vlanID: Annotated[
-        Optional[str],
-        Field(description="vlan assigned to this subinterface.", title="VLAN ID"),
-    ] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Ping(BaseModel):
-    """
-    Ping is the Schema for the pings API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: PingMetadata
-    spec: Annotated[
-        PingSpec,
-        Field(
-            description="PingSpec defines the desired state of Ping",
-            title="Specification",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[
-        Optional[PingStatus],
-        Field(
-            description="PingStatus defines the observed state of Ping", title="Status"
-        ),
-    ] = None
-
-
-PingDeletedResourceEntry = MirrorDeletedResourceEntry
-
-
-class PingDeletedResources(RootModel[List[PingDeletedResourceEntry]]):
-    root: List[PingDeletedResourceEntry]
-
-
-class PingList(BaseModel):
-    """
-    PingList is a list of pings
-    """
-
-    apiVersion: str
-    items: Optional[List[Ping]] = None
-    kind: str
-
-
-PingMetadata = MirrorMetadata
+    namespace: str
 
 
 class PingSpec(BaseModel):
@@ -1147,147 +1097,14 @@ class PingStatus(BaseModel):
     ]
 
 
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+PingDeletedResourceEntry = MirrorDeletedResourceEntry
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
+class PingDeletedResources(RootModel[List[PingDeletedResourceEntry]]):
+    root: List[PingDeletedResourceEntry]
 
 
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class Threshold(BaseModel):
-    """
-    Threshold is the Schema for the thresholds API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: ThresholdMetadata
-    spec: Annotated[
-        ThresholdSpec,
-        Field(
-            description="A Threshold allows you to monitor a field in EDB and trigger severity-correct alarms based on the value of that field.\nBy using EDB as a source you are able to trigger thresholds on any published field from a TopoNode, or any other EDB source.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="ThresholdStatus defines the observed state of Threshold",
-            title="Status",
-        ),
-    ] = None
-
-
-ThresholdDeletedResourceEntry = MirrorDeletedResourceEntry
-
-
-class ThresholdDeletedResources(RootModel[List[ThresholdDeletedResourceEntry]]):
-    root: List[ThresholdDeletedResourceEntry]
-
-
-class ThresholdList(BaseModel):
-    """
-    ThresholdList is a list of thresholds
-    """
-
-    apiVersion: str
-    items: Optional[List[Threshold]] = None
-    kind: str
-
-
-ThresholdMetadata = MirrorMetadata
-
-
-class ThresholdSpec(BaseModel):
-    """
-    A Threshold allows you to monitor a field in EDB and trigger severity-correct alarms based on the value of that field.
-    By using EDB as a source you are able to trigger thresholds on any published field from a TopoNode, or any other EDB source.
-    """
-
-    alarm: Annotated[
-        Optional[ThresholdSpecAlarm],
-        Field(description="Alarm details for this threshold.", title="Thresholds"),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enable or disable this threshold.", title="Enabled"),
-    ] = True
-    field: Annotated[
-        str,
-        Field(
-            description="Field to monitor for this threshold, for example `utilization`.",
-            title="Field",
-        ),
-    ]
-    generateOverlay: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable or disable generation of a topology overlay for this threshold.",
-            title="Generate Overlay",
-        ),
-    ] = False
-    name: Annotated[
-        str,
-        Field(
-            description="The name of this threshold. This name will be used to generate the alarm name, so should follow CamelCase conventions, e.g. VolumeUtilization.",
-            title="Threshold Name",
-        ),
-    ]
-    path: Annotated[
-        str,
-        Field(
-            description="Path to monitor for this threshold. This should be the full EDB path to the table containing the field you wish to trigger a threshold on.\nFor example, to monitor the utilization field of the component volume table, you would use `.namespace.node.normal.components_eda_nokia_com.v1.controlmodule.volume`, and set field to `utilization`.",
-            title="Path",
-        ),
-    ]
-    resource: Annotated[
-        Optional[ThresholdSpecResource],
-        Field(
-            description="Which resource to associate with this threshold. This overrides the destination resource in alarms raised as a result of threshold breaches.\nBy default a resource will attempt to be derived based on the monitored path.",
-            title="Associated Resource",
-        ),
-    ] = None
-    thresholds: Annotated[
-        ThresholdSpecThresholds,
-        Field(
-            description="Severities and their associated values.", title="Thresholds"
-        ),
-    ]
+PingMetadata = MirrorMetadata
 
 
 class ThresholdSpecAlarm(BaseModel):
@@ -1377,5 +1194,188 @@ class ThresholdSpecThresholds(BaseModel):
     ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class ThresholdSpec(BaseModel):
+    """
+    A Threshold allows you to monitor a field in EDB and trigger severity-correct alarms based on the value of that field.
+    By using EDB as a source you are able to trigger thresholds on any published field from a TopoNode, or any other EDB source.
+    """
+
+    alarm: Annotated[
+        Optional[ThresholdSpecAlarm],
+        Field(description="Alarm details for this threshold.", title="Thresholds"),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enable or disable this threshold.", title="Enabled"),
+    ] = True
+    field: Annotated[
+        str,
+        Field(
+            description="Field to monitor for this threshold, for example `utilization`.",
+            title="Field",
+        ),
+    ]
+    generateOverlay: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable generation of a topology overlay for this threshold.",
+            title="Generate Overlay",
+        ),
+    ] = False
+    name: Annotated[
+        str,
+        Field(
+            description="The name of this threshold. This name will be used to generate the alarm name, so should follow CamelCase conventions, e.g. VolumeUtilization.",
+            title="Threshold Name",
+        ),
+    ]
+    path: Annotated[
+        str,
+        Field(
+            description="Path to monitor for this threshold. This should be the full EDB path to the table containing the field you wish to trigger a threshold on.\nFor example, to monitor the utilization field of the component volume table, you would use `.namespace.node.normal.components_eda_nokia_com.v1.controlmodule.volume`, and set field to `utilization`.",
+            title="Path",
+        ),
+    ]
+    resource: Annotated[
+        Optional[ThresholdSpecResource],
+        Field(
+            description="Which resource to associate with this threshold. This overrides the destination resource in alarms raised as a result of threshold breaches.\nBy default a resource will attempt to be derived based on the monitored path.",
+            title="Associated Resource",
+        ),
+    ] = None
+    thresholds: Annotated[
+        ThresholdSpecThresholds,
+        Field(
+            description="Severities and their associated values.", title="Thresholds"
+        ),
+    ]
+
+
+ThresholdDeletedResourceEntry = MirrorDeletedResourceEntry
+
+
+class ThresholdDeletedResources(RootModel[List[ThresholdDeletedResourceEntry]]):
+    root: List[ThresholdDeletedResourceEntry]
+
+
+ThresholdMetadata = MirrorMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class Mirror(BaseModel):
+    """
+    Mirror is the Schema for the mirrors API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MirrorMetadata
+    spec: Annotated[
+        MirrorSpec,
+        Field(
+            description="Mirror allows for the configuration of mirroring sources, including interfaces, subinterfaces, and filters, as well as the destination for the mirrored traffic, which can be either local or remote.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[MirrorStatus],
+        Field(
+            description="MirrorStatus defines the observed state of Mirror",
+            title="Status",
+        ),
+    ] = None
+
+
+class MirrorList(BaseModel):
+    """
+    MirrorList is a list of mirrors
+    """
+
+    apiVersion: str
+    items: Optional[List[Mirror]] = None
+    kind: str
+
+
+class Ping(BaseModel):
+    """
+    Ping is the Schema for the pings API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PingMetadata
+    spec: Annotated[
+        PingSpec,
+        Field(
+            description="PingSpec defines the desired state of Ping",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[PingStatus],
+        Field(
+            description="PingStatus defines the observed state of Ping", title="Status"
+        ),
+    ] = None
+
+
+class PingList(BaseModel):
+    """
+    PingList is a list of pings
+    """
+
+    apiVersion: str
+    items: Optional[List[Ping]] = None
+    kind: str
+
+
+class Threshold(BaseModel):
+    """
+    Threshold is the Schema for the thresholds API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ThresholdMetadata
+    spec: Annotated[
+        ThresholdSpec,
+        Field(
+            description="A Threshold allows you to monitor a field in EDB and trigger severity-correct alarms based on the value of that field.\nBy using EDB as a source you are able to trigger thresholds on any published field from a TopoNode, or any other EDB source.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="ThresholdStatus defines the observed state of Threshold",
+            title="Status",
+        ),
+    ] = None
+
+
+class ThresholdList(BaseModel):
+    """
+    ThresholdList is a list of thresholds
+    """
+
+    apiVersion: str
+    items: Optional[List[Threshold]] = None
+    kind: str

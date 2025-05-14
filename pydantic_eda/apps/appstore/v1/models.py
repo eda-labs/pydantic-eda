@@ -7,74 +7,112 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import datetime
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class Catalog(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    Catalog is the Schema for the catalogs API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: CatalogMetadata
-    spec: Annotated[
-        CatalogSpec,
-        Field(
-            description="CatalogSpec defines the desired state of a Catalog.",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
-        Optional[CatalogStatus],
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
+        Optional[Dict[str, Any]],
         Field(
-            description="CatalogStatus defines the observed state of a Catalog.",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class CatalogDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class CatalogDeletedResources(RootModel[List[CatalogDeletedResourceEntry]]):
-    root: List[CatalogDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class CatalogList(BaseModel):
-    """
-    CatalogList is a list of catalogs
-    """
-
-    apiVersion: str
-    items: Optional[List[Catalog]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class CatalogMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
+class UIResult(RootModel[str]):
+    root: str
 
 
 class CatalogSpec(BaseModel):
@@ -163,116 +201,27 @@ class CatalogStatus(BaseModel):
     ] = False
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
+class CatalogDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
+class CatalogDeletedResources(RootModel[List[CatalogDeletedResourceEntry]]):
+    root: List[CatalogDeletedResourceEntry]
 
 
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
+class CatalogMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
         Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Registry(BaseModel):
-    """
-    Registry is the Schema for the registries API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: RegistryMetadata
-    spec: Annotated[
-        RegistrySpec,
-        Field(
-            description="RegistrySpec defines the desired state of a Registry",
-            title="Specification",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[
-        Optional[RegistryStatus],
-        Field(
-            description="RegistryStatus defines the observed state of Registry",
-            title="Status",
-        ),
-    ] = None
-
-
-RegistryDeletedResourceEntry = CatalogDeletedResourceEntry
-
-
-class RegistryDeletedResources(RootModel[List[RegistryDeletedResourceEntry]]):
-    root: List[RegistryDeletedResourceEntry]
-
-
-class RegistryList(BaseModel):
-    """
-    RegistryList is a list of registries
-    """
-
-    apiVersion: str
-    items: Optional[List[Registry]] = None
-    kind: str
-
-
-RegistryMetadata = CatalogMetadata
 
 
 class RegistrySpec(BaseModel):
@@ -338,33 +287,26 @@ class RegistryStatus(BaseModel):
     ] = False
 
 
-class Resource(BaseModel):
+RegistryDeletedResourceEntry = CatalogDeletedResourceEntry
+
+
+class RegistryDeletedResources(RootModel[List[RegistryDeletedResourceEntry]]):
+    root: List[RegistryDeletedResourceEntry]
+
+
+RegistryMetadata = CatalogMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -374,11 +316,69 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class Catalog(BaseModel):
+    """
+    Catalog is the Schema for the catalogs API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: CatalogMetadata
+    spec: Annotated[
+        CatalogSpec,
+        Field(
+            description="CatalogSpec defines the desired state of a Catalog.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[CatalogStatus],
+        Field(
+            description="CatalogStatus defines the observed state of a Catalog.",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class CatalogList(BaseModel):
+    """
+    CatalogList is a list of catalogs
+    """
+
+    apiVersion: str
+    items: Optional[List[Catalog]] = None
+    kind: str
+
+
+class Registry(BaseModel):
+    """
+    Registry is the Schema for the registries API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RegistryMetadata
+    spec: Annotated[
+        RegistrySpec,
+        Field(
+            description="RegistrySpec defines the desired state of a Registry",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RegistryStatus],
+        Field(
+            description="RegistryStatus defines the observed state of Registry",
+            title="Status",
+        ),
+    ] = None
+
+
+class RegistryList(BaseModel):
+    """
+    RegistryList is a list of registries
+    """
+
+    apiVersion: str
+    items: Optional[List[Registry]] = None
+    kind: str

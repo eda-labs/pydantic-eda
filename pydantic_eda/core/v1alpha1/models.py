@@ -235,6 +235,693 @@ class AuthPasswordPolicy(BaseModel):
     ] = None
 
 
+class Credentials(BaseModel):
+    temporary: Annotated[
+        Optional[bool],
+        Field(
+            description="This is true if the password being set is a temporary password.  In this case the user\nis required to change the password after they login using the temporary password."
+        ),
+    ] = None
+    value: Annotated[
+        Optional[str], Field(description="The new password for the user.")
+    ] = None
+
+
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
+    """
+    Generic error response for REST APIs
+    """
+
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
+    ]
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
+        ),
+    ] = None
+
+
+class FlowListEntry(BaseModel):
+    id: Annotated[Optional[int], Field(description="The id of the workflow")] = None
+    name: Annotated[Optional[str], Field(description="Name of the workflow")] = None
+    namespace: Annotated[
+        Optional[str], Field(description="The namespace in which the workflow ran")
+    ] = None
+    parentId: Annotated[
+        Optional[int], Field(description="The id of the parent workflow, if any")
+    ] = None
+    state: Optional[
+        Literal[
+            "waitingToStart",
+            "running",
+            "waitingForInput",
+            "terminated",
+            "failed",
+            "completed",
+            "subflowWaitingForInput",
+        ]
+    ] = None
+    type: Annotated[Optional[str], Field(description="The type of workflow")] = None
+
+
+class FlowListResult(BaseModel):
+    """
+    A list of flows
+    """
+
+    flows: Optional[List[FlowListEntry]] = None
+
+
+class FlowStage(BaseModel):
+    """
+    Describes the stage of a workflow
+    """
+
+    completed: Annotated[
+        Optional[bool], Field(description="True if the stage has completed")
+    ] = None
+    hadError: Annotated[
+        Optional[bool],
+        Field(description="True if the stage is complete and there was an error"),
+    ] = None
+    name: Annotated[Optional[str], Field(description="Name of the flow stage")] = None
+    skipped: Annotated[
+        Optional[bool], Field(description="True if the stage was skipped")
+    ] = None
+    started: Annotated[
+        Optional[bool], Field(description="True if the stage has started")
+    ] = None
+    subFlowIds: Annotated[
+        Optional[List[int]],
+        Field(description="The ids of flows triggered by the stage"),
+    ] = None
+
+
+class GroupIDs(RootModel[List[str]]):
+    root: Annotated[
+        List[str], Field(title="A list of user group identifiers (uuid values).")
+    ]
+
+
+class GroupVersionKind(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
+class HealthServiceStatus(BaseModel):
+    error: Annotated[
+        Optional[str], Field(description="Detailed status if the service is not up.")
+    ] = None
+    status: Annotated[
+        Literal["UP", "DOWN"],
+        Field(description="Health status of the given service.  UP or DOWN."),
+    ]
+
+
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class LabelCompletionResponse(BaseModel):
+    results: Optional[List[str]] = None
+
+
+class LineSegment(BaseModel):
+    endLine: Optional[int] = None
+    startLine: Optional[int] = None
+
+
+class Metadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: Optional[str] = None
+
+
+class NamespaceData(BaseModel):
+    """
+    Information about an individual namespace
+    """
+
+    description: Annotated[
+        Optional[str], Field(description="The description of the namespace")
+    ] = None
+    name: Annotated[Optional[str], Field(description="The namespace name")] = None
+
+
+class NamespaceGetResponse(BaseModel):
+    """
+    Body of the non streaming namespace get request
+    """
+
+    allNamesapces: Annotated[
+        Optional[bool],
+        Field(
+            description="If true, the requestor is considered to have permission to access all namespaces"
+        ),
+    ] = None
+    namespaces: Annotated[
+        Optional[List[NamespaceData]], Field(description="The list of namespaces")
+    ] = None
+
+
+class NsCrGvkName(BaseModel):
+    gvk: Optional[GroupVersionKind] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+
+
+class ProviderAuth(BaseModel):
+    bindCredential: Annotated[
+        str, Field(description="Credentials to use when binding to an LDAP provider")
+    ]
+    bindDN: Annotated[
+        str, Field(description="DN to use when binding to an LDAP provider")
+    ]
+
+
+class QueryCompletion(BaseModel):
+    completion: Optional[str] = None
+    token: Optional[str] = None
+
+
+class QueryCompletionResponse(BaseModel):
+    """
+    The result of a successful query auto-completion request
+    """
+
+    completions: Annotated[
+        Optional[List[QueryCompletion]],
+        Field(description="Array of possible auto-completion results."),
+    ] = None
+
+
+class ResourceRule(BaseModel):
+    apiGroups: Annotated[
+        List[str],
+        Field(
+            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.\nIn addition, the version can be a wildcard.'
+        ),
+    ]
+    permissions: Annotated[
+        Optional[Literal["none", "read", "readWrite"]],
+        Field(description="Permissions for resources specified by the rule."),
+    ] = None
+    resources: Annotated[
+        List[str],
+        Field(
+            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.'
+        ),
+    ]
+
+
+class StreamResult(BaseModel):
+    details: Annotated[
+        Optional[str],
+        Field(
+            description="The details for the streaming request; e.g. the query string in the corresponding GET request."
+        ),
+    ] = None
+    stream: Annotated[
+        Optional[str],
+        Field(
+            description="The stream identifier specified in the corresponding streaming GET request."
+        ),
+    ] = None
+
+
+class TableRule(BaseModel):
+    """
+    A role rule controlling access to a EDB table.  Note that
+    there is never write access to EDB.
+    """
+
+    path: Annotated[
+        str,
+        Field(
+            description='EDB path to which this rule applies. It can end in ".*"\nin which case the final portion of the table path can be anything, if the\nprefix matches. It can end in ".**" in which case the table path can be\nanything if the prefix matches.',
+            min_length=1,
+            pattern="^\\\\..*",
+        ),
+    ]
+    permissions: Annotated[
+        Literal["none", "read"],
+        Field(description="Permissions for the given EDB path."),
+    ]
+
+
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayBadgeMetadata(BaseModel):
+    badge_name: Optional[str] = None
+    badge_path: Optional[str] = None
+    color: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    value: Optional[int] = None
+
+
+class TopoOverlayStateMetadata(BaseModel):
+    color: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    value: Optional[int] = None
+
+
+class TopoOverlayStateRequest(BaseModel):
+    badge: Optional[str] = None
+    status: Optional[str] = None
+
+
+TopoSchema = GroupVersionKind
+
+
+class TopologyStateGroupSelector(BaseModel):
+    group: Annotated[
+        Optional[str],
+        Field(
+            description='The group to assign to nodes that match the selector.\n+eda:ui:title="Group"'
+        ),
+    ] = None
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description='+kubebuilder:validation:Optional\n+eda:ui:title="Node Selector"\n+eda:ui:format="labelselector"\nLabel selector to use to match nodes that should be assigned to this group.'
+        ),
+    ] = None
+
+
+class TopologyStateTierSelector(BaseModel):
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description='+kubebuilder:validation:Optional\n+eda:ui:title="Node Selector"\n+eda:ui:format="labelselector"\nLabel selector to use to match nodes that should be assigned to this tier.'
+        ),
+    ] = None
+    tier: Annotated[
+        Optional[int],
+        Field(
+            description='The tier to assign to nodes that match the selector.\n+eda:ui:title="Tier"'
+        ),
+    ] = None
+
+
+class TransactionContent(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    metadata: Optional[Metadata] = None
+    spec: Optional[Dict[str, Any]] = None
+
+
+class TransactionId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A transaction identifier; these are assigned by the system to a posted transaction."
+        ),
+    ] = None
+
+
+class TransactionInputResource(BaseModel):
+    isDelete: Optional[bool] = None
+    name: Optional[NsCrGvkName] = None
+
+
+class TransactionNodeResult(BaseModel):
+    """
+    The name of a node with changes from a transaction, and a list
+    of errors that occurred for the node
+    """
+
+    errors: Annotated[
+        Optional[List[str]], Field(description="Resulting errors for the node")
+    ] = None
+    name: Annotated[Optional[str], Field(description="The name of the node")] = None
+    namespace: Annotated[
+        Optional[str], Field(description="The namespace of the node")
+    ] = None
+
+
+class TransactionNsCrGvkNames(BaseModel):
+    gvk: Optional[GroupVersionKind] = None
+    names: Optional[List[str]] = None
+    namespace: Optional[str] = None
+
+
+class TransactionPatch(BaseModel):
+    patchOps: List[K8SPatchOp]
+    target: NsCrGvkName
+
+
+class TransactionPoolAllocation(BaseModel):
+    key: Optional[str] = None
+    poolName: Optional[str] = None
+    poolTemplate: Optional[str] = None
+    value: Optional[str] = None
+
+
+class TransactionResultInputResources(BaseModel):
+    inputCrs: Annotated[
+        Optional[List[TransactionInputResource]],
+        Field(description="List of input resources from the transaction"),
+    ] = None
+    limitedAccess: Annotated[
+        Optional[bool],
+        Field(
+            description="This field is true if the list returned here is not the complete list of input resources in the transaction because the user does not have read-access to some of them"
+        ),
+    ] = None
+
+
+class TransactionResultObjectString(BaseModel):
+    data: Optional[str] = None
+
+
+class TransactionScriptResults(BaseModel):
+    executionTime: Optional[int] = None
+    output: Optional[str] = None
+
+
+class TransactionState(BaseModel):
+    state: Annotated[
+        Optional[str], Field(description="The state of the transaction")
+    ] = None
+
+
+class TransactionStructuredAppError(BaseModel):
+    message: Optional[str] = None
+    messageKey: Optional[str] = None
+    values: Optional[Dict[str, Dict[str, Any]]] = None
+
+
+class TransactionSummaryResult(BaseModel):
+    """
+    Summary of the result of a transaction
+    """
+
+    commitHash: Annotated[
+        Optional[str], Field(description="The git commit hash for the transaction")
+    ] = None
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="The description of the transaction, as posted in the transaction request."
+        ),
+    ] = None
+    details: Annotated[
+        Optional[str],
+        Field(
+            description="The type of details available for the transaction, as posted in the transaction request."
+        ),
+    ] = None
+    dryRun: Annotated[
+        Optional[bool],
+        Field(
+            description="If true the transaction was not committed and ran in dry run mode."
+        ),
+    ] = None
+    id: Annotated[Optional[int], Field(description="The transaction identifier")] = None
+    lastChangeTimestamp: Annotated[
+        Optional[str], Field(description="The time that the transaction completed.")
+    ] = None
+    state: Annotated[
+        Optional[str], Field(description="The state of the transaction.")
+    ] = None
+    success: Annotated[
+        Optional[bool], Field(description="True if the transaction was successful.")
+    ] = None
+    username: Annotated[
+        Optional[str], Field(description="The user who posted the transaction.")
+    ] = None
+
+
+class TransactionSummaryResults(BaseModel):
+    results: Annotated[
+        Optional[List[TransactionSummaryResult]],
+        Field(description="array of summary-results for transactions"),
+    ] = None
+
+
+class TransactionValue(BaseModel):
+    value: Optional[TransactionContent] = None
+
+
+class UrlRule(BaseModel):
+    path: Annotated[
+        str,
+        Field(
+            description='The API server URL path to which this rule applies. It can end in "/*"\nin which case the final portion of the URL path can be anything, if the\nprefix matches. It can end in "/**" in which case the URL path can be\nanything if the prefix matches.",',
+            min_length=1,
+            pattern="^/.*",
+        ),
+    ]
+    permissions: Annotated[
+        Optional[Literal["none", "read", "readWrite"]],
+        Field(description="The permissions for the API server URL for the rule."),
+    ] = None
+
+
+class UserStatus(BaseModel):
+    failedLoginSinceSuccessfulLogin: Optional[int] = None
+    isFederatedUser: Annotated[
+        Optional[bool],
+        Field(description="True if the user comes from a federated LDAP server"),
+    ] = None
+    lastFailedLogin: Optional[str] = None
+    lastSuccessfulLogin: Optional[str] = None
+    temporarilyDisabled: Optional[bool] = None
+
+
+class UserStorageInFileContent(BaseModel):
+    file_content: Annotated[
+        str,
+        Field(
+            alias="file-content",
+            description="The desired content of the user-storage file. This will be base64 decoded before storing if the request indicates that the content is base64 encoded.",
+        ),
+    ]
+
+
+class UserStorageOutDirEntry(BaseModel):
+    """
+    user-storage directory entry
+    """
+
+    modification_time: Annotated[
+        Optional[datetime],
+        Field(
+            alias="modification-time",
+            description="modification type of the item, if a file",
+        ),
+    ] = None
+    name: Annotated[str, Field(description="name of the item within the directory")]
+    type: Annotated[str, Field(description='type of the item; "file" or "directory"')]
+
+
+class UserStorageOutFileContent(BaseModel):
+    file_content: Annotated[
+        Optional[str],
+        Field(
+            alias="file-content",
+            description="content of the file, will be base64 encoded if the request asked for this",
+        ),
+    ] = None
+    file_deleted: Annotated[
+        Optional[bool],
+        Field(
+            alias="file-deleted",
+            description="if present and true, indicates the file has been deleted; used for\nstreamed responses",
+        ),
+    ] = None
+    file_name: Annotated[str, Field(alias="file-name", description="name of the file")]
+    modification_time: Annotated[
+        Optional[datetime],
+        Field(
+            alias="modification-time",
+            description="UTC modification time of the file, as an RFC 3339 date/time.\nNot valid if file-deleted is true (in a streamed response)",
+        ),
+    ] = None
+
+
+class Workflow(BaseModel):
+    cr: Annotated[
+        Dict[str, Dict[str, Any]],
+        Field(description="Custom resource that defines the workflow to execute"),
+    ]
+    description: Annotated[
+        str, Field(description="Description message for the workflow")
+    ]
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowState(BaseModel):
+    runningState: Optional[str] = None
+    state: Optional[str] = None
+
+
+class SingleVersionInfo(BaseModel):
+    builtDate: Annotated[
+        Optional[str], Field(description="The build-time for the component.")
+    ] = None
+    version: Annotated[
+        Optional[str], Field(description="The version string for the component.")
+    ] = None
+
+
+class VersionInfo(RootModel[Optional[Dict[str, SingleVersionInfo]]]):
+    root: Optional[Dict[str, SingleVersionInfo]] = None
+
+
+class AuthProviderAuth(BaseModel):
+    """
+    If present, bind to LDAP server with the given credentials.  Otherwise do not bind.
+    """
+
+    bindCredential: Annotated[
+        str, Field(description="Credentials to use when binding to an LDAP provider")
+    ]
+    bindDN: Annotated[
+        str, Field(description="DN to use when binding to an LDAP provider")
+    ]
+
+
+class AuthProviderGroupSupport(BaseModel):
+    """
+    Configuration for group import/sync with LDAP.  If not present, groups will not synchronized with EDA.
+    """
+
+    NameLDAPAttribute: Annotated[
+        str, Field(description="The LDAP group name attribute")
+    ]
+    filter: Annotated[
+        Optional[str],
+        Field(
+            description="Further for filtering when retrieving LDAP groups. Ensure starts and ends with parentheses if using."
+        ),
+    ] = None
+    groupLDAPDN: Annotated[
+        str, Field(description="The LDAP DN where groups are found.")
+    ]
+    memberAttribute: Annotated[
+        Optional[str],
+        Field(
+            description='The group attribute for a members.  Usually "member" or "memberUid".'
+        ),
+    ] = None
+    memberOfAttribute: Annotated[
+        Optional[str],
+        Field(
+            description='If retrievalStrategy is "memberOf", this is the LDAP user attribute for group memberships.'
+        ),
+    ] = None
+    membershipAttributeType: Annotated[
+        Optional[Literal["DN", "UID"]],
+        Field(
+            description="How users are identified in a group member entry: either DN or UID."
+        ),
+    ] = None
+    membershipUserAttribute: Annotated[
+        Optional[str],
+        Field(
+            description="Only required if membershipAttributeType is UID; then it is the user attribute that should match the group member value."
+        ),
+    ] = None
+    objectClasses: Annotated[
+        str,
+        Field(
+            description="The LDAP object class or classes used for groups. If more than one, they must be comma-separated."
+        ),
+    ]
+    retrievalStrategy: Annotated[
+        Optional[Literal["member", "memberOf"]],
+        Field(
+            description='The strategy for retrieving groups.  Should be "member" to get group membership from the group, or "memberOf" to get group membership from the user.'
+        ),
+    ] = None
+
+
 class AuthProvider(BaseModel):
     auth: Optional[AuthProviderAuth] = None
     enabled: Annotated[
@@ -335,74 +1022,6 @@ class AuthProvider(BaseModel):
         ),
     ] = None
     vendor: Annotated[str, Field(description="LDAP vendor (provider).")]
-
-
-class AuthProviderAuth(BaseModel):
-    """
-    If present, bind to LDAP server with the given credentials.  Otherwise do not bind.
-    """
-
-    bindCredential: Annotated[
-        str, Field(description="Credentials to use when binding to an LDAP provider")
-    ]
-    bindDN: Annotated[
-        str, Field(description="DN to use when binding to an LDAP provider")
-    ]
-
-
-class AuthProviderGroupSupport(BaseModel):
-    """
-    Configuration for group import/sync with LDAP.  If not present, groups will not synchronized with EDA.
-    """
-
-    NameLDAPAttribute: Annotated[
-        str, Field(description="The LDAP group name attribute")
-    ]
-    filter: Annotated[
-        Optional[str],
-        Field(
-            description="Further for filtering when retrieving LDAP groups. Ensure starts and ends with parentheses if using."
-        ),
-    ] = None
-    groupLDAPDN: Annotated[
-        str, Field(description="The LDAP DN where groups are found.")
-    ]
-    memberAttribute: Annotated[
-        Optional[str],
-        Field(
-            description='The group attribute for a members.  Usually "member" or "memberUid".'
-        ),
-    ] = None
-    memberOfAttribute: Annotated[
-        Optional[str],
-        Field(
-            description='If retrievalStrategy is "memberOf", this is the LDAP user attribute for group memberships.'
-        ),
-    ] = None
-    membershipAttributeType: Annotated[
-        Optional[Literal["DN", "UID"]],
-        Field(
-            description="How users are identified in a group member entry: either DN or UID."
-        ),
-    ] = None
-    membershipUserAttribute: Annotated[
-        Optional[str],
-        Field(
-            description="Only required if membershipAttributeType is UID; then it is the user attribute that should match the group member value."
-        ),
-    ] = None
-    objectClasses: Annotated[
-        str,
-        Field(
-            description="The LDAP object class or classes used for groups. If more than one, they must be comma-separated."
-        ),
-    ]
-    retrievalStrategy: Annotated[
-        Optional[Literal["member", "memberOf"]],
-        Field(
-            description='The strategy for retrieving groups.  Should be "member" to get group membership from the group, or "memberOf" to get group membership from the user.'
-        ),
-    ] = None
 
 
 class AuthProviderTestParams(BaseModel):
@@ -524,74 +1143,6 @@ class CrAnnotation(BaseModel):
     lines: Optional[List[LineSegment]] = None
 
 
-class Credentials(BaseModel):
-    temporary: Annotated[
-        Optional[bool],
-        Field(
-            description="This is true if the password being set is a temporary password.  In this case the user\nis required to change the password after they login using the temporary password."
-        ),
-    ] = None
-    value: Annotated[
-        Optional[str], Field(description="The new password for the user.")
-    ] = None
-
-
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
-
-
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
 class FlowGetResponse(BaseModel):
     error: Annotated[
         Optional[str],
@@ -634,62 +1185,6 @@ class FlowGetResponse(BaseModel):
     ] = None
 
 
-class FlowListEntry(BaseModel):
-    id: Annotated[Optional[int], Field(description="The id of the workflow")] = None
-    name: Annotated[Optional[str], Field(description="Name of the workflow")] = None
-    namespace: Annotated[
-        Optional[str], Field(description="The namespace in which the workflow ran")
-    ] = None
-    parentId: Annotated[
-        Optional[int], Field(description="The id of the parent workflow, if any")
-    ] = None
-    state: Optional[
-        Literal[
-            "waitingToStart",
-            "running",
-            "waitingForInput",
-            "terminated",
-            "failed",
-            "completed",
-            "subflowWaitingForInput",
-        ]
-    ] = None
-    type: Annotated[Optional[str], Field(description="The type of workflow")] = None
-
-
-class FlowListResult(BaseModel):
-    """
-    A list of flows
-    """
-
-    flows: Optional[List[FlowListEntry]] = None
-
-
-class FlowStage(BaseModel):
-    """
-    Describes the stage of a workflow
-    """
-
-    completed: Annotated[
-        Optional[bool], Field(description="True if the stage has completed")
-    ] = None
-    hadError: Annotated[
-        Optional[bool],
-        Field(description="True if the stage is complete and there was an error"),
-    ] = None
-    name: Annotated[Optional[str], Field(description="Name of the flow stage")] = None
-    skipped: Annotated[
-        Optional[bool], Field(description="True if the stage was skipped")
-    ] = None
-    started: Annotated[
-        Optional[bool], Field(description="True if the stage has started")
-    ] = None
-    subFlowIds: Annotated[
-        Optional[List[int]],
-        Field(description="The ids of flows triggered by the stage"),
-    ] = None
-
-
 class GetLabelCompletionRequest(BaseModel):
     gvk: Optional[GroupVersionKind] = None
     limit: Annotated[
@@ -707,18 +1202,6 @@ class GetLabelCompletionRequest(BaseModel):
             description="A key value string delimited by =.  If the Value does not include an =\nit is assumed to be a Key lookup.  If there is an =, everything before\nthe = is assumed to be the key and the lookup will be a value lookup"
         ),
     ]
-
-
-class GroupIDs(RootModel[List[str]]):
-    root: Annotated[
-        List[str], Field(title="A list of user group identifiers (uuid values).")
-    ]
-
-
-class GroupVersionKind(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    version: Optional[str] = None
 
 
 class Health(BaseModel):
@@ -741,73 +1224,6 @@ class Health(BaseModel):
     ]
 
 
-class HealthServiceStatus(BaseModel):
-    error: Annotated[
-        Optional[str], Field(description="Detailed status if the service is not up.")
-    ] = None
-    status: Annotated[
-        Literal["UP", "DOWN"],
-        Field(description="Health status of the given service.  UP or DOWN."),
-    ]
-
-
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class LabelCompletionResponse(BaseModel):
-    results: Optional[List[str]] = None
-
-
-class LineSegment(BaseModel):
-    endLine: Optional[int] = None
-    startLine: Optional[int] = None
-
-
-class Metadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: Optional[str] = None
-
-
-class NamespaceData(BaseModel):
-    """
-    Information about an individual namespace
-    """
-
-    description: Annotated[
-        Optional[str], Field(description="The description of the namespace")
-    ] = None
-    name: Annotated[Optional[str], Field(description="The namespace name")] = None
-
-
-class NamespaceGetResponse(BaseModel):
-    """
-    Body of the non streaming namespace get request
-    """
-
-    allNamesapces: Annotated[
-        Optional[bool],
-        Field(
-            description="If true, the requestor is considered to have permission to access all namespaces"
-        ),
-    ] = None
-    namespaces: Annotated[
-        Optional[List[NamespaceData]], Field(description="The list of namespaces")
-    ] = None
-
-
 class NodeConfigResponse(BaseModel):
     annotations: Annotated[
         Optional[List[CrAnnotation]],
@@ -816,12 +1232,6 @@ class NodeConfigResponse(BaseModel):
     running: Annotated[
         Optional[str], Field(description="The current node configuration for the node")
     ] = None
-
-
-class NsCrGvkName(BaseModel):
-    gvk: Optional[GroupVersionKind] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
 
 
 class Overlay(BaseModel):
@@ -842,102 +1252,6 @@ class Overlays(RootModel[List[Overlay]]):
     root: List[Overlay]
 
 
-class ProviderAuth(BaseModel):
-    bindCredential: Annotated[
-        str, Field(description="Credentials to use when binding to an LDAP provider")
-    ]
-    bindDN: Annotated[
-        str, Field(description="DN to use when binding to an LDAP provider")
-    ]
-
-
-class QueryCompletion(BaseModel):
-    completion: Optional[str] = None
-    token: Optional[str] = None
-
-
-class QueryCompletionResponse(BaseModel):
-    """
-    The result of a successful query auto-completion request
-    """
-
-    completions: Annotated[
-        Optional[List[QueryCompletion]],
-        Field(description="Array of possible auto-completion results."),
-    ] = None
-
-
-class ResourceRule(BaseModel):
-    apiGroups: Annotated[
-        List[str],
-        Field(
-            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.\nIn addition, the version can be a wildcard.'
-        ),
-    ]
-    permissions: Annotated[
-        Optional[Literal["none", "read", "readWrite"]],
-        Field(description="Permissions for resources specified by the rule."),
-    ] = None
-    resources: Annotated[
-        List[str],
-        Field(
-            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.'
-        ),
-    ]
-
-
-class SingleVersionInfo(BaseModel):
-    builtDate: Annotated[
-        Optional[str], Field(description="The build-time for the component.")
-    ] = None
-    version: Annotated[
-        Optional[str], Field(description="The version string for the component.")
-    ] = None
-
-
-class StreamResult(BaseModel):
-    details: Annotated[
-        Optional[str],
-        Field(
-            description="The details for the streaming request; e.g. the query string in the corresponding GET request."
-        ),
-    ] = None
-    stream: Annotated[
-        Optional[str],
-        Field(
-            description="The stream identifier specified in the corresponding streaming GET request."
-        ),
-    ] = None
-
-
-class TableRule(BaseModel):
-    """
-    A role rule controlling access to a EDB table.  Note that
-    there is never write access to EDB.
-    """
-
-    path: Annotated[
-        str,
-        Field(
-            description='EDB path to which this rule applies. It can end in ".*"\nin which case the final portion of the table path can be anything, if the\nprefix matches. It can end in ".**" in which case the table path can be\nanything if the prefix matches.',
-            min_length=1,
-            pattern="^\\\\..*",
-        ),
-    ]
-    permissions: Annotated[
-        Literal["none", "read"],
-        Field(description="Permissions for the given EDB path."),
-    ]
-
-
-class TopoAttrMetadata(BaseModel):
-    type: Optional[str] = None
-    ui_description: Optional[str] = None
-    ui_description_key: Optional[str] = None
-    ui_name: Optional[str] = None
-    ui_name_key: Optional[str] = None
-
-
 class TopoElemMetadata(BaseModel):
     attributes: Optional[Dict[str, TopoAttrMetadata]] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
@@ -955,11 +1269,6 @@ class TopoEndpoint(BaseModel):
     ui_name: Optional[str] = None
 
 
-class TopoGroupingStateRequest(BaseModel):
-    name: Optional[str] = None
-    spec: Optional[TopologyStateGroupingBase] = None
-
-
 class TopoLink(BaseModel):
     attributes: Optional[Dict[str, Dict[str, Any]]] = None
     cr_name: Optional[str] = None
@@ -975,12 +1284,6 @@ class TopoLink(BaseModel):
     ui_name: Optional[str] = None
 
 
-class TopoLinkEndpoint(BaseModel):
-    endpoint: Optional[str] = None
-    node: Optional[str] = None
-    node_key: Optional[str] = None
-
-
 class TopoNode(BaseModel):
     attributes: Optional[Dict[str, Dict[str, Any]]] = None
     cr_name: Optional[str] = None
@@ -991,49 +1294,6 @@ class TopoNode(BaseModel):
     namespace: Optional[str] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
     ui_name: Optional[str] = None
-
-
-class TopoNodeGrouping(BaseModel):
-    group: Optional[str] = None
-    tier: Optional[int] = None
-
-
-class TopoOverlayBadgeMetadata(BaseModel):
-    badge_name: Optional[str] = None
-    badge_path: Optional[str] = None
-    color: Optional[str] = None
-    ui_description: Optional[str] = None
-    ui_description_key: Optional[str] = None
-    ui_name: Optional[str] = None
-    ui_name_key: Optional[str] = None
-    value: Optional[int] = None
-
-
-class TopoOverlayStateMetadata(BaseModel):
-    color: Optional[str] = None
-    ui_description: Optional[str] = None
-    ui_description_key: Optional[str] = None
-    ui_name: Optional[str] = None
-    ui_name_key: Optional[str] = None
-    value: Optional[int] = None
-
-
-class TopoOverlayStateRequest(BaseModel):
-    badge: Optional[str] = None
-    status: Optional[str] = None
-
-
-TopoSchema = GroupVersionKind
-
-
-class TopoStateRequest(BaseModel):
-    grouping: Optional[TopoGroupingStateRequest] = None
-    namespace: Optional[str] = None
-    overlays: Optional[TopoOverlayStateRequest] = None
-
-
-class Topologies(RootModel[List[Topology]]):
-    root: List[Topology]
 
 
 class Topology(BaseModel):
@@ -1053,21 +1313,6 @@ class Topology(BaseModel):
 class TopologyState(BaseModel):
     links: Optional[Dict[str, TopoLink]] = None
     nodes: Optional[Dict[str, TopoNode]] = None
-
-
-class TopologyStateGroupSelector(BaseModel):
-    group: Annotated[
-        Optional[str],
-        Field(
-            description='The group to assign to nodes that match the selector.\n+eda:ui:title="Group"'
-        ),
-    ] = None
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description='+kubebuilder:validation:Optional\n+eda:ui:title="Node Selector"\n+eda:ui:format="labelselector"\nLabel selector to use to match nodes that should be assigned to this group.'
-        ),
-    ] = None
 
 
 class TopologyStateGroupingBase(BaseModel):
@@ -1114,57 +1359,73 @@ class TopologyStateGroupingBase(BaseModel):
     ] = None
 
 
-class TopologyStateTierSelector(BaseModel):
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description='+kubebuilder:validation:Optional\n+eda:ui:title="Node Selector"\n+eda:ui:format="labelselector"\nLabel selector to use to match nodes that should be assigned to this tier.'
-        ),
-    ] = None
-    tier: Annotated[
-        Optional[int],
-        Field(
-            description='The tier to assign to nodes that match the selector.\n+eda:ui:title="Tier"'
-        ),
-    ] = None
-
-
-class Transaction(BaseModel):
-    crs: Annotated[
-        List[TransactionCr],
-        Field(description="List of CRs to include in the transaction"),
-    ]
-    description: Annotated[
-        str, Field(description="Description/commit message for the transaction")
-    ]
-    dryRun: Annotated[
-        bool,
-        Field(
-            description="If true the transaction will not be committed and will run in dry run mode.  If false the\ntransaction will be committed"
-        ),
-    ]
-    resultType: Annotated[
-        Optional[str],
-        Field(description="The type of result - errors only, normal, or debug"),
-    ] = None
-    retain: Annotated[
-        Optional[bool],
-        Field(
-            description="retain after results fetched - e.g. after call to get transaction result"
-        ),
-    ] = None
-
-
 class TransactionAppError(BaseModel):
     rawError: Optional[str] = None
     structuredError: Optional[TransactionStructuredAppError] = None
 
 
-class TransactionContent(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    metadata: Optional[Metadata] = None
-    spec: Optional[Dict[str, Any]] = None
+class TransactionIntentResult(BaseModel):
+    errors: Optional[List[TransactionAppError]] = None
+    intentName: Optional[NsCrGvkName] = None
+    outputCrs: Optional[List[NsCrGvkName]] = None
+    poolAllocation: Optional[List[TransactionPoolAllocation]] = None
+    script: Optional[TransactionScriptResults] = None
+
+
+class TransactionResultObject(BaseModel):
+    after: Optional[TransactionResultObjectString] = None
+    before: Optional[TransactionResultObjectString] = None
+    dataUnavailable: Annotated[
+        Optional[bool],
+        Field(description="True if there is no data available for the result"),
+    ] = None
+    format: Annotated[
+        Optional[str], Field(description="The format of the response - Text or YAML")
+    ] = None
+
+
+class TransactionType(BaseModel):
+    create: Optional[TransactionValue] = None
+    delete: Optional[NsCrGvkName] = None
+    modify: Optional[TransactionValue] = None
+    patch: Optional[TransactionPatch] = None
+    replace: Optional[TransactionValue] = None
+
+
+class UserStorageOutDirContent(BaseModel):
+    directory_path: Annotated[
+        str,
+        Field(
+            alias="directory-path",
+            description="path for the directory within the users storage",
+        ),
+    ]
+    entries: Annotated[
+        List[UserStorageOutDirEntry],
+        Field(description="array of entries for the items in the directory"),
+    ]
+
+
+class WorkflowResult(BaseModel):
+    errorMessage: Optional[str] = None
+    resultMessage: Optional[str] = None
+    state: Optional[WorkflowState] = None
+    success: Optional[bool] = None
+
+
+class TopoGroupingStateRequest(BaseModel):
+    name: Optional[str] = None
+    spec: Optional[TopologyStateGroupingBase] = None
+
+
+class TopoStateRequest(BaseModel):
+    grouping: Optional[TopoGroupingStateRequest] = None
+    namespace: Optional[str] = None
+    overlays: Optional[TopoOverlayStateRequest] = None
+
+
+class Topologies(RootModel[List[Topology]]):
+    root: List[Topology]
 
 
 class TransactionCr(BaseModel):
@@ -1230,288 +1491,27 @@ class TransactionExecutionResult(BaseModel):
     ] = None
 
 
-class TransactionId(BaseModel):
-    id: Annotated[
-        Optional[int],
-        Field(
-            description="A transaction identifier; these are assigned by the system to a posted transaction."
-        ),
-    ] = None
-
-
-class TransactionInputResource(BaseModel):
-    isDelete: Optional[bool] = None
-    name: Optional[NsCrGvkName] = None
-
-
-class TransactionIntentResult(BaseModel):
-    errors: Optional[List[TransactionAppError]] = None
-    intentName: Optional[NsCrGvkName] = None
-    outputCrs: Optional[List[NsCrGvkName]] = None
-    poolAllocation: Optional[List[TransactionPoolAllocation]] = None
-    script: Optional[TransactionScriptResults] = None
-
-
-class TransactionNodeResult(BaseModel):
-    """
-    The name of a node with changes from a transaction, and a list
-    of errors that occurred for the node
-    """
-
-    errors: Annotated[
-        Optional[List[str]], Field(description="Resulting errors for the node")
-    ] = None
-    name: Annotated[Optional[str], Field(description="The name of the node")] = None
-    namespace: Annotated[
-        Optional[str], Field(description="The namespace of the node")
-    ] = None
-
-
-class TransactionNsCrGvkNames(BaseModel):
-    gvk: Optional[GroupVersionKind] = None
-    names: Optional[List[str]] = None
-    namespace: Optional[str] = None
-
-
-class TransactionPatch(BaseModel):
-    patchOps: List[K8SPatchOp]
-    target: NsCrGvkName
-
-
-class TransactionPoolAllocation(BaseModel):
-    key: Optional[str] = None
-    poolName: Optional[str] = None
-    poolTemplate: Optional[str] = None
-    value: Optional[str] = None
-
-
-class TransactionResultInputResources(BaseModel):
-    inputCrs: Annotated[
-        Optional[List[TransactionInputResource]],
-        Field(description="List of input resources from the transaction"),
-    ] = None
-    limitedAccess: Annotated[
-        Optional[bool],
-        Field(
-            description="This field is true if the list returned here is not the complete list of input resources in the transaction because the user does not have read-access to some of them"
-        ),
-    ] = None
-
-
-class TransactionResultObject(BaseModel):
-    after: Optional[TransactionResultObjectString] = None
-    before: Optional[TransactionResultObjectString] = None
-    dataUnavailable: Annotated[
-        Optional[bool],
-        Field(description="True if there is no data available for the result"),
-    ] = None
-    format: Annotated[
-        Optional[str], Field(description="The format of the response - Text or YAML")
-    ] = None
-
-
-class TransactionResultObjectString(BaseModel):
-    data: Optional[str] = None
-
-
-class TransactionScriptResults(BaseModel):
-    executionTime: Optional[int] = None
-    output: Optional[str] = None
-
-
-class TransactionState(BaseModel):
-    state: Annotated[
-        Optional[str], Field(description="The state of the transaction")
-    ] = None
-
-
-class TransactionStructuredAppError(BaseModel):
-    message: Optional[str] = None
-    messageKey: Optional[str] = None
-    values: Optional[Dict[str, Dict[str, Any]]] = None
-
-
-class TransactionSummaryResult(BaseModel):
-    """
-    Summary of the result of a transaction
-    """
-
-    commitHash: Annotated[
-        Optional[str], Field(description="The git commit hash for the transaction")
-    ] = None
+class Transaction(BaseModel):
+    crs: Annotated[
+        List[TransactionCr],
+        Field(description="List of CRs to include in the transaction"),
+    ]
     description: Annotated[
-        Optional[str],
-        Field(
-            description="The description of the transaction, as posted in the transaction request."
-        ),
-    ] = None
-    details: Annotated[
-        Optional[str],
-        Field(
-            description="The type of details available for the transaction, as posted in the transaction request."
-        ),
-    ] = None
+        str, Field(description="Description/commit message for the transaction")
+    ]
     dryRun: Annotated[
-        Optional[bool],
+        bool,
         Field(
-            description="If true the transaction was not committed and ran in dry run mode."
-        ),
-    ] = None
-    id: Annotated[Optional[int], Field(description="The transaction identifier")] = None
-    lastChangeTimestamp: Annotated[
-        Optional[str], Field(description="The time that the transaction completed.")
-    ] = None
-    state: Annotated[
-        Optional[str], Field(description="The state of the transaction.")
-    ] = None
-    success: Annotated[
-        Optional[bool], Field(description="True if the transaction was successful.")
-    ] = None
-    username: Annotated[
-        Optional[str], Field(description="The user who posted the transaction.")
-    ] = None
-
-
-class TransactionSummaryResults(BaseModel):
-    results: Annotated[
-        Optional[List[TransactionSummaryResult]],
-        Field(description="array of summary-results for transactions"),
-    ] = None
-
-
-class TransactionType(BaseModel):
-    create: Optional[TransactionValue] = None
-    delete: Optional[NsCrGvkName] = None
-    modify: Optional[TransactionValue] = None
-    patch: Optional[TransactionPatch] = None
-    replace: Optional[TransactionValue] = None
-
-
-class TransactionValue(BaseModel):
-    value: Optional[TransactionContent] = None
-
-
-class UrlRule(BaseModel):
-    path: Annotated[
-        str,
-        Field(
-            description='The API server URL path to which this rule applies. It can end in "/*"\nin which case the final portion of the URL path can be anything, if the\nprefix matches. It can end in "/**" in which case the URL path can be\nanything if the prefix matches.",',
-            min_length=1,
-            pattern="^/.*",
+            description="If true the transaction will not be committed and will run in dry run mode.  If false the\ntransaction will be committed"
         ),
     ]
-    permissions: Annotated[
-        Optional[Literal["none", "read", "readWrite"]],
-        Field(description="The permissions for the API server URL for the rule."),
-    ] = None
-
-
-class UserStatus(BaseModel):
-    failedLoginSinceSuccessfulLogin: Optional[int] = None
-    isFederatedUser: Annotated[
-        Optional[bool],
-        Field(description="True if the user comes from a federated LDAP server"),
-    ] = None
-    lastFailedLogin: Optional[str] = None
-    lastSuccessfulLogin: Optional[str] = None
-    temporarilyDisabled: Optional[bool] = None
-
-
-class UserStorageInFileContent(BaseModel):
-    file_content: Annotated[
-        str,
-        Field(
-            alias="file-content",
-            description="The desired content of the user-storage file. This will be base64 decoded before storing if the request indicates that the content is base64 encoded.",
-        ),
-    ]
-
-
-class UserStorageOutDirContent(BaseModel):
-    directory_path: Annotated[
-        str,
-        Field(
-            alias="directory-path",
-            description="path for the directory within the users storage",
-        ),
-    ]
-    entries: Annotated[
-        List[UserStorageOutDirEntry],
-        Field(description="array of entries for the items in the directory"),
-    ]
-
-
-class UserStorageOutDirEntry(BaseModel):
-    """
-    user-storage directory entry
-    """
-
-    modification_time: Annotated[
-        Optional[datetime],
-        Field(
-            alias="modification-time",
-            description="modification type of the item, if a file",
-        ),
-    ] = None
-    name: Annotated[str, Field(description="name of the item within the directory")]
-    type: Annotated[str, Field(description='type of the item; "file" or "directory"')]
-
-
-class UserStorageOutFileContent(BaseModel):
-    file_content: Annotated[
+    resultType: Annotated[
         Optional[str],
-        Field(
-            alias="file-content",
-            description="content of the file, will be base64 encoded if the request asked for this",
-        ),
+        Field(description="The type of result - errors only, normal, or debug"),
     ] = None
-    file_deleted: Annotated[
+    retain: Annotated[
         Optional[bool],
         Field(
-            alias="file-deleted",
-            description="if present and true, indicates the file has been deleted; used for\nstreamed responses",
+            description="retain after results fetched - e.g. after call to get transaction result"
         ),
     ] = None
-    file_name: Annotated[str, Field(alias="file-name", description="name of the file")]
-    modification_time: Annotated[
-        Optional[datetime],
-        Field(
-            alias="modification-time",
-            description="UTC modification time of the file, as an RFC 3339 date/time.\nNot valid if file-deleted is true (in a streamed response)",
-        ),
-    ] = None
-
-
-class VersionInfo(RootModel[Optional[Dict[str, SingleVersionInfo]]]):
-    root: Optional[Dict[str, SingleVersionInfo]] = None
-
-
-class Workflow(BaseModel):
-    cr: Annotated[
-        Dict[str, Dict[str, Any]],
-        Field(description="Custom resource that defines the workflow to execute"),
-    ]
-    description: Annotated[
-        str, Field(description="Description message for the workflow")
-    ]
-
-
-class WorkflowId(BaseModel):
-    id: Annotated[
-        Optional[int],
-        Field(
-            description="A workflow identifier; these are assigned by the system to a posted workflow."
-        ),
-    ] = None
-
-
-class WorkflowResult(BaseModel):
-    errorMessage: Optional[str] = None
-    resultMessage: Optional[str] = None
-    state: Optional[WorkflowState] = None
-    success: Optional[bool] = None
-
-
-class WorkflowState(BaseModel):
-    runningState: Optional[str] = None
-    state: Optional[str] = None

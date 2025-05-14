@@ -7,76 +7,248 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class BridgeDomain(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    BridgeDomain is the Schema for the bridgedomains API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: BridgeDomainMetadata
-    spec: Annotated[
-        BridgeDomainSpec,
-        Field(
-            description="The BridgeDomain enables the configuration and management of Layer 2 virtual networks. It includes settings for VNI, EVI, route targets for import and export, and tunnel index allocation. Additionally, the specification allows for advanced features such as MAC address table limits, aging, Proxy ARP and detection of MAC and IP duplication.",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
-        Optional[BridgeDomainStatus],
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
+        Optional[Dict[str, Any]],
         Field(
-            description="BridgeDomainStatus defines the observed state of BridgeDomain",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class BridgeDomainDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class BridgeDomainDeletedResources(RootModel[List[BridgeDomainDeletedResourceEntry]]):
-    root: List[BridgeDomainDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class BridgeDomainList(BaseModel):
-    """
-    BridgeDomainList is a list of bridgedomains
-    """
-
-    apiVersion: str
-    items: Optional[List[BridgeDomain]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class BridgeDomainMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
+class UIResult(RootModel[str]):
+    root: str
+
+
+class BridgeDomainSpecL2proxyARPNDDynamicLearning(BaseModel):
+    ageTime: Annotated[
+        Optional[int],
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description="Aging timer value for the proxy entries in seconds. If not set, this indicates that the entries are never flushed.",
+            ge=60,
+            le=86400,
+            title="Age Time",
         ),
-    ]
-    namespace: str
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables or disables Dynamic Learning.", title="Enabled"),
+    ] = False
+    sendRefresh: Annotated[
+        Optional[int],
+        Field(
+            description="The interval determines the frequency at which the system generates three ARP Requests or Neighbor Solicitations with the intent to refresh the proxy entry. The refresh is sent within the age-time window.",
+            ge=120,
+            le=86400,
+            title="Send Refresh Interval",
+        ),
+    ] = None
+
+
+class BridgeDomainSpecL2proxyARPNDIpDuplication(BaseModel):
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables or disables IP Duplication.", title="Enabled"),
+    ] = False
+    holdDownTime: Annotated[
+        Optional[int],
+        Field(
+            description="Time to wait in minutes from the moment an IP is declared duplicate to the time the IP is removed from the proxy ARP/ND table.",
+            ge=2,
+            le=60,
+            title="Hold Down Time",
+        ),
+    ] = 9
+    monitoringWindow: Annotated[
+        Optional[int],
+        Field(
+            description="Monitoring window for detecting duplication on a given IP address in the proxy ARP/ND table.",
+            ge=1,
+            le=15,
+            title="Monitoring Window",
+        ),
+    ] = 3
+    numMoves: Annotated[
+        Optional[int],
+        Field(
+            description="Number of moves in the proxy ARP/ND table that an IP is allowed within the monitoring-window.",
+            ge=3,
+            le=10,
+            title="Number of Moves",
+        ),
+    ] = 5
+
+
+class BridgeDomainSpecL2proxyARPND(BaseModel):
+    """
+    Enables / Disabled Proxy ARP / Proxy ND.
+    """
+
+    dynamicLearning: Annotated[
+        Optional[BridgeDomainSpecL2proxyARPNDDynamicLearning],
+        Field(title="Dynamic Learning"),
+    ] = None
+    ipDuplication: Annotated[
+        Optional[BridgeDomainSpecL2proxyARPNDIpDuplication],
+        Field(title="L2 Proxy ARP/ND IP Duplication Detection"),
+    ] = None
+    proxyARP: Annotated[
+        Optional[bool], Field(description="Enables proxy ARP.", title="Proxy ARP")
+    ] = False
+    proxyND: Annotated[
+        Optional[bool], Field(description="Enables proxy ND.", title="Proxy ND")
+    ] = False
+    tableSize: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of entries allowed in the proxy table of the bridge domain.",
+            ge=1,
+            le=8192,
+            title="L2 Proxy ARP/ND Table Size",
+        ),
+    ] = 250
+
+
+class BridgeDomainSpecMacDuplicationDetection(BaseModel):
+    """
+    Enable or disable MAC duplication detection and resolution mechanisms.
+    """
+
+    action: Annotated[
+        Optional[Literal["Blackhole", "OperDown", "StopLearning"]],
+        Field(
+            description="Action to take on the subinterface upon detecting at least one mac addresses as duplicate on the subinterface.",
+            title="Action",
+        ),
+    ] = "StopLearning"
+    enabled: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables or disables Mac Duplication Detection.",
+            title="Enabled",
+        ),
+    ] = False
+    holdDownTime: Annotated[
+        Optional[int],
+        Field(
+            description="Time to wait in minutes from the moment a mac is declared duplicate to the mac is flushed from the bridge table.",
+            ge=2,
+            le=60,
+            title="Hold Down Time",
+        ),
+    ] = 9
+    monitoringWindow: Annotated[
+        Optional[int],
+        Field(
+            description="Monitoring window in minutes for detecting duplication on a given mac address.",
+            ge=1,
+            le=15,
+            title="Monitoring Window",
+        ),
+    ] = 3
+    numMoves: Annotated[
+        Optional[int],
+        Field(
+            description="Number of moves a mac is allowed within the monitoring-window, before it is declared duplicate.",
+            ge=3,
+            title="Number of Moves",
+        ),
+    ] = 5
 
 
 class BridgeDomainSpec(BaseModel):
@@ -182,142 +354,6 @@ class BridgeDomainSpec(BaseModel):
     ] = "vni-pool"
 
 
-class BridgeDomainSpecL2proxyARPND(BaseModel):
-    """
-    Enables / Disabled Proxy ARP / Proxy ND.
-    """
-
-    dynamicLearning: Annotated[
-        Optional[BridgeDomainSpecL2proxyARPNDDynamicLearning],
-        Field(title="Dynamic Learning"),
-    ] = None
-    ipDuplication: Annotated[
-        Optional[BridgeDomainSpecL2proxyARPNDIpDuplication],
-        Field(title="L2 Proxy ARP/ND IP Duplication Detection"),
-    ] = None
-    proxyARP: Annotated[
-        Optional[bool], Field(description="Enables proxy ARP.", title="Proxy ARP")
-    ] = False
-    proxyND: Annotated[
-        Optional[bool], Field(description="Enables proxy ND.", title="Proxy ND")
-    ] = False
-    tableSize: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of entries allowed in the proxy table of the bridge domain.",
-            ge=1,
-            le=8192,
-            title="L2 Proxy ARP/ND Table Size",
-        ),
-    ] = 250
-
-
-class BridgeDomainSpecL2proxyARPNDDynamicLearning(BaseModel):
-    ageTime: Annotated[
-        Optional[int],
-        Field(
-            description="Aging timer value for the proxy entries in seconds. If not set, this indicates that the entries are never flushed.",
-            ge=60,
-            le=86400,
-            title="Age Time",
-        ),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables or disables Dynamic Learning.", title="Enabled"),
-    ] = False
-    sendRefresh: Annotated[
-        Optional[int],
-        Field(
-            description="The interval determines the frequency at which the system generates three ARP Requests or Neighbor Solicitations with the intent to refresh the proxy entry. The refresh is sent within the age-time window.",
-            ge=120,
-            le=86400,
-            title="Send Refresh Interval",
-        ),
-    ] = None
-
-
-class BridgeDomainSpecL2proxyARPNDIpDuplication(BaseModel):
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables or disables IP Duplication.", title="Enabled"),
-    ] = False
-    holdDownTime: Annotated[
-        Optional[int],
-        Field(
-            description="Time to wait in minutes from the moment an IP is declared duplicate to the time the IP is removed from the proxy ARP/ND table.",
-            ge=2,
-            le=60,
-            title="Hold Down Time",
-        ),
-    ] = 9
-    monitoringWindow: Annotated[
-        Optional[int],
-        Field(
-            description="Monitoring window for detecting duplication on a given IP address in the proxy ARP/ND table.",
-            ge=1,
-            le=15,
-            title="Monitoring Window",
-        ),
-    ] = 3
-    numMoves: Annotated[
-        Optional[int],
-        Field(
-            description="Number of moves in the proxy ARP/ND table that an IP is allowed within the monitoring-window.",
-            ge=3,
-            le=10,
-            title="Number of Moves",
-        ),
-    ] = 5
-
-
-class BridgeDomainSpecMacDuplicationDetection(BaseModel):
-    """
-    Enable or disable MAC duplication detection and resolution mechanisms.
-    """
-
-    action: Annotated[
-        Optional[Literal["Blackhole", "OperDown", "StopLearning"]],
-        Field(
-            description="Action to take on the subinterface upon detecting at least one mac addresses as duplicate on the subinterface.",
-            title="Action",
-        ),
-    ] = "StopLearning"
-    enabled: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables or disables Mac Duplication Detection.",
-            title="Enabled",
-        ),
-    ] = False
-    holdDownTime: Annotated[
-        Optional[int],
-        Field(
-            description="Time to wait in minutes from the moment a mac is declared duplicate to the mac is flushed from the bridge table.",
-            ge=2,
-            le=60,
-            title="Hold Down Time",
-        ),
-    ] = 9
-    monitoringWindow: Annotated[
-        Optional[int],
-        Field(
-            description="Monitoring window in minutes for detecting duplication on a given mac address.",
-            ge=1,
-            le=15,
-            title="Monitoring Window",
-        ),
-    ] = 3
-    numMoves: Annotated[
-        Optional[int],
-        Field(
-            description="Number of moves a mac is allowed within the monitoring-window, before it is declared duplicate.",
-            ge=3,
-            title="Number of Moves",
-        ),
-    ] = 5
-
-
 class BridgeDomainStatus(BaseModel):
     """
     BridgeDomainStatus defines the observed state of BridgeDomain
@@ -403,44 +439,151 @@ class BridgeDomainStatus(BaseModel):
     ] = None
 
 
-class BridgeInterface(BaseModel):
-    """
-    BridgeInterface is the Schema for the bridgeinterfaces API
-    """
+class BridgeDomainDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
-    apiVersion: str
-    kind: str
-    metadata: BridgeInterfaceMetadata
-    spec: Annotated[
-        BridgeInterfaceSpec,
+
+class BridgeDomainDeletedResources(RootModel[List[BridgeDomainDeletedResourceEntry]]):
+    root: List[BridgeDomainDeletedResourceEntry]
+
+
+class BridgeDomainMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
         Field(
-            description="The BridgeInterface enables the attachment of network interfaces to a Bridge Domain. It includes settings for VLAN ID allocation, interface attachment, and actions on ingress and egress traffic. The specification supports integration with other network resources, such as Bridge Domains and Interfaces, and provides advanced features like MAC Duplication Detection with configurable actions.",
-            title="Specification",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[Optional[BridgeInterfaceStatus], Field(title="Status")] = None
+    namespace: str
 
 
-BridgeInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class BridgeInterfaceDeletedResources(
-    RootModel[List[BridgeInterfaceDeletedResourceEntry]]
-):
-    root: List[BridgeInterfaceDeletedResourceEntry]
-
-
-class BridgeInterfaceList(BaseModel):
+class BridgeInterfaceSpecEgress(BaseModel):
     """
-    BridgeInterfaceList is a list of bridgeinterfaces
+    Manages actions on traffic at Egress.
     """
 
-    apiVersion: str
-    items: Optional[List[BridgeInterface]] = None
-    kind: str
+    filters: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of Filter references to use at egress.", title="Filters"
+        ),
+    ] = None
+    qosPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of QoS Egress policy references to use at egress.",
+            title="QoS Egress Policy",
+        ),
+    ] = None
 
 
-BridgeInterfaceMetadata = BridgeDomainMetadata
+class BridgeInterfaceSpecIngress(BaseModel):
+    """
+    Manages actions on traffic at Ingress.
+    """
+
+    filters: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of Filter references to use at ingress.", title="Filters"
+        ),
+    ] = None
+    qosPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of QoS Ingress policy references to use at ingress.",
+            title="QoS Ingress Policy",
+        ),
+    ] = None
+
+
+class BridgeInterfaceSpecUplinkEgress(BaseModel):
+    """
+    Manages actions on traffic at Egress of the Local enpoint of the Uplink.
+    """
+
+    filters: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of Filter references to use at egress.", title="Filters"
+        ),
+    ] = None
+    qosPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of QoS Egress policy references to use at egress.",
+            title="QoS Egress Policy",
+        ),
+    ] = None
+
+
+class BridgeInterfaceSpecUplinkIngress(BaseModel):
+    """
+    Manages actions on traffic at Ingress of the Local enpoint of the Uplink.
+    """
+
+    filters: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of Filter references to use at ingress.", title="Filters"
+        ),
+    ] = None
+    qosPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of QoS Ingress policy references to use at ingress.",
+            title="QoS Ingress Policy",
+        ),
+    ] = None
+
+
+class BridgeInterfaceSpecUplink(BaseModel):
+    """
+    The Uplink between your access breakout switch and your leaf switch.
+    """
+
+    egress: Annotated[
+        Optional[BridgeInterfaceSpecUplinkEgress],
+        Field(
+            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
+            title="Egress",
+        ),
+    ] = None
+    ingress: Annotated[
+        Optional[BridgeInterfaceSpecUplinkIngress],
+        Field(
+            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
+            title="Ingress",
+        ),
+    ] = None
+    uplinkSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
+            title="Uplink Selector",
+        ),
+    ] = None
+    uplinkVLANID: Annotated[
+        Optional[str],
+        Field(
+            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN ID",
+        ),
+    ] = "pool"
+    uplinkVLANPool: Annotated[
+        Optional[str],
+        Field(
+            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN Pool",
+        ),
+    ] = None
 
 
 class BridgeInterfaceSpec(BaseModel):
@@ -522,166 +665,6 @@ class BridgeInterfaceSpec(BaseModel):
     ]
 
 
-class BridgeInterfaceSpecEgress(BaseModel):
-    """
-    Manages actions on traffic at Egress.
-    """
-
-    filters: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of Filter references to use at egress.", title="Filters"
-        ),
-    ] = None
-    qosPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of QoS Egress policy references to use at egress.",
-            title="QoS Egress Policy",
-        ),
-    ] = None
-
-
-class BridgeInterfaceSpecIngress(BaseModel):
-    """
-    Manages actions on traffic at Ingress.
-    """
-
-    filters: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of Filter references to use at ingress.", title="Filters"
-        ),
-    ] = None
-    qosPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of QoS Ingress policy references to use at ingress.",
-            title="QoS Ingress Policy",
-        ),
-    ] = None
-
-
-class BridgeInterfaceSpecUplink(BaseModel):
-    """
-    The Uplink between your access breakout switch and your leaf switch.
-    """
-
-    egress: Annotated[
-        Optional[BridgeInterfaceSpecUplinkEgress],
-        Field(
-            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
-            title="Egress",
-        ),
-    ] = None
-    ingress: Annotated[
-        Optional[BridgeInterfaceSpecUplinkIngress],
-        Field(
-            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
-            title="Ingress",
-        ),
-    ] = None
-    uplinkSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
-            title="Uplink Selector",
-        ),
-    ] = None
-    uplinkVLANID: Annotated[
-        Optional[str],
-        Field(
-            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN ID",
-        ),
-    ] = "pool"
-    uplinkVLANPool: Annotated[
-        Optional[str],
-        Field(
-            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN Pool",
-        ),
-    ] = None
-
-
-class BridgeInterfaceSpecUplinkEgress(BaseModel):
-    """
-    Manages actions on traffic at Egress of the Local enpoint of the Uplink.
-    """
-
-    filters: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of Filter references to use at egress.", title="Filters"
-        ),
-    ] = None
-    qosPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of QoS Egress policy references to use at egress.",
-            title="QoS Egress Policy",
-        ),
-    ] = None
-
-
-class BridgeInterfaceSpecUplinkIngress(BaseModel):
-    """
-    Manages actions on traffic at Ingress of the Local enpoint of the Uplink.
-    """
-
-    filters: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of Filter references to use at ingress.", title="Filters"
-        ),
-    ] = None
-    qosPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of QoS Ingress policy references to use at ingress.",
-            title="QoS Ingress Policy",
-        ),
-    ] = None
-
-
-class BridgeInterfaceStatus(BaseModel):
-    health: Annotated[
-        Optional[int],
-        Field(
-            description="Indicates the health score of the BridgeInterface.",
-            title="Health Score",
-        ),
-    ] = None
-    healthScoreReason: Annotated[
-        Optional[str],
-        Field(
-            description="Indicates the reason for the health score.",
-            title="Health Score Reason",
-        ),
-    ] = None
-    lastChange: Annotated[
-        Optional[date],
-        Field(
-            description="The time when the state of the resource last changed.",
-            title="Last Change",
-        ),
-    ] = None
-    operationalState: Annotated[
-        Optional[str],
-        Field(
-            description="Operational state of the BridgeInterface.",
-            title="Operational State",
-        ),
-    ] = None
-    subInterfaces: Annotated[
-        Optional[List[BridgeInterfaceStatusSubInterface]],
-        Field(
-            description="Sub-interfaces status within the BridgeInterface.",
-            title="Sub-Interfaces Status",
-        ),
-    ] = None
-
-
 class BridgeInterfaceStatusSubInterface(BaseModel):
     enabled: Annotated[
         Optional[bool],
@@ -731,48 +714,54 @@ class BridgeInterfaceStatusSubInterface(BaseModel):
     ] = None
 
 
-class DHCPRelay(BaseModel):
-    """
-    DHCPRelay is the Schema for the dhcprelays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DHCPRelayMetadata
-    spec: Annotated[
-        DHCPRelaySpec,
+class BridgeInterfaceStatus(BaseModel):
+    health: Annotated[
+        Optional[int],
         Field(
-            description="The DHCPRelay enables the forwarding of DHCP requests and responses between clients and servers across different networks. This resource allows for the configuration of various DHCP relay sub-options, such as CircuitID, RemoteID, and ClientLinkLayerAddress, to provide detailed client information. It also includes settings for specifying the router to reach the DHCP server, the list of DHCP servers to forward requests to, and selectors for Routed and IRB interfaces where the relay will be configured. Additionally, the GI Address option can be set to derive the Gateway IP address from the selected interface, ensuring correct routing of DHCP messages.",
-            title="Specification",
+            description="Indicates the health score of the BridgeInterface.",
+            title="Health Score",
         ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
         Field(
-            description="DHCPRelayStatus defines the observed state of DHCPRelay",
-            title="Status",
+            description="Indicates the reason for the health score.",
+            title="Health Score Reason",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The time when the state of the resource last changed.",
+            title="Last Change",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(
+            description="Operational state of the BridgeInterface.",
+            title="Operational State",
+        ),
+    ] = None
+    subInterfaces: Annotated[
+        Optional[List[BridgeInterfaceStatusSubInterface]],
+        Field(
+            description="Sub-interfaces status within the BridgeInterface.",
+            title="Sub-Interfaces Status",
         ),
     ] = None
 
 
-DHCPRelayDeletedResourceEntry = BridgeDomainDeletedResourceEntry
+BridgeInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class DHCPRelayDeletedResources(RootModel[List[DHCPRelayDeletedResourceEntry]]):
-    root: List[DHCPRelayDeletedResourceEntry]
+class BridgeInterfaceDeletedResources(
+    RootModel[List[BridgeInterfaceDeletedResourceEntry]]
+):
+    root: List[BridgeInterfaceDeletedResourceEntry]
 
 
-class DHCPRelayList(BaseModel):
-    """
-    DHCPRelayList is a list of dhcprelays
-    """
-
-    apiVersion: str
-    items: Optional[List[DHCPRelay]] = None
-    kind: str
-
-
-DHCPRelayMetadata = BridgeDomainMetadata
+BridgeInterfaceMetadata = BridgeDomainMetadata
 
 
 class DHCPRelaySpec(BaseModel):
@@ -825,207 +814,14 @@ class DHCPRelaySpec(BaseModel):
     ] = None
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
+DHCPRelayDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
+class DHCPRelayDeletedResources(RootModel[List[DHCPRelayDeletedResourceEntry]]):
+    root: List[DHCPRelayDeletedResourceEntry]
 
 
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
-class IRBInterface(BaseModel):
-    """
-    IRBInterface is the Schema for the irbinterfaces API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: IRBInterfaceMetadata
-    spec: Annotated[
-        IRBInterfaceSpec,
-        Field(
-            description="The IRBInterface enables the configuration and management of Layer 3 interfaces associated with a BridgeDomain. This resource allows for the specification of various parameters, including IP MTU, learning of unsolicited ARPs, IPv4 and IPv6 addresses, and unnumbered interface settings. It also supports advanced features such as BFD configuration, Virtual IP discovery, and ARP/ND-related settings like Proxy ARP/ND and EVPN route advertisement.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[IRBInterfaceStatus],
-        Field(
-            description="IRBInterfaceStatus defines the observed state of IRBInterface",
-            title="Status",
-        ),
-    ] = None
-
-
-IRBInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class IRBInterfaceDeletedResources(RootModel[List[IRBInterfaceDeletedResourceEntry]]):
-    root: List[IRBInterfaceDeletedResourceEntry]
-
-
-class IRBInterfaceList(BaseModel):
-    """
-    IRBInterfaceList is a list of irbinterfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[IRBInterface]] = None
-    kind: str
-
-
-IRBInterfaceMetadata = BridgeDomainMetadata
-
-
-class IRBInterfaceSpec(BaseModel):
-    """
-    The IRBInterface enables the configuration and management of Layer 3 interfaces associated with a BridgeDomain. This resource allows for the specification of various parameters, including IP MTU, learning of unsolicited ARPs, IPv4 and IPv6 addresses, and unnumbered interface settings. It also supports advanced features such as BFD configuration, Virtual IP discovery, and ARP/ND-related settings like Proxy ARP/ND and EVPN route advertisement.
-    """
-
-    anycastGatewayMAC: Annotated[
-        Optional[str],
-        Field(
-            description="The gateway MAC to use on the anycast address, if left empty the node will automatically assign one.",
-            title="Anycast GW MAC",
-        ),
-    ] = None
-    arpTimeout: Annotated[
-        Optional[int],
-        Field(
-            description="Duration of time that dynamic ARP entries remain in the ARP cache before they expire.",
-            title="ARP Timeout",
-        ),
-    ] = 14400
-    bfd: Annotated[
-        Optional[IRBInterfaceSpecBfd],
-        Field(description="Enable BFD on the IRBInterface.", title="BFD Configuration"),
-    ] = None
-    bridgeDomain: Annotated[
-        str, Field(description="Reference to a BridgeDomain.", title="Bridge Domain")
-    ]
-    description: Annotated[
-        Optional[str],
-        Field(description="The description of the IRBInterface.", title="Description"),
-    ] = None
-    egress: Annotated[
-        Optional[IRBInterfaceSpecEgress],
-        Field(
-            description="Manages actions on traffic at Egress.", title="Egress Actions"
-        ),
-    ] = None
-    evpnRouteAdvertisementType: Annotated[
-        Optional[IRBInterfaceSpecEvpnRouteAdvertisementType],
-        Field(
-            description="Controls the type of ARP/ND entries to advertise.",
-            title="EVPN Route Advertisement Type",
-        ),
-    ] = None
-    hostRoutePopulate: Annotated[
-        Optional[IRBInterfaceSpecHostRoutePopulate],
-        Field(
-            description="Configures host route population based on ARP entries.",
-            title="Host Route Population",
-        ),
-    ] = None
-    ingress: Annotated[
-        Optional[IRBInterfaceSpecIngress],
-        Field(
-            description="Manages actions on traffic at Ingress.",
-            title="Ingress Actions",
-        ),
-    ] = None
-    ipAddresses: Annotated[
-        Optional[List[IRBInterfaceSpecIpAddress]], Field(title="IP Addresses")
-    ] = None
-    ipMTU: Annotated[
-        Optional[int],
-        Field(
-            description="IP MTU for the IRBInterface [default=1500].",
-            ge=1280,
-            le=9486,
-            title="IP MTU",
-        ),
-    ] = 1500
-    ipv6RouterAdvertisement: Annotated[
-        Optional[IRBInterfaceSpecIpv6RouterAdvertisement],
-        Field(title="IPv6 Router Advertisement"),
-    ] = None
-    l3ProxyARPND: Annotated[
-        Optional[IRBInterfaceSpecL3ProxyARPND],
-        Field(
-            description="L3 Proxy ARP and ND configuration.", title="L3 Proxy ARP/ND"
-        ),
-    ] = None
-    learnUnsolicited: Annotated[
-        Optional[Literal["BOTH", "GLOBAL", "LINK-LOCAL", "NONE"]],
-        Field(
-            description="Enable or disable learning of unsolicited ARPs.",
-            title="Learn Unsolicited ARPs",
-        ),
-    ] = "NONE"
-    router: Annotated[str, Field(description="Reference to a Router.", title="Router")]
-    unnumbered: Annotated[
-        Optional[Literal["IPV6"]],
-        Field(
-            description="Enables the use of unnumbered interfaces on the IRBInterface.  If IPv6 is specified, no IP address are configured on the sub-interface and only the link local address will be used.  If any IP addresses are specified for either IPv4 or IPv6 that will take precedence and IPs will be assigned to the interfaces.(Deprecated, Use IPv6RouterAdvertisement)",
-            title="Unnumbered",
-        ),
-    ] = None
-    virtualIPDiscovery: Annotated[
-        Optional[List[IRBInterfaceSpecVirtualIPDiscoveryItem]],
-        Field(
-            description="Configuration for Virtual IP discovery on the interface.",
-            title="Virtual IP Discovery",
-        ),
-    ] = None
+DHCPRelayMetadata = BridgeDomainMetadata
 
 
 class IRBInterfaceSpecBfd(BaseModel):
@@ -1137,30 +933,6 @@ class IRBInterfaceSpecHostRoutePopulate(BaseModel):
 IRBInterfaceSpecIngress = BridgeInterfaceSpecIngress
 
 
-class IRBInterfaceSpecIpAddress(BaseModel):
-    ipv4Address: Annotated[
-        Optional[IRBInterfaceSpecIpAddressIpv4Address],
-        Field(
-            description="IPv4 address in IP/mask form, e.g., 192.168.0.1/24.",
-            title="IPv4 Addresses",
-        ),
-    ] = None
-    ipv6Address: Annotated[
-        Optional[IRBInterfaceSpecIpAddressIpv6Address],
-        Field(
-            description="IPv6 address in IP/mask form, e.g., fc00::1/120.",
-            title="IPv6 Addresses",
-        ),
-    ] = None
-    node: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a TopoNode resource, if not specified the IP address will be assigned to all nodes on which the IRB is deployed.  If specified the IP address will be assigned to the specified node.",
-            title="Node",
-        ),
-    ] = None
-
-
 class IRBInterfaceSpecIpAddressIpv4Address(BaseModel):
     """
     IPv4 address in IP/mask form, e.g., 192.168.0.1/24.
@@ -1193,6 +965,75 @@ class IRBInterfaceSpecIpAddressIpv6Address(BaseModel):
             title="Primary",
         ),
     ] = None
+
+
+class IRBInterfaceSpecIpAddress(BaseModel):
+    ipv4Address: Annotated[
+        Optional[IRBInterfaceSpecIpAddressIpv4Address],
+        Field(
+            description="IPv4 address in IP/mask form, e.g., 192.168.0.1/24.",
+            title="IPv4 Addresses",
+        ),
+    ] = None
+    ipv6Address: Annotated[
+        Optional[IRBInterfaceSpecIpAddressIpv6Address],
+        Field(
+            description="IPv6 address in IP/mask form, e.g., fc00::1/120.",
+            title="IPv6 Addresses",
+        ),
+    ] = None
+    node: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a TopoNode resource, if not specified the IP address will be assigned to all nodes on which the IRB is deployed.  If specified the IP address will be assigned to the specified node.",
+            title="Node",
+        ),
+    ] = None
+
+
+class IRBInterfaceSpecIpv6RouterAdvertisementPrefix(BaseModel):
+    """
+    IPv6Prefix defines the configuration for an IPv6 prefix advertisement.
+    """
+
+    autonomousFlag: Annotated[
+        Optional[bool],
+        Field(
+            description="When this is set in the prefix information option hosts can use the prefix for stateless address autoconfiguration (SLAAC).",
+            title="Autonomous Flag",
+        ),
+    ] = True
+    onLinkFlag: Annotated[
+        Optional[bool],
+        Field(
+            description="When this is set in the prefix information option hosts can use the prefix for on-link determination.",
+            title="On-Link Flag",
+        ),
+    ] = True
+    preferredLifetime: Annotated[
+        Optional[int],
+        Field(
+            description="The length of time in seconds (relative to the time the packet is sent) that addresses generated from the prefix via stateless address autoconfiguration remain preferred.",
+            ge=0,
+            le=4294967295,
+            title="Preferred Lifetime",
+        ),
+    ] = 604800
+    prefix: Annotated[
+        str,
+        Field(
+            description="An IPv6 global unicast address prefix.", title="IPv6 Prefix"
+        ),
+    ]
+    validLifetime: Annotated[
+        Optional[int],
+        Field(
+            description="The length of time in seconds (relative to the time the packet is sent) that the prefix is valid for the purpose of on-link determination.",
+            ge=0,
+            le=4294967295,
+            title="Valid Lifetime",
+        ),
+    ] = 2592000
 
 
 class IRBInterfaceSpecIpv6RouterAdvertisement(BaseModel):
@@ -1289,51 +1130,6 @@ class IRBInterfaceSpecIpv6RouterAdvertisement(BaseModel):
     ]
 
 
-class IRBInterfaceSpecIpv6RouterAdvertisementPrefix(BaseModel):
-    """
-    IPv6Prefix defines the configuration for an IPv6 prefix advertisement.
-    """
-
-    autonomousFlag: Annotated[
-        Optional[bool],
-        Field(
-            description="When this is set in the prefix information option hosts can use the prefix for stateless address autoconfiguration (SLAAC).",
-            title="Autonomous Flag",
-        ),
-    ] = True
-    onLinkFlag: Annotated[
-        Optional[bool],
-        Field(
-            description="When this is set in the prefix information option hosts can use the prefix for on-link determination.",
-            title="On-Link Flag",
-        ),
-    ] = True
-    preferredLifetime: Annotated[
-        Optional[int],
-        Field(
-            description="The length of time in seconds (relative to the time the packet is sent) that addresses generated from the prefix via stateless address autoconfiguration remain preferred.",
-            ge=0,
-            le=4294967295,
-            title="Preferred Lifetime",
-        ),
-    ] = 604800
-    prefix: Annotated[
-        str,
-        Field(
-            description="An IPv6 global unicast address prefix.", title="IPv6 Prefix"
-        ),
-    ]
-    validLifetime: Annotated[
-        Optional[int],
-        Field(
-            description="The length of time in seconds (relative to the time the packet is sent) that the prefix is valid for the purpose of on-link determination.",
-            ge=0,
-            le=4294967295,
-            title="Valid Lifetime",
-        ),
-    ] = 2592000
-
-
 class IRBInterfaceSpecL3ProxyARPND(BaseModel):
     """
     L3 Proxy ARP and ND configuration.
@@ -1389,39 +1185,123 @@ class IRBInterfaceSpecVirtualIPDiscoveryItem(BaseModel):
     ] = None
 
 
-class IRBInterfaceStatus(BaseModel):
+class IRBInterfaceSpec(BaseModel):
     """
-    IRBInterfaceStatus defines the observed state of IRBInterface
+    The IRBInterface enables the configuration and management of Layer 3 interfaces associated with a BridgeDomain. This resource allows for the specification of various parameters, including IP MTU, learning of unsolicited ARPs, IPv4 and IPv6 addresses, and unnumbered interface settings. It also supports advanced features such as BFD configuration, Virtual IP discovery, and ARP/ND-related settings like Proxy ARP/ND and EVPN route advertisement.
     """
 
-    health: Annotated[
+    anycastGatewayMAC: Annotated[
+        Optional[str],
+        Field(
+            description="The gateway MAC to use on the anycast address, if left empty the node will automatically assign one.",
+            title="Anycast GW MAC",
+        ),
+    ] = None
+    arpTimeout: Annotated[
         Optional[int],
         Field(
-            description="Indicates the health score of the VNET.", title="Health Score"
+            description="Duration of time that dynamic ARP entries remain in the ARP cache before they expire.",
+            title="ARP Timeout",
         ),
+    ] = 14400
+    bfd: Annotated[
+        Optional[IRBInterfaceSpecBfd],
+        Field(description="Enable BFD on the IRBInterface.", title="BFD Configuration"),
     ] = None
-    healthScoreReason: Annotated[
+    bridgeDomain: Annotated[
+        str, Field(description="Reference to a BridgeDomain.", title="Bridge Domain")
+    ]
+    description: Annotated[
         Optional[str],
+        Field(description="The description of the IRBInterface.", title="Description"),
+    ] = None
+    egress: Annotated[
+        Optional[IRBInterfaceSpecEgress],
         Field(
-            description="Explains the reason for the health score.",
-            title="Health Score Reason",
+            description="Manages actions on traffic at Egress.", title="Egress Actions"
         ),
     ] = None
-    interfaces: Annotated[
-        Optional[List[IRBInterfaceStatusInterface]],
+    evpnRouteAdvertisementType: Annotated[
+        Optional[IRBInterfaceSpecEvpnRouteAdvertisementType],
         Field(
-            description="Details of the interfaces associated with the IRB.",
-            title="Interface Statuses",
+            description="Controls the type of ARP/ND entries to advertise.",
+            title="EVPN Route Advertisement Type",
         ),
     ] = None
-    lastChange: Annotated[
-        Optional[date],
-        Field(description="Timestamp of the last state change.", title="Last Change"),
+    hostRoutePopulate: Annotated[
+        Optional[IRBInterfaceSpecHostRoutePopulate],
+        Field(
+            description="Configures host route population based on ARP entries.",
+            title="Host Route Population",
+        ),
     ] = None
-    operationalState: Annotated[
-        Optional[str],
-        Field(description="Operational state of the VNET.", title="Operational State"),
+    ingress: Annotated[
+        Optional[IRBInterfaceSpecIngress],
+        Field(
+            description="Manages actions on traffic at Ingress.",
+            title="Ingress Actions",
+        ),
     ] = None
+    ipAddresses: Annotated[
+        Optional[List[IRBInterfaceSpecIpAddress]], Field(title="IP Addresses")
+    ] = None
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="IP MTU for the IRBInterface [default=1500].",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = 1500
+    ipv6RouterAdvertisement: Annotated[
+        Optional[IRBInterfaceSpecIpv6RouterAdvertisement],
+        Field(title="IPv6 Router Advertisement"),
+    ] = None
+    l3ProxyARPND: Annotated[
+        Optional[IRBInterfaceSpecL3ProxyARPND],
+        Field(
+            description="L3 Proxy ARP and ND configuration.", title="L3 Proxy ARP/ND"
+        ),
+    ] = None
+    learnUnsolicited: Annotated[
+        Optional[Literal["BOTH", "GLOBAL", "LINK-LOCAL", "NONE"]],
+        Field(
+            description="Enable or disable learning of unsolicited ARPs.",
+            title="Learn Unsolicited ARPs",
+        ),
+    ] = "NONE"
+    router: Annotated[str, Field(description="Reference to a Router.", title="Router")]
+    unnumbered: Annotated[
+        Optional[Literal["IPV6"]],
+        Field(
+            description="Enables the use of unnumbered interfaces on the IRBInterface.  If IPv6 is specified, no IP address are configured on the sub-interface and only the link local address will be used.  If any IP addresses are specified for either IPv4 or IPv6 that will take precedence and IPs will be assigned to the interfaces.(Deprecated, Use IPv6RouterAdvertisement)",
+            title="Unnumbered",
+        ),
+    ] = None
+    virtualIPDiscovery: Annotated[
+        Optional[List[IRBInterfaceSpecVirtualIPDiscoveryItem]],
+        Field(
+            description="Configuration for Virtual IP discovery on the interface.",
+            title="Virtual IP Discovery",
+        ),
+    ] = None
+
+
+class IRBInterfaceStatusInterfaceIpv4Address(BaseModel):
+    ipPrefix: Annotated[
+        str, Field(description="Address and mask to use", title="IP Prefix")
+    ]
+    primary: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates which address to use as primary for broadcast",
+            title="Primary",
+        ),
+    ] = None
+
+
+IRBInterfaceStatusInterfaceIpv6Address = IRBInterfaceStatusInterfaceIpv4Address
 
 
 class IRBInterfaceStatusInterface(BaseModel):
@@ -1463,107 +1343,209 @@ class IRBInterfaceStatusInterface(BaseModel):
     ] = None
 
 
-class IRBInterfaceStatusInterfaceIpv4Address(BaseModel):
-    ipPrefix: Annotated[
-        str, Field(description="Address and mask to use", title="IP Prefix")
-    ]
-    primary: Annotated[
-        Optional[bool],
+class IRBInterfaceStatus(BaseModel):
+    """
+    IRBInterfaceStatus defines the observed state of IRBInterface
+    """
+
+    health: Annotated[
+        Optional[int],
         Field(
-            description="Indicates which address to use as primary for broadcast",
-            title="Primary",
+            description="Indicates the health score of the VNET.", title="Health Score"
         ),
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
+        Field(
+            description="Explains the reason for the health score.",
+            title="Health Score Reason",
+        ),
+    ] = None
+    interfaces: Annotated[
+        Optional[List[IRBInterfaceStatusInterface]],
+        Field(
+            description="Details of the interfaces associated with the IRB.",
+            title="Interface Statuses",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(description="Timestamp of the last state change.", title="Last Change"),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(description="Operational state of the VNET.", title="Operational State"),
     ] = None
 
 
-IRBInterfaceStatusInterfaceIpv6Address = IRBInterfaceStatusInterfaceIpv4Address
+IRBInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+class IRBInterfaceDeletedResources(RootModel[List[IRBInterfaceDeletedResourceEntry]]):
+    root: List[IRBInterfaceDeletedResourceEntry]
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+IRBInterfaceMetadata = BridgeDomainMetadata
 
 
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class RoutedInterface(BaseModel):
+class RoutedInterfaceSpecBfd(BaseModel):
     """
-    RoutedInterface is the Schema for the routedinterfaces API
+    Enables BFD on the RoutedInterface.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: RoutedInterfaceMetadata
-    spec: Annotated[
-        RoutedInterfaceSpec,
+    desiredMinTransmitInt: Annotated[
+        Optional[int],
         Field(
-            description="The RoutedInterface enables the configuration and management of Layer 3 interfaces for routing traffic between different networks. This resource allows for specifying an underlying Interface and Router, configuring VLAN IDs, and setting the IP MTU. It also supports the learning of unsolicited ARPs, defining both IPv4 and IPv6 addresses, and enabling unnumbered interfaces. Advanced features such as BFD configuration, Proxy ARP/ND, and ARP timeout settings are included to ensure robust and efficient routing.",
-            title="Specification",
+            description="The minimum interval in microseconds between transmission of BFD control packets.",
+            ge=10000,
+            le=100000000,
+            title="Transmit Interval",
+        ),
+    ] = 1000000
+    detectionMultiplier: Annotated[
+        Optional[int],
+        Field(
+            description="The number of packets that must be missed to declare this session as down.",
+            ge=3,
+            le=20,
+            title="Multiplier",
+        ),
+    ] = 3
+    enabled: Annotated[
+        bool, Field(description="Enables Biforward Detection.", title="Enabled")
+    ]
+    minEchoReceiveInterval: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum interval between echo packets the local node can receive.",
+            ge=250000,
+            le=100000000,
+            title="Minimum Echo Receive Interval",
+        ),
+    ] = 1000000
+    requiredMinReceive: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum interval in microseconds between received BFD control packets that this system should support.",
+            ge=10000,
+            le=100000000,
+            title="Receive Interval",
+        ),
+    ] = 1000000
+
+
+RoutedInterfaceSpecEgress = BridgeInterfaceSpecEgress
+
+
+RoutedInterfaceSpecIngress = BridgeInterfaceSpecIngress
+
+
+RoutedInterfaceSpecIpv4Address = IRBInterfaceStatusInterfaceIpv4Address
+
+
+RoutedInterfaceSpecIpv6Address = IRBInterfaceStatusInterfaceIpv4Address
+
+
+RoutedInterfaceSpecIpv6RouterAdvertisementPrefix = (
+    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
+)
+
+
+class RoutedInterfaceSpecIpv6RouterAdvertisement(BaseModel):
+    currentHopLimit: Annotated[
+        int,
+        Field(
+            description="The current hop limit to advertise in the router advertisement messages.",
+            ge=0,
+            le=255,
+            title="Current Hop Limit",
         ),
     ]
-    status: Annotated[
-        Optional[RoutedInterfaceStatus],
+    enabled: Annotated[
+        bool,
         Field(
-            description="RoutedInterfaceStatus defines the observed state of RoutedInterface",
-            title="Status",
+            description="Enable or disable IPv6 router advertisements.",
+            title="Enable Router Advertisements",
+        ),
+    ]
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="The IP MTU to advertise in the router advertisement messages.",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
         ),
     ] = None
+    managedConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for address configuration (M-bit).",
+            title="Managed Configuration Flag",
+        ),
+    ]
+    maxAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Maximum time between router advertisements (in seconds).",
+            ge=4,
+            le=1800,
+            title="Maximum Advertisement Interval",
+        ),
+    ]
+    minAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Minimum time between router advertisements (in seconds).",
+            ge=3,
+            le=1350,
+            title="Minimum Advertisement Interval",
+        ),
+    ]
+    otherConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for other configuration (O-bit).",
+            title="Other Configuration Flag",
+        ),
+    ]
+    prefixes: Annotated[
+        Optional[List[RoutedInterfaceSpecIpv6RouterAdvertisementPrefix]],
+        Field(
+            description="IPv6 prefixes to advertise in router advertisements.",
+            title="Prefixes",
+        ),
+    ] = None
+    reachableTime: Annotated[
+        Optional[int],
+        Field(
+            description="Time in milliseconds for Neighbor Unreachability Detection.",
+            ge=0,
+            le=3600000,
+            title="Reachable Time",
+        ),
+    ] = 0
+    retransmitTime: Annotated[
+        int,
+        Field(
+            description="Time in milliseconds between retransmitted NS messages.",
+            ge=0,
+            le=1800000,
+            title="Retransmit Time",
+        ),
+    ]
+    routerLifetime: Annotated[
+        int,
+        Field(
+            description="Router lifetime in seconds for default gateway.",
+            ge=0,
+            le=9000,
+            title="Router Lifetime",
+        ),
+    ]
 
 
-RoutedInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class RoutedInterfaceDeletedResources(
-    RootModel[List[RoutedInterfaceDeletedResourceEntry]]
-):
-    root: List[RoutedInterfaceDeletedResourceEntry]
-
-
-class RoutedInterfaceList(BaseModel):
-    """
-    RoutedInterfaceList is a list of routedinterfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[RoutedInterface]] = None
-    kind: str
-
-
-RoutedInterfaceMetadata = BridgeDomainMetadata
+RoutedInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
 
 
 class RoutedInterfaceSpec(BaseModel):
@@ -1674,164 +1656,7 @@ class RoutedInterfaceSpec(BaseModel):
     ] = "vlan-pool"
 
 
-class RoutedInterfaceSpecBfd(BaseModel):
-    """
-    Enables BFD on the RoutedInterface.
-    """
-
-    desiredMinTransmitInt: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum interval in microseconds between transmission of BFD control packets.",
-            ge=10000,
-            le=100000000,
-            title="Transmit Interval",
-        ),
-    ] = 1000000
-    detectionMultiplier: Annotated[
-        Optional[int],
-        Field(
-            description="The number of packets that must be missed to declare this session as down.",
-            ge=3,
-            le=20,
-            title="Multiplier",
-        ),
-    ] = 3
-    enabled: Annotated[
-        bool, Field(description="Enables Biforward Detection.", title="Enabled")
-    ]
-    minEchoReceiveInterval: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum interval between echo packets the local node can receive.",
-            ge=250000,
-            le=100000000,
-            title="Minimum Echo Receive Interval",
-        ),
-    ] = 1000000
-    requiredMinReceive: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum interval in microseconds between received BFD control packets that this system should support.",
-            ge=10000,
-            le=100000000,
-            title="Receive Interval",
-        ),
-    ] = 1000000
-
-
-RoutedInterfaceSpecEgress = BridgeInterfaceSpecEgress
-
-
-RoutedInterfaceSpecIngress = BridgeInterfaceSpecIngress
-
-
-RoutedInterfaceSpecIpv4Address = IRBInterfaceStatusInterfaceIpv4Address
-
-
-RoutedInterfaceSpecIpv6Address = IRBInterfaceStatusInterfaceIpv4Address
-
-
-class RoutedInterfaceSpecIpv6RouterAdvertisement(BaseModel):
-    currentHopLimit: Annotated[
-        int,
-        Field(
-            description="The current hop limit to advertise in the router advertisement messages.",
-            ge=0,
-            le=255,
-            title="Current Hop Limit",
-        ),
-    ]
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable IPv6 router advertisements.",
-            title="Enable Router Advertisements",
-        ),
-    ]
-    ipMTU: Annotated[
-        Optional[int],
-        Field(
-            description="The IP MTU to advertise in the router advertisement messages.",
-            ge=1280,
-            le=9486,
-            title="IP MTU",
-        ),
-    ] = None
-    managedConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for address configuration (M-bit).",
-            title="Managed Configuration Flag",
-        ),
-    ]
-    maxAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Maximum time between router advertisements (in seconds).",
-            ge=4,
-            le=1800,
-            title="Maximum Advertisement Interval",
-        ),
-    ]
-    minAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Minimum time between router advertisements (in seconds).",
-            ge=3,
-            le=1350,
-            title="Minimum Advertisement Interval",
-        ),
-    ]
-    otherConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for other configuration (O-bit).",
-            title="Other Configuration Flag",
-        ),
-    ]
-    prefixes: Annotated[
-        Optional[List[RoutedInterfaceSpecIpv6RouterAdvertisementPrefix]],
-        Field(
-            description="IPv6 prefixes to advertise in router advertisements.",
-            title="Prefixes",
-        ),
-    ] = None
-    reachableTime: Annotated[
-        Optional[int],
-        Field(
-            description="Time in milliseconds for Neighbor Unreachability Detection.",
-            ge=0,
-            le=3600000,
-            title="Reachable Time",
-        ),
-    ] = 0
-    retransmitTime: Annotated[
-        int,
-        Field(
-            description="Time in milliseconds between retransmitted NS messages.",
-            ge=0,
-            le=1800000,
-            title="Retransmit Time",
-        ),
-    ]
-    routerLifetime: Annotated[
-        int,
-        Field(
-            description="Router lifetime in seconds for default gateway.",
-            ge=0,
-            le=9000,
-            title="Router Lifetime",
-        ),
-    ]
-
-
-RoutedInterfaceSpecIpv6RouterAdvertisementPrefix = (
-    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
-)
-
-
-RoutedInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
+RoutedInterfaceStatusInterface = BridgeInterfaceStatusSubInterface
 
 
 class RoutedInterfaceStatus(BaseModel):
@@ -1876,51 +1701,273 @@ class RoutedInterfaceStatus(BaseModel):
     ] = None
 
 
-RoutedInterfaceStatusInterface = BridgeInterfaceStatusSubInterface
+RoutedInterfaceDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class Router(BaseModel):
-    """
-    Router is the Schema for the routers API
-    """
+class RoutedInterfaceDeletedResources(
+    RootModel[List[RoutedInterfaceDeletedResourceEntry]]
+):
+    root: List[RoutedInterfaceDeletedResourceEntry]
 
-    apiVersion: str
-    kind: str
-    metadata: RouterMetadata
-    spec: Annotated[
-        RouterSpec,
+
+RoutedInterfaceMetadata = BridgeDomainMetadata
+
+
+class RouterSpecBgpIpAliasNexthop(BaseModel):
+    esi: Annotated[
+        Optional[str],
         Field(
-            description="The Router enables the configuration and management of routing functions within a network. This resource allows for setting a unique Router ID, configuring VNIs and EVIs with options for automatic allocation, and defining import and export route targets. It also includes advanced configuration options such as BGP settings, including autonomous system numbers, AFI/SAFI options, and route advertisement preferences. Node selectors can be used to constrain the deployment of the router to specific nodes within the network.",
-            title="Specification",
+            description="10 byte Ethernet Segment Identifier, if not set a type 0 ESI is generated.",
+            title="ESI",
+        ),
+    ] = "auto"
+    nextHop: Annotated[
+        str,
+        Field(
+            description="The nexthop IP address to track for the IP alias.",
+            title="IP Alias Address",
         ),
     ]
-    status: Annotated[
-        Optional[RouterStatus],
+    preferredActiveNode: Annotated[
+        Optional[str],
         Field(
-            description="RouterStatus defines the observed state of Router",
-            title="Status",
+            description="When not set the ES is used in an all active mode. This references the ToppNode object and when set, the DF algorithm is configured to type preference and the selected Node is set with a higher preference value. All other Nodes have a lower value configured.",
+            title="Preferred Active Node",
         ),
     ] = None
 
 
-RouterDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class RouterDeletedResources(RootModel[List[RouterDeletedResourceEntry]]):
-    root: List[RouterDeletedResourceEntry]
-
-
-class RouterList(BaseModel):
+class RouterSpecBgpIpv4UnicastMultipath(BaseModel):
     """
-    RouterList is a list of routers
+    Enable multipath.
     """
 
-    apiVersion: str
-    items: Optional[List[Router]] = None
-    kind: str
+    allowMultipleAS: Annotated[
+        bool,
+        Field(
+            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
+            title="Allow Multiple Autonomous Systems Per Path",
+        ),
+    ]
+    maxAllowedPaths: Annotated[
+        int,
+        Field(
+            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
+            ge=1,
+            le=256,
+            title="Maximum Number of Paths",
+        ),
+    ]
 
 
-RouterMetadata = BridgeDomainMetadata
+class RouterSpecBgpIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        bool, Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled")
+    ]
+    multipath: Annotated[
+        Optional[RouterSpecBgpIpv4UnicastMultipath],
+        Field(description="Enable multipath.", title="Multipath"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+class RouterSpecBgpIpv6UnicastMultipath(BaseModel):
+    """
+    Enable multipath
+    """
+
+    allowMultipleAS: Annotated[
+        bool,
+        Field(
+            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
+            title="Allow Multiple Autonomous Systems Per Path",
+        ),
+    ]
+    maxAllowedPaths: Annotated[
+        int,
+        Field(
+            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
+            ge=1,
+            le=256,
+            title="Maximum Number of Paths",
+        ),
+    ]
+
+
+class RouterSpecBgpIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        bool, Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled")
+    ]
+    multipath: Annotated[
+        Optional[RouterSpecBgpIpv6UnicastMultipath],
+        Field(description="Enable multipath", title="Multipath"),
+    ] = None
+
+
+class RouterSpecBgp(BaseModel):
+    """
+    BGP configuration.
+    """
+
+    autonomousSystem: Annotated[
+        Optional[int],
+        Field(
+            description="Autonomous System number for BGP.",
+            ge=1,
+            le=4294967295,
+            title="Autonomous System",
+        ),
+    ] = None
+    ebgpPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Preference to be set for eBGP [default=170].",
+            ge=1,
+            le=255,
+            title="eBGP Preference",
+        ),
+    ] = 170
+    enabled: Annotated[
+        Optional[bool], Field(description="Enable or disable BGP.", title="Enable BGP")
+    ] = False
+    ibgpPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Preference to be set for iBGP [default=170].",
+            ge=1,
+            le=255,
+            title="iBGP Preference",
+        ),
+    ] = 170
+    ipAliasNexthops: Annotated[
+        Optional[List[RouterSpecBgpIpAliasNexthop]],
+        Field(description="IP aliasing configuration.", title="IP Alias Nexthops"),
+    ] = None
+    ipv4Unicast: Annotated[
+        Optional[RouterSpecBgpIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[RouterSpecBgpIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(description="Keychain to be used for authentication", title="Keychain"),
+    ] = None
+    minWaitToAdvertise: Annotated[
+        Optional[int],
+        Field(
+            description="Minimum wait time before advertising routes post BGP restart.",
+            ge=0,
+            le=3600,
+            title="Min Wait To Advertise Time",
+        ),
+    ] = 0
+    rapidWithdrawl: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable rapid withdrawal in BGP.",
+            title="Enable Rapid Withdrawal",
+        ),
+    ] = True
+    waitForFIBInstall: Annotated[
+        Optional[bool],
+        Field(
+            description="Wait for FIB installation before advertising routes.",
+            title="Wait for FIB Installation",
+        ),
+    ] = False
+
+
+class RouterSpecIpLoadBalancingPrefixItem(BaseModel):
+    hashBucketsPerPath: Annotated[
+        int,
+        Field(
+            description="The number of times each next-hop is repeated in the fill pattern if there are max-paths ECMP next-hops.",
+            ge=1,
+            le=32,
+            title="Max Paths",
+        ),
+    ]
+    maxECMP: Annotated[
+        int,
+        Field(
+            description="The maximum number of ECMP next-hops per route associated with the resilient-hash prefix.",
+            ge=1,
+            le=64,
+            title="Max ECMP",
+        ),
+    ]
+    prefix: Annotated[
+        str,
+        Field(
+            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
+            title="Prefix",
+        ),
+    ]
+
+
+class RouterSpecIpLoadBalancing(BaseModel):
+    """
+    IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.
+    """
+
+    prefix: Annotated[
+        Optional[List[RouterSpecIpLoadBalancingPrefixItem]],
+        Field(
+            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
+            title="Prefix",
+        ),
+    ] = None
+
+
+class RouterSpecRouteLeaking(BaseModel):
+    """
+    Route leaking controlled by routing policies in and out of the DefaultRouter.
+    """
+
+    exportPolicy: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
+            title="Export Policy",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
+            title="Import Policy",
+        ),
+    ] = None
 
 
 class RouterSpec(BaseModel):
@@ -2024,263 +2071,6 @@ class RouterSpec(BaseModel):
     ] = "vni-pool"
 
 
-class RouterSpecBgp(BaseModel):
-    """
-    BGP configuration.
-    """
-
-    autonomousSystem: Annotated[
-        Optional[int],
-        Field(
-            description="Autonomous System number for BGP.",
-            ge=1,
-            le=4294967295,
-            title="Autonomous System",
-        ),
-    ] = None
-    ebgpPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Preference to be set for eBGP [default=170].",
-            ge=1,
-            le=255,
-            title="eBGP Preference",
-        ),
-    ] = 170
-    enabled: Annotated[
-        Optional[bool], Field(description="Enable or disable BGP.", title="Enable BGP")
-    ] = False
-    ibgpPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Preference to be set for iBGP [default=170].",
-            ge=1,
-            le=255,
-            title="iBGP Preference",
-        ),
-    ] = 170
-    ipAliasNexthops: Annotated[
-        Optional[List[RouterSpecBgpIpAliasNexthop]],
-        Field(description="IP aliasing configuration.", title="IP Alias Nexthops"),
-    ] = None
-    ipv4Unicast: Annotated[
-        Optional[RouterSpecBgpIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[RouterSpecBgpIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(description="Keychain to be used for authentication", title="Keychain"),
-    ] = None
-    minWaitToAdvertise: Annotated[
-        Optional[int],
-        Field(
-            description="Minimum wait time before advertising routes post BGP restart.",
-            ge=0,
-            le=3600,
-            title="Min Wait To Advertise Time",
-        ),
-    ] = 0
-    rapidWithdrawl: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable rapid withdrawal in BGP.",
-            title="Enable Rapid Withdrawal",
-        ),
-    ] = True
-    waitForFIBInstall: Annotated[
-        Optional[bool],
-        Field(
-            description="Wait for FIB installation before advertising routes.",
-            title="Wait for FIB Installation",
-        ),
-    ] = False
-
-
-class RouterSpecBgpIpAliasNexthop(BaseModel):
-    esi: Annotated[
-        Optional[str],
-        Field(
-            description="10 byte Ethernet Segment Identifier, if not set a type 0 ESI is generated.",
-            title="ESI",
-        ),
-    ] = "auto"
-    nextHop: Annotated[
-        str,
-        Field(
-            description="The nexthop IP address to track for the IP alias.",
-            title="IP Alias Address",
-        ),
-    ]
-    preferredActiveNode: Annotated[
-        Optional[str],
-        Field(
-            description="When not set the ES is used in an all active mode. This references the ToppNode object and when set, the DF algorithm is configured to type preference and the selected Node is set with a higher preference value. All other Nodes have a lower value configured.",
-            title="Preferred Active Node",
-        ),
-    ] = None
-
-
-class RouterSpecBgpIpv4Unicast(BaseModel):
-    """
-    Parameters relating to the IPv4 unicast AFI/SAFI.
-    """
-
-    advertiseIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
-            title="Advertise IPv6 Next Hops",
-        ),
-    ] = None
-    enabled: Annotated[
-        bool, Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled")
-    ]
-    multipath: Annotated[
-        Optional[RouterSpecBgpIpv4UnicastMultipath],
-        Field(description="Enable multipath.", title="Multipath"),
-    ] = None
-    receiveIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
-            title="Receive IPv6 Next Hops",
-        ),
-    ] = None
-
-
-class RouterSpecBgpIpv4UnicastMultipath(BaseModel):
-    """
-    Enable multipath.
-    """
-
-    allowMultipleAS: Annotated[
-        bool,
-        Field(
-            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
-            title="Allow Multiple Autonomous Systems Per Path",
-        ),
-    ]
-    maxAllowedPaths: Annotated[
-        int,
-        Field(
-            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
-            ge=1,
-            le=256,
-            title="Maximum Number of Paths",
-        ),
-    ]
-
-
-class RouterSpecBgpIpv6Unicast(BaseModel):
-    """
-    Parameters relating to the IPv6 unicast AFI/SAFI.
-    """
-
-    enabled: Annotated[
-        bool, Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled")
-    ]
-    multipath: Annotated[
-        Optional[RouterSpecBgpIpv6UnicastMultipath],
-        Field(description="Enable multipath", title="Multipath"),
-    ] = None
-
-
-class RouterSpecBgpIpv6UnicastMultipath(BaseModel):
-    """
-    Enable multipath
-    """
-
-    allowMultipleAS: Annotated[
-        bool,
-        Field(
-            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
-            title="Allow Multiple Autonomous Systems Per Path",
-        ),
-    ]
-    maxAllowedPaths: Annotated[
-        int,
-        Field(
-            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
-            ge=1,
-            le=256,
-            title="Maximum Number of Paths",
-        ),
-    ]
-
-
-class RouterSpecIpLoadBalancing(BaseModel):
-    """
-    IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.
-    """
-
-    prefix: Annotated[
-        Optional[List[RouterSpecIpLoadBalancingPrefixItem]],
-        Field(
-            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
-            title="Prefix",
-        ),
-    ] = None
-
-
-class RouterSpecIpLoadBalancingPrefixItem(BaseModel):
-    hashBucketsPerPath: Annotated[
-        int,
-        Field(
-            description="The number of times each next-hop is repeated in the fill pattern if there are max-paths ECMP next-hops.",
-            ge=1,
-            le=32,
-            title="Max Paths",
-        ),
-    ]
-    maxECMP: Annotated[
-        int,
-        Field(
-            description="The maximum number of ECMP next-hops per route associated with the resilient-hash prefix.",
-            ge=1,
-            le=64,
-            title="Max ECMP",
-        ),
-    ]
-    prefix: Annotated[
-        str,
-        Field(
-            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
-            title="Prefix",
-        ),
-    ]
-
-
-class RouterSpecRouteLeaking(BaseModel):
-    """
-    Route leaking controlled by routing policies in and out of the DefaultRouter.
-    """
-
-    exportPolicy: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
-            title="Export Policy",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
-            title="Import Policy",
-        ),
-    ] = None
-
-
 class RouterStatus(BaseModel):
     """
     RouterStatus defines the observed state of Router
@@ -2367,59 +2157,68 @@ class RouterStatus(BaseModel):
     ] = None
 
 
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
+RouterDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class RouterDeletedResources(RootModel[List[RouterDeletedResourceEntry]]):
+    root: List[RouterDeletedResourceEntry]
 
 
-class UIResult(RootModel[str]):
-    root: str
+RouterMetadata = BridgeDomainMetadata
 
 
-class VLAN(BaseModel):
+VLANSpecEgress = BridgeInterfaceSpecEgress
+
+
+VLANSpecIngress = BridgeInterfaceSpecIngress
+
+
+VLANSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
+
+
+VLANSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
+
+
+class VLANSpecUplink(BaseModel):
     """
-    VLAN is the Schema for the vlans API
+    The Uplink between your access breakout switch and your leaf switch.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: VLANMetadata
-    spec: Annotated[
-        VLANSpec,
+    egress: Annotated[
+        Optional[VLANSpecUplinkEgress],
         Field(
-            description="The VLAN enables the configuration and management of VLAN and their association with BridgeDomains. This resource allows for specifying the associated BridgeDomain, selecting interfaces based on label selectors, and configuring VLAN IDs with options for auto-allocation from a VLAN pool. It also supports advanced configurations such as ingress and egress traffic management, and overrides for MAC Duplication Detection actions when enabled in the associated BridgeDomain.",
-            title="Specification",
+            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
+            title="Egress",
         ),
-    ]
-    status: Annotated[Optional[VLANStatus], Field(title="Status")] = None
-
-
-VLANDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class VLANDeletedResources(RootModel[List[VLANDeletedResourceEntry]]):
-    root: List[VLANDeletedResourceEntry]
-
-
-class VLANList(BaseModel):
-    """
-    VLANList is a list of vlans
-    """
-
-    apiVersion: str
-    items: Optional[List[VLAN]] = None
-    kind: str
-
-
-VLANMetadata = BridgeDomainMetadata
+    ] = None
+    ingress: Annotated[
+        Optional[VLANSpecUplinkIngress],
+        Field(
+            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
+            title="Ingress",
+        ),
+    ] = None
+    uplinkSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
+            title="Uplink Selector",
+        ),
+    ] = None
+    uplinkVLANID: Annotated[
+        Optional[str],
+        Field(
+            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN ID",
+        ),
+    ] = "pool"
+    uplinkVLANPool: Annotated[
+        Optional[str],
+        Field(
+            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN Pool",
+        ),
+    ] = None
 
 
 class VLANSpec(BaseModel):
@@ -2501,58 +2300,7 @@ class VLANSpec(BaseModel):
     ] = None
 
 
-VLANSpecEgress = BridgeInterfaceSpecEgress
-
-
-VLANSpecIngress = BridgeInterfaceSpecIngress
-
-
-class VLANSpecUplink(BaseModel):
-    """
-    The Uplink between your access breakout switch and your leaf switch.
-    """
-
-    egress: Annotated[
-        Optional[VLANSpecUplinkEgress],
-        Field(
-            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
-            title="Egress",
-        ),
-    ] = None
-    ingress: Annotated[
-        Optional[VLANSpecUplinkIngress],
-        Field(
-            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
-            title="Ingress",
-        ),
-    ] = None
-    uplinkSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
-            title="Uplink Selector",
-        ),
-    ] = None
-    uplinkVLANID: Annotated[
-        Optional[str],
-        Field(
-            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN ID",
-        ),
-    ] = "pool"
-    uplinkVLANPool: Annotated[
-        Optional[str],
-        Field(
-            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN Pool",
-        ),
-    ] = None
-
-
-VLANSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
-
-
-VLANSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
+VLANStatusSubInterface = BridgeInterfaceStatusSubInterface
 
 
 class VLANStatus(BaseModel):
@@ -2598,106 +2346,59 @@ class VLANStatus(BaseModel):
     ] = None
 
 
-VLANStatusSubInterface = BridgeInterfaceStatusSubInterface
+VLANDeletedResourceEntry = BridgeDomainDeletedResourceEntry
 
 
-class VirtualNetwork(BaseModel):
+class VLANDeletedResources(RootModel[List[VLANDeletedResourceEntry]]):
+    root: List[VLANDeletedResourceEntry]
+
+
+VLANMetadata = BridgeDomainMetadata
+
+
+VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDDynamicLearning = (
+    BridgeDomainSpecL2proxyARPNDDynamicLearning
+)
+
+
+VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDIpDuplication = (
+    BridgeDomainSpecL2proxyARPNDIpDuplication
+)
+
+
+class VirtualNetworkSpecBridgeDomainSpecL2proxyARPND(BaseModel):
     """
-    VirtualNetwork is the Schema for the virtualnetworks API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: VirtualNetworkMetadata
-    spec: Annotated[
-        VirtualNetworkSpec,
-        Field(
-            description="VirtualNetworkSpec defines the desired state of VirtualNetwork",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[Optional[VirtualNetworkStatus], Field(title="Status")] = None
-
-
-VirtualNetworkDeletedResourceEntry = BridgeDomainDeletedResourceEntry
-
-
-class VirtualNetworkDeletedResources(
-    RootModel[List[VirtualNetworkDeletedResourceEntry]]
-):
-    root: List[VirtualNetworkDeletedResourceEntry]
-
-
-class VirtualNetworkList(BaseModel):
-    """
-    VirtualNetworkList is a list of virtualnetworks
+    Enables / Disabled Proxy ARP / Proxy ND.
     """
 
-    apiVersion: str
-    items: Optional[List[VirtualNetwork]] = None
-    kind: str
-
-
-VirtualNetworkMetadata = BridgeDomainMetadata
-
-
-class VirtualNetworkSpec(BaseModel):
-    """
-    VirtualNetworkSpec defines the desired state of VirtualNetwork
-    """
-
-    bridgeDomains: Annotated[
-        Optional[List[VirtualNetworkSpecBridgeDomain]],
+    dynamicLearning: Annotated[
+        Optional[VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDDynamicLearning],
+        Field(title="Dynamic Learning"),
+    ] = None
+    ipDuplication: Annotated[
+        Optional[VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDIpDuplication],
+        Field(title="L2 Proxy ARP/ND IP Duplication Detection"),
+    ] = None
+    proxyARP: Annotated[
+        Optional[bool], Field(description="Enables proxy ARP.", title="Proxy ARP")
+    ] = False
+    proxyND: Annotated[
+        Optional[bool], Field(description="Enables proxy ND.", title="Proxy ND")
+    ] = False
+    tableSize: Annotated[
+        Optional[int],
         Field(
-            description="List of Subnets. [emits=BridgeDomain]", title="Bridge Domains"
+            description="Maximum number of entries allowed in the proxy table of the bridge domain.",
+            ge=1,
+            le=8192,
+            title="L2 Proxy ARP/ND Table Size",
         ),
-    ] = None
-    bridgeInterfaces: Annotated[
-        Optional[List[VirtualNetworkSpecBridgeInterface]],
-        Field(
-            description="List of BridgeInterfaces. [emits=BridgeInterface]",
-            title="Bridge Interfaces",
-        ),
-    ] = None
-    irbInterfaces: Annotated[
-        Optional[List[VirtualNetworkSpecIrbInterface]],
-        Field(
-            description="List of IRBInterfaces. [emits=IRBInterface]",
-            title="IRB Interfaces",
-        ),
-    ] = None
-    protocols: Annotated[
-        Optional[VirtualNetworkSpecProtocols],
-        Field(description="Protocols to configure.", title="Protocols"),
-    ] = None
-    routedInterfaces: Annotated[
-        Optional[List[VirtualNetworkSpecRoutedInterface]],
-        Field(
-            description="List of RoutedInterface. [emits=RoutedInterface]",
-            title="Routed Interfaces",
-        ),
-    ] = None
-    routers: Annotated[
-        Optional[List[VirtualNetworkSpecRouter]],
-        Field(description="List of Routers.[emits=Router]", title="Routers"),
-    ] = None
-    vlans: Annotated[
-        Optional[List[VirtualNetworkSpecVlan]],
-        Field(description="List of VLANs. [emits=VLAN]", title="VLAN"),
-    ] = None
+    ] = 250
 
 
-class VirtualNetworkSpecBridgeDomain(BaseModel):
-    name: Annotated[
-        str,
-        Field(description="The name of the BridgeDomain.", title="Bridge Domain Name"),
-    ]
-    spec: Annotated[
-        VirtualNetworkSpecBridgeDomainSpec,
-        Field(
-            description="Specification of the BridgeDomain", title="Bridge Domain Spec"
-        ),
-    ]
+VirtualNetworkSpecBridgeDomainSpecMacDuplicationDetection = (
+    BridgeDomainSpecMacDuplicationDetection
+)
 
 
 class VirtualNetworkSpecBridgeDomainSpec(BaseModel):
@@ -2803,66 +2504,71 @@ class VirtualNetworkSpecBridgeDomainSpec(BaseModel):
     ] = "vni-pool"
 
 
-class VirtualNetworkSpecBridgeDomainSpecL2proxyARPND(BaseModel):
-    """
-    Enables / Disabled Proxy ARP / Proxy ND.
-    """
-
-    dynamicLearning: Annotated[
-        Optional[VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDDynamicLearning],
-        Field(title="Dynamic Learning"),
-    ] = None
-    ipDuplication: Annotated[
-        Optional[VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDIpDuplication],
-        Field(title="L2 Proxy ARP/ND IP Duplication Detection"),
-    ] = None
-    proxyARP: Annotated[
-        Optional[bool], Field(description="Enables proxy ARP.", title="Proxy ARP")
-    ] = False
-    proxyND: Annotated[
-        Optional[bool], Field(description="Enables proxy ND.", title="Proxy ND")
-    ] = False
-    tableSize: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of entries allowed in the proxy table of the bridge domain.",
-            ge=1,
-            le=8192,
-            title="L2 Proxy ARP/ND Table Size",
-        ),
-    ] = 250
-
-
-VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDDynamicLearning = (
-    BridgeDomainSpecL2proxyARPNDDynamicLearning
-)
-
-
-VirtualNetworkSpecBridgeDomainSpecL2proxyARPNDIpDuplication = (
-    BridgeDomainSpecL2proxyARPNDIpDuplication
-)
-
-
-VirtualNetworkSpecBridgeDomainSpecMacDuplicationDetection = (
-    BridgeDomainSpecMacDuplicationDetection
-)
-
-
-class VirtualNetworkSpecBridgeInterface(BaseModel):
+class VirtualNetworkSpecBridgeDomain(BaseModel):
     name: Annotated[
         str,
-        Field(
-            description="The name of the BridgeInterface.",
-            title="Bridge Interface Name",
-        ),
+        Field(description="The name of the BridgeDomain.", title="Bridge Domain Name"),
     ]
     spec: Annotated[
-        VirtualNetworkSpecBridgeInterfaceSpec,
+        VirtualNetworkSpecBridgeDomainSpec,
         Field(
-            description="Specification of the BridgeInterface",
-            title="Bridge Interface Spec",
+            description="Specification of the BridgeDomain", title="Bridge Domain Spec"
         ),
     ]
+
+
+VirtualNetworkSpecBridgeInterfaceSpecEgress = BridgeInterfaceSpecEgress
+
+
+VirtualNetworkSpecBridgeInterfaceSpecIngress = BridgeInterfaceSpecIngress
+
+
+VirtualNetworkSpecBridgeInterfaceSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
+
+
+VirtualNetworkSpecBridgeInterfaceSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
+
+
+class VirtualNetworkSpecBridgeInterfaceSpecUplink(BaseModel):
+    """
+    The Uplink between your access breakout switch and your leaf switch.
+    """
+
+    egress: Annotated[
+        Optional[VirtualNetworkSpecBridgeInterfaceSpecUplinkEgress],
+        Field(
+            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
+            title="Egress",
+        ),
+    ] = None
+    ingress: Annotated[
+        Optional[VirtualNetworkSpecBridgeInterfaceSpecUplinkIngress],
+        Field(
+            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
+            title="Ingress",
+        ),
+    ] = None
+    uplinkSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
+            title="Uplink Selector",
+        ),
+    ] = None
+    uplinkVLANID: Annotated[
+        Optional[str],
+        Field(
+            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN ID",
+        ),
+    ] = "pool"
+    uplinkVLANPool: Annotated[
+        Optional[str],
+        Field(
+            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN Pool",
+        ),
+    ] = None
 
 
 class VirtualNetworkSpecBridgeInterfaceSpec(BaseModel):
@@ -2944,71 +2650,179 @@ class VirtualNetworkSpecBridgeInterfaceSpec(BaseModel):
     ]
 
 
-VirtualNetworkSpecBridgeInterfaceSpecEgress = BridgeInterfaceSpecEgress
-
-
-VirtualNetworkSpecBridgeInterfaceSpecIngress = BridgeInterfaceSpecIngress
-
-
-class VirtualNetworkSpecBridgeInterfaceSpecUplink(BaseModel):
-    """
-    The Uplink between your access breakout switch and your leaf switch.
-    """
-
-    egress: Annotated[
-        Optional[VirtualNetworkSpecBridgeInterfaceSpecUplinkEgress],
-        Field(
-            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
-            title="Egress",
-        ),
-    ] = None
-    ingress: Annotated[
-        Optional[VirtualNetworkSpecBridgeInterfaceSpecUplinkIngress],
-        Field(
-            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
-            title="Ingress",
-        ),
-    ] = None
-    uplinkSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
-            title="Uplink Selector",
-        ),
-    ] = None
-    uplinkVLANID: Annotated[
-        Optional[str],
-        Field(
-            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN ID",
-        ),
-    ] = "pool"
-    uplinkVLANPool: Annotated[
-        Optional[str],
-        Field(
-            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN Pool",
-        ),
-    ] = None
-
-
-VirtualNetworkSpecBridgeInterfaceSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
-
-
-VirtualNetworkSpecBridgeInterfaceSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
-
-
-class VirtualNetworkSpecIrbInterface(BaseModel):
+class VirtualNetworkSpecBridgeInterface(BaseModel):
     name: Annotated[
         str,
-        Field(description="The name of the IrbInterface.", title="IRB Interface Name"),
-    ]
-    spec: Annotated[
-        VirtualNetworkSpecIrbInterfaceSpec,
         Field(
-            description="Specification of the IrbInterface", title="IRB Interface Spec"
+            description="The name of the BridgeInterface.",
+            title="Bridge Interface Name",
         ),
     ]
+    spec: Annotated[
+        VirtualNetworkSpecBridgeInterfaceSpec,
+        Field(
+            description="Specification of the BridgeInterface",
+            title="Bridge Interface Spec",
+        ),
+    ]
+
+
+VirtualNetworkSpecIrbInterfaceSpecBfd = IRBInterfaceSpecBfd
+
+
+VirtualNetworkSpecIrbInterfaceSpecEgress = BridgeInterfaceSpecEgress
+
+
+VirtualNetworkSpecIrbInterfaceSpecEvpnRouteAdvertisementType = (
+    IRBInterfaceSpecEvpnRouteAdvertisementType
+)
+
+
+VirtualNetworkSpecIrbInterfaceSpecHostRoutePopulate = IRBInterfaceSpecHostRoutePopulate
+
+
+VirtualNetworkSpecIrbInterfaceSpecIngress = BridgeInterfaceSpecIngress
+
+
+VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv4Address = (
+    IRBInterfaceSpecIpAddressIpv4Address
+)
+
+
+VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv6Address = (
+    IRBInterfaceSpecIpAddressIpv6Address
+)
+
+
+class VirtualNetworkSpecIrbInterfaceSpecIpAddress(BaseModel):
+    ipv4Address: Annotated[
+        Optional[VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv4Address],
+        Field(
+            description="IPv4 address in IP/mask form, e.g., 192.168.0.1/24.",
+            title="IPv4 Addresses",
+        ),
+    ] = None
+    ipv6Address: Annotated[
+        Optional[VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv6Address],
+        Field(
+            description="IPv6 address in IP/mask form, e.g., fc00::1/120.",
+            title="IPv6 Addresses",
+        ),
+    ] = None
+    node: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a TopoNode resource, if not specified the IP address will be assigned to all nodes on which the IRB is deployed.  If specified the IP address will be assigned to the specified node.",
+            title="Node",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisementPrefix = (
+    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
+)
+
+
+class VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisement(BaseModel):
+    currentHopLimit: Annotated[
+        int,
+        Field(
+            description="The current hop limit to advertise in the router advertisement messages.",
+            ge=0,
+            le=255,
+            title="Current Hop Limit",
+        ),
+    ]
+    enabled: Annotated[
+        bool,
+        Field(
+            description="Enable or disable IPv6 router advertisements.",
+            title="Enable Router Advertisements",
+        ),
+    ]
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="The IP MTU to advertise in the router advertisement messages.",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = None
+    managedConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for address configuration (M-bit).",
+            title="Managed Configuration Flag",
+        ),
+    ]
+    maxAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Maximum time between router advertisements (in seconds).",
+            ge=4,
+            le=1800,
+            title="Maximum Advertisement Interval",
+        ),
+    ]
+    minAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Minimum time between router advertisements (in seconds).",
+            ge=3,
+            le=1350,
+            title="Minimum Advertisement Interval",
+        ),
+    ]
+    otherConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for other configuration (O-bit).",
+            title="Other Configuration Flag",
+        ),
+    ]
+    prefixes: Annotated[
+        Optional[List[VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisementPrefix]],
+        Field(
+            description="IPv6 prefixes to advertise in router advertisements.",
+            title="Prefixes",
+        ),
+    ] = None
+    reachableTime: Annotated[
+        Optional[int],
+        Field(
+            description="Time in milliseconds for Neighbor Unreachability Detection.",
+            ge=0,
+            le=3600000,
+            title="Reachable Time",
+        ),
+    ] = 0
+    retransmitTime: Annotated[
+        int,
+        Field(
+            description="Time in milliseconds between retransmitted NS messages.",
+            ge=0,
+            le=1800000,
+            title="Retransmit Time",
+        ),
+    ]
+    routerLifetime: Annotated[
+        int,
+        Field(
+            description="Router lifetime in seconds for default gateway.",
+            ge=0,
+            le=9000,
+            title="Router Lifetime",
+        ),
+    ]
+
+
+VirtualNetworkSpecIrbInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
+
+
+VirtualNetworkSpecIrbInterfaceSpecVirtualIPDiscoveryItem = (
+    IRBInterfaceSpecVirtualIPDiscoveryItem
+)
 
 
 class VirtualNetworkSpecIrbInterfaceSpec(BaseModel):
@@ -3115,380 +2929,17 @@ class VirtualNetworkSpecIrbInterfaceSpec(BaseModel):
     ] = None
 
 
-VirtualNetworkSpecIrbInterfaceSpecBfd = IRBInterfaceSpecBfd
-
-
-VirtualNetworkSpecIrbInterfaceSpecEgress = BridgeInterfaceSpecEgress
-
-
-VirtualNetworkSpecIrbInterfaceSpecEvpnRouteAdvertisementType = (
-    IRBInterfaceSpecEvpnRouteAdvertisementType
-)
-
-
-VirtualNetworkSpecIrbInterfaceSpecHostRoutePopulate = IRBInterfaceSpecHostRoutePopulate
-
-
-VirtualNetworkSpecIrbInterfaceSpecIngress = BridgeInterfaceSpecIngress
-
-
-class VirtualNetworkSpecIrbInterfaceSpecIpAddress(BaseModel):
-    ipv4Address: Annotated[
-        Optional[VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv4Address],
-        Field(
-            description="IPv4 address in IP/mask form, e.g., 192.168.0.1/24.",
-            title="IPv4 Addresses",
-        ),
-    ] = None
-    ipv6Address: Annotated[
-        Optional[VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv6Address],
-        Field(
-            description="IPv6 address in IP/mask form, e.g., fc00::1/120.",
-            title="IPv6 Addresses",
-        ),
-    ] = None
-    node: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a TopoNode resource, if not specified the IP address will be assigned to all nodes on which the IRB is deployed.  If specified the IP address will be assigned to the specified node.",
-            title="Node",
-        ),
-    ] = None
-
-
-VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv4Address = (
-    IRBInterfaceSpecIpAddressIpv4Address
-)
-
-
-VirtualNetworkSpecIrbInterfaceSpecIpAddressIpv6Address = (
-    IRBInterfaceSpecIpAddressIpv6Address
-)
-
-
-class VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisement(BaseModel):
-    currentHopLimit: Annotated[
-        int,
-        Field(
-            description="The current hop limit to advertise in the router advertisement messages.",
-            ge=0,
-            le=255,
-            title="Current Hop Limit",
-        ),
-    ]
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable IPv6 router advertisements.",
-            title="Enable Router Advertisements",
-        ),
-    ]
-    ipMTU: Annotated[
-        Optional[int],
-        Field(
-            description="The IP MTU to advertise in the router advertisement messages.",
-            ge=1280,
-            le=9486,
-            title="IP MTU",
-        ),
-    ] = None
-    managedConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for address configuration (M-bit).",
-            title="Managed Configuration Flag",
-        ),
-    ]
-    maxAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Maximum time between router advertisements (in seconds).",
-            ge=4,
-            le=1800,
-            title="Maximum Advertisement Interval",
-        ),
-    ]
-    minAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Minimum time between router advertisements (in seconds).",
-            ge=3,
-            le=1350,
-            title="Minimum Advertisement Interval",
-        ),
-    ]
-    otherConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for other configuration (O-bit).",
-            title="Other Configuration Flag",
-        ),
-    ]
-    prefixes: Annotated[
-        Optional[List[VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisementPrefix]],
-        Field(
-            description="IPv6 prefixes to advertise in router advertisements.",
-            title="Prefixes",
-        ),
-    ] = None
-    reachableTime: Annotated[
-        Optional[int],
-        Field(
-            description="Time in milliseconds for Neighbor Unreachability Detection.",
-            ge=0,
-            le=3600000,
-            title="Reachable Time",
-        ),
-    ] = 0
-    retransmitTime: Annotated[
-        int,
-        Field(
-            description="Time in milliseconds between retransmitted NS messages.",
-            ge=0,
-            le=1800000,
-            title="Retransmit Time",
-        ),
-    ]
-    routerLifetime: Annotated[
-        int,
-        Field(
-            description="Router lifetime in seconds for default gateway.",
-            ge=0,
-            le=9000,
-            title="Router Lifetime",
-        ),
-    ]
-
-
-VirtualNetworkSpecIrbInterfaceSpecIpv6RouterAdvertisementPrefix = (
-    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
-)
-
-
-VirtualNetworkSpecIrbInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
-
-
-VirtualNetworkSpecIrbInterfaceSpecVirtualIPDiscoveryItem = (
-    IRBInterfaceSpecVirtualIPDiscoveryItem
-)
-
-
-class VirtualNetworkSpecProtocols(BaseModel):
-    """
-    Protocols to configure.
-    """
-
-    bgp: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgp],
-        Field(description="BGP Protocol.", title="BGP"),
-    ] = None
-    routingPolicies: Annotated[
-        Optional[VirtualNetworkSpecProtocolsRoutingPolicies],
-        Field(description="Routing Policies.", title="Routing Policies"),
-    ] = None
-    staticRoutes: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsStaticRoute]],
-        Field(
-            description="List of Static Routes within this VirtualNetwork. [emits=StaticRoute]",
-            title="Static Routes",
-        ),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsBgp(BaseModel):
-    """
-    BGP Protocol.
-    """
-
-    bgpGroups: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsBgpBgpGroup]],
-        Field(description="List of BgpGroups. [emits=BGPGroup]", title="BGP Groups"),
-    ] = None
-    bgpPeers: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsBgpBgpPeer]],
-        Field(description="List of BgpPeers [emits=BGPPeer]", title="BGP Peers"),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsBgpBgpGroup(BaseModel):
+class VirtualNetworkSpecIrbInterface(BaseModel):
     name: Annotated[
-        str, Field(description="The name of the BgpGroup.", title="BGP Group Name")
+        str,
+        Field(description="The name of the IrbInterface.", title="IRB Interface Name"),
     ]
     spec: Annotated[
-        VirtualNetworkSpecProtocolsBgpBgpGroupSpec,
-        Field(description="Specification of the BgpGroup", title="BGP Group Spec"),
-    ]
-
-
-class VirtualNetworkSpecProtocolsBgpBgpGroupSpec(BaseModel):
-    """
-    Specification of the BgpGroup
-    """
-
-    asPathOptions: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptions],
-        Field(description="AS Path Options", title="AS Path Options"),
-    ] = None
-    bfd: Annotated[
-        Optional[bool],
+        VirtualNetworkSpecIrbInterfaceSpec,
         Field(
-            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
-            title="BFD",
-        ),
-    ] = None
-    client: Annotated[
-        Optional[bool],
-        Field(
-            description="When set to true, all configured and dynamic BGP peers are considered RR clients.",
-            title="Route Reflector Client",
-        ),
-    ] = None
-    clusterID: Annotated[
-        Optional[str],
-        Field(
-            description="Enables route reflect client and sets the cluster ID.",
-            title="Cluster ID",
-        ),
-    ] = None
-    description: Annotated[
-        Optional[str],
-        Field(
-            description="Sets the description on the BGP group.", title="Description"
-        ),
-    ] = None
-    exportPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
-            title="Export Policy",
-        ),
-    ] = None
-    grStaleRouteTime: Annotated[
-        Optional[int],
-        Field(
-            description="Enables Graceful Restart on the peer and sets the stale route time.",
-            ge=1,
-            le=3600,
-            title="GR Stale Route Time",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes received from peers.",
-            title="Import Policy",
-        ),
-    ] = None
-    ipv4Unicast: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
-            title="Keychain",
-        ),
-    ] = None
-    localAS: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecLocalAS],
-        Field(
-            description="The local autonomous system number advertised to peers.",
-            title="Local AS",
-        ),
-    ] = None
-    localPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Local Preference attribute added to received routes from the BGP peers, also sets local preference for generated routes.",
-            ge=0,
-            le=4294967295,
-            title="Local Preference",
-        ),
-    ] = None
-    multiHopMaxHop: Annotated[
-        Optional[int],
-        Field(
-            description="Enable multihop for eBGP peers and sets the maximum number of hops allowed.",
-            ge=1,
-            le=255,
-            title="Multihop Max Hop Count",
-        ),
-    ] = None
-    nextHopSelf: Annotated[
-        Optional[bool],
-        Field(
-            description="When set to true, the next-hop in all IPv4-unicast, IPv6-unicast and EVPN BGP routes advertised to the peer is set to the local-address.",
-            title="Next Hop Self",
-        ),
-    ] = None
-    peerAS: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecPeerAS],
-        Field(
-            description="The autonomous system number expected from peers.",
-            title="Peer AS",
-        ),
-    ] = None
-    sendCommunityLarge: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Large",
-        ),
-    ] = None
-    sendCommunityStandard: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Standard",
-        ),
-    ] = None
-    sendDefaultRoute: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecSendDefaultRoute],
-        Field(
-            description="Options for controlling the generation of default routes towards BGP peers.",
-            title="Send Default Route",
-        ),
-    ] = None
-    timers: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecTimers],
-        Field(description="Timer configurations", title="Timers"),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
+            description="Specification of the IrbInterface", title="IRB Interface Spec"
         ),
     ]
-    removePrivateAS: Annotated[
-        Optional[
-            VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS
-        ],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
 
 
 class VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS(BaseModel):
@@ -3517,6 +2968,31 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS(Bas
             title="Remove Private AS Mode",
         ),
     ]
+
+
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptions(BaseModel):
+    """
+    AS Path Options
+    """
+
+    allowOwnAS: Annotated[
+        int,
+        Field(
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
+        ),
+    ]
+    removePrivateAS: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS
+        ],
+        Field(
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
+        ),
+    ] = None
 
 
 class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast(BaseModel):
@@ -3683,14 +3159,218 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecTimers(BaseModel):
     ] = None
 
 
-class VirtualNetworkSpecProtocolsBgpBgpPeer(BaseModel):
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpec(BaseModel):
+    """
+    Specification of the BgpGroup
+    """
+
+    asPathOptions: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptions],
+        Field(description="AS Path Options", title="AS Path Options"),
+    ] = None
+    bfd: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
+            title="BFD",
+        ),
+    ] = None
+    client: Annotated[
+        Optional[bool],
+        Field(
+            description="When set to true, all configured and dynamic BGP peers are considered RR clients.",
+            title="Route Reflector Client",
+        ),
+    ] = None
+    clusterID: Annotated[
+        Optional[str],
+        Field(
+            description="Enables route reflect client and sets the cluster ID.",
+            title="Cluster ID",
+        ),
+    ] = None
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="Sets the description on the BGP group.", title="Description"
+        ),
+    ] = None
+    exportPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
+            title="Export Policy",
+        ),
+    ] = None
+    grStaleRouteTime: Annotated[
+        Optional[int],
+        Field(
+            description="Enables Graceful Restart on the peer and sets the stale route time.",
+            ge=1,
+            le=3600,
+            title="GR Stale Route Time",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes received from peers.",
+            title="Import Policy",
+        ),
+    ] = None
+    ipv4Unicast: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
+            title="Keychain",
+        ),
+    ] = None
+    localAS: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecLocalAS],
+        Field(
+            description="The local autonomous system number advertised to peers.",
+            title="Local AS",
+        ),
+    ] = None
+    localPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Local Preference attribute added to received routes from the BGP peers, also sets local preference for generated routes.",
+            ge=0,
+            le=4294967295,
+            title="Local Preference",
+        ),
+    ] = None
+    multiHopMaxHop: Annotated[
+        Optional[int],
+        Field(
+            description="Enable multihop for eBGP peers and sets the maximum number of hops allowed.",
+            ge=1,
+            le=255,
+            title="Multihop Max Hop Count",
+        ),
+    ] = None
+    nextHopSelf: Annotated[
+        Optional[bool],
+        Field(
+            description="When set to true, the next-hop in all IPv4-unicast, IPv6-unicast and EVPN BGP routes advertised to the peer is set to the local-address.",
+            title="Next Hop Self",
+        ),
+    ] = None
+    peerAS: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecPeerAS],
+        Field(
+            description="The autonomous system number expected from peers.",
+            title="Peer AS",
+        ),
+    ] = None
+    sendCommunityLarge: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Large",
+        ),
+    ] = None
+    sendCommunityStandard: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Standard",
+        ),
+    ] = None
+    sendDefaultRoute: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecSendDefaultRoute],
+        Field(
+            description="Options for controlling the generation of default routes towards BGP peers.",
+            title="Send Default Route",
+        ),
+    ] = None
+    timers: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecTimers],
+        Field(description="Timer configurations", title="Timers"),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsBgpBgpGroup(BaseModel):
     name: Annotated[
-        str, Field(description="The name of the BgpPeer.", title="BGP Peer Name")
+        str, Field(description="The name of the BgpGroup.", title="BGP Group Name")
     ]
     spec: Annotated[
-        VirtualNetworkSpecProtocolsBgpBgpPeerSpec,
-        Field(description="Specification of the BgpPeer", title="BGP Peer Spec"),
+        VirtualNetworkSpecProtocolsBgpBgpGroupSpec,
+        Field(description="Specification of the BgpGroup", title="BGP Group Spec"),
     ]
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptionsRemovePrivateAS = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS
+)
+
+
+class VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptions(BaseModel):
+    """
+    AS Path Options
+    """
+
+    allowOwnAS: Annotated[
+        int,
+        Field(
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
+        ),
+    ]
+    removePrivateAS: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptionsRemovePrivateAS],
+        Field(
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4Unicast = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6Unicast = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecLocalAS = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecLocalAS
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecPeerAS = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecPeerAS
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecSendDefaultRoute = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecSendDefaultRoute
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecTimers = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecTimers
+)
 
 
 class VirtualNetworkSpecProtocolsBgpBgpPeerSpec(BaseModel):
@@ -3886,119 +3566,28 @@ class VirtualNetworkSpecProtocolsBgpBgpPeerSpec(BaseModel):
     ] = None
 
 
-class VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
+class VirtualNetworkSpecProtocolsBgpBgpPeer(BaseModel):
+    name: Annotated[
+        str, Field(description="The name of the BgpPeer.", title="BGP Peer Name")
     ]
-    removePrivateAS: Annotated[
-        Optional[VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptionsRemovePrivateAS = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptionsRemovePrivateAS
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4Unicast = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6Unicast = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecLocalAS = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecLocalAS
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecPeerAS = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecPeerAS
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecSendDefaultRoute = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecSendDefaultRoute
-)
-
-
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecTimers = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecTimers
-)
-
-
-class VirtualNetworkSpecProtocolsRoutingPolicies(BaseModel):
-    """
-    Routing Policies.
-    """
-
-    policies: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsRoutingPoliciesPolicy]],
-        Field(description="List of Policies.  [emits=Policy]", title="Policies"),
-    ] = None
-    prefixSets: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSet]],
-        Field(description="List of PrefixSet [emits=PrefixSet]", title="Prefix Sets"),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsRoutingPoliciesPolicy(BaseModel):
-    name: Annotated[str, Field(description="Name of the Policy.", title="Policy Name")]
     spec: Annotated[
-        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpec],
-        Field(description="A policy", title="Policy Spec"),
-    ] = None
+        VirtualNetworkSpecProtocolsBgpBgpPeerSpec,
+        Field(description="Specification of the BgpPeer", title="BGP Peer Spec"),
+    ]
 
 
-class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpec(BaseModel):
+class VirtualNetworkSpecProtocolsBgp(BaseModel):
     """
-    A policy
-    """
-
-    defaultAction: Annotated[
-        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultAction],
-        Field(
-            description="The default action to apply if no other actions are defined.",
-            title="Default Action",
-        ),
-    ] = None
-    statement: Annotated[
-        Optional[
-            List[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItem]
-        ],
-        Field(description="List of policy statements.", title="Statements"),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultAction(BaseModel):
-    """
-    The default action to apply if no other actions are defined.
+    BGP Protocol.
     """
 
-    bgp: Annotated[
-        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp],
-        Field(description="Actions related to the BGP protocol.", title="BGP"),
+    bgpGroups: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsBgpBgpGroup]],
+        Field(description="List of BgpGroups. [emits=BGPGroup]", title="BGP Groups"),
     ] = None
-    policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
-        Field(description="Final disposition for the route.", title="Policy Result"),
+    bgpPeers: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsBgpBgpPeer]],
+        Field(description="List of BgpPeers [emits=BGPPeer]", title="BGP Peers"),
     ] = None
 
 
@@ -4047,25 +3636,24 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp(BaseM
     ] = None
 
 
-class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItem(BaseModel):
-    action: Annotated[
-        Optional[
-            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemAction
-        ],
-        Field(
-            description="Actions for routes that match the policy statement.",
-            title="Action",
-        ),
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultAction(BaseModel):
+    """
+    The default action to apply if no other actions are defined.
+    """
+
+    bgp: Annotated[
+        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp],
+        Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
-    match: Annotated[
-        Optional[
-            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatch
-        ],
-        Field(description="Match conditions of the policy statement.", title="Match"),
+    policyResult: Annotated[
+        Optional[Literal["accept", "reject"]],
+        Field(description="Final disposition for the route.", title="Policy Result"),
     ] = None
-    name: Annotated[
-        str, Field(description="Name of the policy statement.", title="Name")
-    ]
+
+
+VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgp = (
+    VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp
+)
 
 
 class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemAction(
@@ -4087,9 +3675,26 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemAction(
     ] = None
 
 
-VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgp = (
-    VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp
-)
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatchBgp(
+    BaseModel
+):
+    """
+    Configuration for BGP-specific policy match criteria.
+    """
+
+    communitySet: Annotated[
+        Optional[str],
+        Field(
+            description="Match conditions for BGP communities.", title="BGP Community"
+        ),
+    ] = None
+    evpnRouteType: Annotated[
+        Optional[List[int]],
+        Field(
+            description="Match conditions for EVPN route types.",
+            title="EVPN Route Type",
+        ),
+    ] = None
 
 
 class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatch(BaseModel):
@@ -4140,50 +3745,53 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatch(Bas
     ] = None
 
 
-class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatchBgp(
-    BaseModel
-):
-    """
-    Configuration for BGP-specific policy match criteria.
-    """
-
-    communitySet: Annotated[
-        Optional[str],
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItem(BaseModel):
+    action: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemAction
+        ],
         Field(
-            description="Match conditions for BGP communities.", title="BGP Community"
+            description="Actions for routes that match the policy statement.",
+            title="Action",
         ),
     ] = None
-    evpnRouteType: Annotated[
-        Optional[List[int]],
-        Field(
-            description="Match conditions for EVPN route types.",
-            title="EVPN Route Type",
-        ),
+    match: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemMatch
+        ],
+        Field(description="Match conditions of the policy statement.", title="Match"),
     ] = None
-
-
-class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSet(BaseModel):
     name: Annotated[
-        str, Field(description="Name of the PrefixSet.", title="Prefix Set Name")
+        str, Field(description="Name of the policy statement.", title="Name")
     ]
-    spec: Annotated[
-        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpec],
-        Field(description="A PrefixSets", title="Prefix Set Spec"),
+
+
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpec(BaseModel):
+    """
+    A policy
+    """
+
+    defaultAction: Annotated[
+        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultAction],
+        Field(
+            description="The default action to apply if no other actions are defined.",
+            title="Default Action",
+        ),
+    ] = None
+    statement: Annotated[
+        Optional[
+            List[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItem]
+        ],
+        Field(description="List of policy statements.", title="Statements"),
     ] = None
 
 
-class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpec(BaseModel):
-    """
-    A PrefixSets
-    """
-
-    prefix: Annotated[
-        List[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpecPrefixItem],
-        Field(
-            description="List of IPv4 or IPv6 prefixes in CIDR notation.",
-            title="Prefixes",
-        ),
-    ]
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicy(BaseModel):
+    name: Annotated[str, Field(description="Name of the Policy.", title="Policy Name")]
+    spec: Annotated[
+        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpec],
+        Field(description="A policy", title="Policy Spec"),
+    ] = None
 
 
 class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpecPrefixItem(BaseModel):
@@ -4221,90 +3829,82 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpecPrefixItem(BaseMode
     ] = None
 
 
-class VirtualNetworkSpecProtocolsStaticRoute(BaseModel):
-    name: Annotated[
-        str, Field(description="Name of the StaticRoute.", title="Static Route Name")
-    ]
-    spec: Annotated[
-        Optional[VirtualNetworkSpecProtocolsStaticRouteSpec],
-        Field(description="A StaticRoutes", title="Static Route Spec"),
-    ] = None
-
-
-class VirtualNetworkSpecProtocolsStaticRouteSpec(BaseModel):
+class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpec(BaseModel):
     """
-    A StaticRoutes
+    A PrefixSets
     """
 
-    nexthopGroup: Annotated[
-        VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroup,
+    prefix: Annotated[
+        List[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpecPrefixItem],
         Field(
-            description="Group of nexthops for the list of prefixes.",
-            title="Nexthop Group",
-        ),
-    ]
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of nodes on which to configure the static routes. An AND operation is executed against the nodes in this list and the nodes on which the Router is configured to determine the Nodes on which to configure the static routes.",
-            title="Nodes",
-        ),
-    ] = None
-    preference: Annotated[
-        Optional[int],
-        Field(description="Defines the route preference.", title="Preference"),
-    ] = None
-    prefixes: Annotated[
-        List[str],
-        Field(
-            description="List of destination prefixes and mask to use for the static routes.",
+            description="List of IPv4 or IPv6 prefixes in CIDR notation.",
             title="Prefixes",
         ),
     ]
-    router: Annotated[
-        str,
-        Field(
-            description="Reference to a Router on which to configure the static routes.  If no Nodes are provided then the static routes will be provisioned on all Nodes on which the Router is provisioned.",
-            title="Router",
-        ),
+
+
+class VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSet(BaseModel):
+    name: Annotated[
+        str, Field(description="Name of the PrefixSet.", title="Prefix Set Name")
     ]
-
-
-class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroup(BaseModel):
-    """
-    Group of nexthops for the list of prefixes.
-    """
-
-    bfd: Annotated[
-        Optional[VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupBfd],
-        Field(
-            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
-            title="BFD",
-        ),
+    spec: Annotated[
+        Optional[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSetSpec],
+        Field(description="A PrefixSets", title="Prefix Set Spec"),
     ] = None
-    blackhole: Annotated[
-        Optional[bool],
-        Field(
-            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
-            title="Blackhole",
-        ),
-    ] = False
-    nexthops: Annotated[
-        Optional[List[VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupNexthop]],
-        Field(description="Ordered list of nexthops.", title="Nexthops"),
+
+
+class VirtualNetworkSpecProtocolsRoutingPolicies(BaseModel):
+    """
+    Routing Policies.
+    """
+
+    policies: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsRoutingPoliciesPolicy]],
+        Field(description="List of Policies.  [emits=Policy]", title="Policies"),
     ] = None
-    resolve: Annotated[
-        Optional[bool],
-        Field(
-            description="If set to true the next-hops can be destinations which are resolved in the route table.",
-            title="Resolve",
-        ),
-    ] = False
+    prefixSets: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsRoutingPoliciesPrefixSet]],
+        Field(description="List of PrefixSet [emits=PrefixSet]", title="Prefix Sets"),
+    ] = None
 
 
 class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupBfd(BaseModel):
     """
     Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines whether BFD should be enabled towards the nexthops.",
+            title="Enabled",
+        ),
+    ] = False
+    localAddress: Annotated[
+        Optional[str],
+        Field(
+            description="Defines the local address to use when establishing the BFD session with the nexthop.",
+            title="Local Address",
+        ),
+    ] = None
+    localDiscriminator: Annotated[
+        Optional[int],
+        Field(
+            description="Defines the local discriminator.", title="Local Discriminator"
+        ),
+    ] = None
+    remoteDiscriminator: Annotated[
+        Optional[int],
+        Field(
+            description="Defines the remote discriminator.",
+            title="Remote Discriminator",
+        ),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupNexthopBfd(BaseModel):
+    """
+    Enables BFD to the next-hops in the group. This overrides the configuration at the group.
     """
 
     enabled: Annotated[
@@ -4354,55 +3954,230 @@ class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupNexthop(BaseModel):
     ] = False
 
 
-class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupNexthopBfd(BaseModel):
+class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroup(BaseModel):
     """
-    Enables BFD to the next-hops in the group. This overrides the configuration at the group.
+    Group of nexthops for the list of prefixes.
     """
 
-    enabled: Annotated[
+    bfd: Annotated[
+        Optional[VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupBfd],
+        Field(
+            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
+            title="BFD",
+        ),
+    ] = None
+    blackhole: Annotated[
         Optional[bool],
         Field(
-            description="Defines whether BFD should be enabled towards the nexthops.",
-            title="Enabled",
+            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
+            title="Blackhole",
         ),
     ] = False
-    localAddress: Annotated[
-        Optional[str],
-        Field(
-            description="Defines the local address to use when establishing the BFD session with the nexthop.",
-            title="Local Address",
-        ),
+    nexthops: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupNexthop]],
+        Field(description="Ordered list of nexthops.", title="Nexthops"),
     ] = None
-    localDiscriminator: Annotated[
-        Optional[int],
+    resolve: Annotated[
+        Optional[bool],
         Field(
-            description="Defines the local discriminator.", title="Local Discriminator"
+            description="If set to true the next-hops can be destinations which are resolved in the route table.",
+            title="Resolve",
         ),
-    ] = None
-    remoteDiscriminator: Annotated[
-        Optional[int],
-        Field(
-            description="Defines the remote discriminator.",
-            title="Remote Discriminator",
-        ),
-    ] = None
+    ] = False
 
 
-class VirtualNetworkSpecRoutedInterface(BaseModel):
-    name: Annotated[
+class VirtualNetworkSpecProtocolsStaticRouteSpec(BaseModel):
+    """
+    A StaticRoutes
+    """
+
+    nexthopGroup: Annotated[
+        VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroup,
+        Field(
+            description="Group of nexthops for the list of prefixes.",
+            title="Nexthop Group",
+        ),
+    ]
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of nodes on which to configure the static routes. An AND operation is executed against the nodes in this list and the nodes on which the Router is configured to determine the Nodes on which to configure the static routes.",
+            title="Nodes",
+        ),
+    ] = None
+    preference: Annotated[
+        Optional[int],
+        Field(description="Defines the route preference.", title="Preference"),
+    ] = None
+    prefixes: Annotated[
+        List[str],
+        Field(
+            description="List of destination prefixes and mask to use for the static routes.",
+            title="Prefixes",
+        ),
+    ]
+    router: Annotated[
         str,
         Field(
-            description="The name of the RoutedInterface.",
-            title="Routed Interface Name",
+            description="Reference to a Router on which to configure the static routes.  If no Nodes are provided then the static routes will be provisioned on all Nodes on which the Router is provisioned.",
+            title="Router",
         ),
+    ]
+
+
+class VirtualNetworkSpecProtocolsStaticRoute(BaseModel):
+    name: Annotated[
+        str, Field(description="Name of the StaticRoute.", title="Static Route Name")
     ]
     spec: Annotated[
-        VirtualNetworkSpecRoutedInterfaceSpec,
+        Optional[VirtualNetworkSpecProtocolsStaticRouteSpec],
+        Field(description="A StaticRoutes", title="Static Route Spec"),
+    ] = None
+
+
+class VirtualNetworkSpecProtocols(BaseModel):
+    """
+    Protocols to configure.
+    """
+
+    bgp: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgp],
+        Field(description="BGP Protocol.", title="BGP"),
+    ] = None
+    routingPolicies: Annotated[
+        Optional[VirtualNetworkSpecProtocolsRoutingPolicies],
+        Field(description="Routing Policies.", title="Routing Policies"),
+    ] = None
+    staticRoutes: Annotated[
+        Optional[List[VirtualNetworkSpecProtocolsStaticRoute]],
         Field(
-            description="Specification of the RoutedInterface",
-            title="Routed Interface Spec",
+            description="List of Static Routes within this VirtualNetwork. [emits=StaticRoute]",
+            title="Static Routes",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecRoutedInterfaceSpecBfd = RoutedInterfaceSpecBfd
+
+
+VirtualNetworkSpecRoutedInterfaceSpecEgress = BridgeInterfaceSpecEgress
+
+
+VirtualNetworkSpecRoutedInterfaceSpecIngress = BridgeInterfaceSpecIngress
+
+
+VirtualNetworkSpecRoutedInterfaceSpecIpv4Address = (
+    IRBInterfaceStatusInterfaceIpv4Address
+)
+
+
+VirtualNetworkSpecRoutedInterfaceSpecIpv6Address = (
+    IRBInterfaceStatusInterfaceIpv4Address
+)
+
+
+VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisementPrefix = (
+    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
+)
+
+
+class VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisement(BaseModel):
+    currentHopLimit: Annotated[
+        int,
+        Field(
+            description="The current hop limit to advertise in the router advertisement messages.",
+            ge=0,
+            le=255,
+            title="Current Hop Limit",
         ),
     ]
+    enabled: Annotated[
+        bool,
+        Field(
+            description="Enable or disable IPv6 router advertisements.",
+            title="Enable Router Advertisements",
+        ),
+    ]
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="The IP MTU to advertise in the router advertisement messages.",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = None
+    managedConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for address configuration (M-bit).",
+            title="Managed Configuration Flag",
+        ),
+    ]
+    maxAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Maximum time between router advertisements (in seconds).",
+            ge=4,
+            le=1800,
+            title="Maximum Advertisement Interval",
+        ),
+    ]
+    minAdvertisementInterval: Annotated[
+        int,
+        Field(
+            description="Minimum time between router advertisements (in seconds).",
+            ge=3,
+            le=1350,
+            title="Minimum Advertisement Interval",
+        ),
+    ]
+    otherConfigurationFlag: Annotated[
+        bool,
+        Field(
+            description="Enable DHCPv6 for other configuration (O-bit).",
+            title="Other Configuration Flag",
+        ),
+    ]
+    prefixes: Annotated[
+        Optional[
+            List[VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisementPrefix]
+        ],
+        Field(
+            description="IPv6 prefixes to advertise in router advertisements.",
+            title="Prefixes",
+        ),
+    ] = None
+    reachableTime: Annotated[
+        Optional[int],
+        Field(
+            description="Time in milliseconds for Neighbor Unreachability Detection.",
+            ge=0,
+            le=3600000,
+            title="Reachable Time",
+        ),
+    ] = 0
+    retransmitTime: Annotated[
+        int,
+        Field(
+            description="Time in milliseconds between retransmitted NS messages.",
+            ge=0,
+            le=1800000,
+            title="Retransmit Time",
+        ),
+    ]
+    routerLifetime: Annotated[
+        int,
+        Field(
+            description="Router lifetime in seconds for default gateway.",
+            ge=0,
+            le=9000,
+            title="Router Lifetime",
+        ),
+    ]
+
+
+VirtualNetworkSpecRoutedInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
 
 
 class VirtualNetworkSpecRoutedInterfaceSpec(BaseModel):
@@ -4513,137 +4288,176 @@ class VirtualNetworkSpecRoutedInterfaceSpec(BaseModel):
     ] = "vlan-pool"
 
 
-VirtualNetworkSpecRoutedInterfaceSpecBfd = RoutedInterfaceSpecBfd
-
-
-VirtualNetworkSpecRoutedInterfaceSpecEgress = BridgeInterfaceSpecEgress
-
-
-VirtualNetworkSpecRoutedInterfaceSpecIngress = BridgeInterfaceSpecIngress
-
-
-VirtualNetworkSpecRoutedInterfaceSpecIpv4Address = (
-    IRBInterfaceStatusInterfaceIpv4Address
-)
-
-
-VirtualNetworkSpecRoutedInterfaceSpecIpv6Address = (
-    IRBInterfaceStatusInterfaceIpv4Address
-)
-
-
-class VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisement(BaseModel):
-    currentHopLimit: Annotated[
-        int,
-        Field(
-            description="The current hop limit to advertise in the router advertisement messages.",
-            ge=0,
-            le=255,
-            title="Current Hop Limit",
-        ),
-    ]
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable IPv6 router advertisements.",
-            title="Enable Router Advertisements",
-        ),
-    ]
-    ipMTU: Annotated[
-        Optional[int],
-        Field(
-            description="The IP MTU to advertise in the router advertisement messages.",
-            ge=1280,
-            le=9486,
-            title="IP MTU",
-        ),
-    ] = None
-    managedConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for address configuration (M-bit).",
-            title="Managed Configuration Flag",
-        ),
-    ]
-    maxAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Maximum time between router advertisements (in seconds).",
-            ge=4,
-            le=1800,
-            title="Maximum Advertisement Interval",
-        ),
-    ]
-    minAdvertisementInterval: Annotated[
-        int,
-        Field(
-            description="Minimum time between router advertisements (in seconds).",
-            ge=3,
-            le=1350,
-            title="Minimum Advertisement Interval",
-        ),
-    ]
-    otherConfigurationFlag: Annotated[
-        bool,
-        Field(
-            description="Enable DHCPv6 for other configuration (O-bit).",
-            title="Other Configuration Flag",
-        ),
-    ]
-    prefixes: Annotated[
-        Optional[
-            List[VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisementPrefix]
-        ],
-        Field(
-            description="IPv6 prefixes to advertise in router advertisements.",
-            title="Prefixes",
-        ),
-    ] = None
-    reachableTime: Annotated[
-        Optional[int],
-        Field(
-            description="Time in milliseconds for Neighbor Unreachability Detection.",
-            ge=0,
-            le=3600000,
-            title="Reachable Time",
-        ),
-    ] = 0
-    retransmitTime: Annotated[
-        int,
-        Field(
-            description="Time in milliseconds between retransmitted NS messages.",
-            ge=0,
-            le=1800000,
-            title="Retransmit Time",
-        ),
-    ]
-    routerLifetime: Annotated[
-        int,
-        Field(
-            description="Router lifetime in seconds for default gateway.",
-            ge=0,
-            le=9000,
-            title="Router Lifetime",
-        ),
-    ]
-
-
-VirtualNetworkSpecRoutedInterfaceSpecIpv6RouterAdvertisementPrefix = (
-    IRBInterfaceSpecIpv6RouterAdvertisementPrefix
-)
-
-
-VirtualNetworkSpecRoutedInterfaceSpecL3ProxyARPND = IRBInterfaceSpecL3ProxyARPND
-
-
-class VirtualNetworkSpecRouter(BaseModel):
+class VirtualNetworkSpecRoutedInterface(BaseModel):
     name: Annotated[
-        str, Field(description="The name of the Router.", title="Router Name")
+        str,
+        Field(
+            description="The name of the RoutedInterface.",
+            title="Routed Interface Name",
+        ),
     ]
     spec: Annotated[
-        VirtualNetworkSpecRouterSpec,
-        Field(description="Specification of the Router", title="Router Spec"),
+        VirtualNetworkSpecRoutedInterfaceSpec,
+        Field(
+            description="Specification of the RoutedInterface",
+            title="Routed Interface Spec",
+        ),
     ]
+
+
+VirtualNetworkSpecRouterSpecBgpIpAliasNexthop = RouterSpecBgpIpAliasNexthop
+
+
+VirtualNetworkSpecRouterSpecBgpIpv4UnicastMultipath = RouterSpecBgpIpv4UnicastMultipath
+
+
+class VirtualNetworkSpecRouterSpecBgpIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        bool, Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled")
+    ]
+    multipath: Annotated[
+        Optional[VirtualNetworkSpecRouterSpecBgpIpv4UnicastMultipath],
+        Field(description="Enable multipath.", title="Multipath"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecRouterSpecBgpIpv6UnicastMultipath = RouterSpecBgpIpv6UnicastMultipath
+
+
+class VirtualNetworkSpecRouterSpecBgpIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        bool, Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled")
+    ]
+    multipath: Annotated[
+        Optional[VirtualNetworkSpecRouterSpecBgpIpv6UnicastMultipath],
+        Field(description="Enable multipath", title="Multipath"),
+    ] = None
+
+
+class VirtualNetworkSpecRouterSpecBgp(BaseModel):
+    """
+    BGP configuration.
+    """
+
+    autonomousSystem: Annotated[
+        Optional[int],
+        Field(
+            description="Autonomous System number for BGP.",
+            ge=1,
+            le=4294967295,
+            title="Autonomous System",
+        ),
+    ] = None
+    ebgpPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Preference to be set for eBGP [default=170].",
+            ge=1,
+            le=255,
+            title="eBGP Preference",
+        ),
+    ] = 170
+    enabled: Annotated[
+        Optional[bool], Field(description="Enable or disable BGP.", title="Enable BGP")
+    ] = False
+    ibgpPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Preference to be set for iBGP [default=170].",
+            ge=1,
+            le=255,
+            title="iBGP Preference",
+        ),
+    ] = 170
+    ipAliasNexthops: Annotated[
+        Optional[List[VirtualNetworkSpecRouterSpecBgpIpAliasNexthop]],
+        Field(description="IP aliasing configuration.", title="IP Alias Nexthops"),
+    ] = None
+    ipv4Unicast: Annotated[
+        Optional[VirtualNetworkSpecRouterSpecBgpIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[VirtualNetworkSpecRouterSpecBgpIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(description="Keychain to be used for authentication", title="Keychain"),
+    ] = None
+    minWaitToAdvertise: Annotated[
+        Optional[int],
+        Field(
+            description="Minimum wait time before advertising routes post BGP restart.",
+            ge=0,
+            le=3600,
+            title="Min Wait To Advertise Time",
+        ),
+    ] = 0
+    rapidWithdrawl: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable rapid withdrawal in BGP.",
+            title="Enable Rapid Withdrawal",
+        ),
+    ] = True
+    waitForFIBInstall: Annotated[
+        Optional[bool],
+        Field(
+            description="Wait for FIB installation before advertising routes.",
+            title="Wait for FIB Installation",
+        ),
+    ] = False
+
+
+VirtualNetworkSpecRouterSpecIpLoadBalancingPrefixItem = (
+    RouterSpecIpLoadBalancingPrefixItem
+)
+
+
+class VirtualNetworkSpecRouterSpecIpLoadBalancing(BaseModel):
+    """
+    IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.
+    """
+
+    prefix: Annotated[
+        Optional[List[VirtualNetworkSpecRouterSpecIpLoadBalancingPrefixItem]],
+        Field(
+            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
+            title="Prefix",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecRouterSpecRouteLeaking = RouterSpecRouteLeaking
 
 
 class VirtualNetworkSpecRouterSpec(BaseModel):
@@ -4747,167 +4561,68 @@ class VirtualNetworkSpecRouterSpec(BaseModel):
     ] = "vni-pool"
 
 
-class VirtualNetworkSpecRouterSpecBgp(BaseModel):
-    """
-    BGP configuration.
-    """
-
-    autonomousSystem: Annotated[
-        Optional[int],
-        Field(
-            description="Autonomous System number for BGP.",
-            ge=1,
-            le=4294967295,
-            title="Autonomous System",
-        ),
-    ] = None
-    ebgpPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Preference to be set for eBGP [default=170].",
-            ge=1,
-            le=255,
-            title="eBGP Preference",
-        ),
-    ] = 170
-    enabled: Annotated[
-        Optional[bool], Field(description="Enable or disable BGP.", title="Enable BGP")
-    ] = False
-    ibgpPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Preference to be set for iBGP [default=170].",
-            ge=1,
-            le=255,
-            title="iBGP Preference",
-        ),
-    ] = 170
-    ipAliasNexthops: Annotated[
-        Optional[List[VirtualNetworkSpecRouterSpecBgpIpAliasNexthop]],
-        Field(description="IP aliasing configuration.", title="IP Alias Nexthops"),
-    ] = None
-    ipv4Unicast: Annotated[
-        Optional[VirtualNetworkSpecRouterSpecBgpIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[VirtualNetworkSpecRouterSpecBgpIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(description="Keychain to be used for authentication", title="Keychain"),
-    ] = None
-    minWaitToAdvertise: Annotated[
-        Optional[int],
-        Field(
-            description="Minimum wait time before advertising routes post BGP restart.",
-            ge=0,
-            le=3600,
-            title="Min Wait To Advertise Time",
-        ),
-    ] = 0
-    rapidWithdrawl: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable rapid withdrawal in BGP.",
-            title="Enable Rapid Withdrawal",
-        ),
-    ] = True
-    waitForFIBInstall: Annotated[
-        Optional[bool],
-        Field(
-            description="Wait for FIB installation before advertising routes.",
-            title="Wait for FIB Installation",
-        ),
-    ] = False
-
-
-VirtualNetworkSpecRouterSpecBgpIpAliasNexthop = RouterSpecBgpIpAliasNexthop
-
-
-class VirtualNetworkSpecRouterSpecBgpIpv4Unicast(BaseModel):
-    """
-    Parameters relating to the IPv4 unicast AFI/SAFI.
-    """
-
-    advertiseIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
-            title="Advertise IPv6 Next Hops",
-        ),
-    ] = None
-    enabled: Annotated[
-        bool, Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled")
+class VirtualNetworkSpecRouter(BaseModel):
+    name: Annotated[
+        str, Field(description="The name of the Router.", title="Router Name")
     ]
-    multipath: Annotated[
-        Optional[VirtualNetworkSpecRouterSpecBgpIpv4UnicastMultipath],
-        Field(description="Enable multipath.", title="Multipath"),
-    ] = None
-    receiveIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
-            title="Receive IPv6 Next Hops",
-        ),
-    ] = None
-
-
-VirtualNetworkSpecRouterSpecBgpIpv4UnicastMultipath = RouterSpecBgpIpv4UnicastMultipath
-
-
-class VirtualNetworkSpecRouterSpecBgpIpv6Unicast(BaseModel):
-    """
-    Parameters relating to the IPv6 unicast AFI/SAFI.
-    """
-
-    enabled: Annotated[
-        bool, Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled")
-    ]
-    multipath: Annotated[
-        Optional[VirtualNetworkSpecRouterSpecBgpIpv6UnicastMultipath],
-        Field(description="Enable multipath", title="Multipath"),
-    ] = None
-
-
-VirtualNetworkSpecRouterSpecBgpIpv6UnicastMultipath = RouterSpecBgpIpv6UnicastMultipath
-
-
-class VirtualNetworkSpecRouterSpecIpLoadBalancing(BaseModel):
-    """
-    IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.
-    """
-
-    prefix: Annotated[
-        Optional[List[VirtualNetworkSpecRouterSpecIpLoadBalancingPrefixItem]],
-        Field(
-            description="IPv4 or IPv6 prefix. Active routes in the FIB that exactly match this prefix or that are longer matches of this prefix are provided with resilient-hash programming.",
-            title="Prefix",
-        ),
-    ] = None
-
-
-VirtualNetworkSpecRouterSpecIpLoadBalancingPrefixItem = (
-    RouterSpecIpLoadBalancingPrefixItem
-)
-
-
-VirtualNetworkSpecRouterSpecRouteLeaking = RouterSpecRouteLeaking
-
-
-class VirtualNetworkSpecVlan(BaseModel):
-    name: Annotated[str, Field(description="The name of the VLAN.", title="VLAN Name")]
     spec: Annotated[
-        VirtualNetworkSpecVlanSpec,
-        Field(description="Specification of the Vlan", title="VLAN Spec"),
+        VirtualNetworkSpecRouterSpec,
+        Field(description="Specification of the Router", title="Router Spec"),
     ]
+
+
+VirtualNetworkSpecVlanSpecEgress = BridgeInterfaceSpecEgress
+
+
+VirtualNetworkSpecVlanSpecIngress = BridgeInterfaceSpecIngress
+
+
+VirtualNetworkSpecVlanSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
+
+
+VirtualNetworkSpecVlanSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
+
+
+class VirtualNetworkSpecVlanSpecUplink(BaseModel):
+    """
+    The Uplink between your access breakout switch and your leaf switch.
+    """
+
+    egress: Annotated[
+        Optional[VirtualNetworkSpecVlanSpecUplinkEgress],
+        Field(
+            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
+            title="Egress",
+        ),
+    ] = None
+    ingress: Annotated[
+        Optional[VirtualNetworkSpecVlanSpecUplinkIngress],
+        Field(
+            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
+            title="Ingress",
+        ),
+    ] = None
+    uplinkSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
+            title="Uplink Selector",
+        ),
+    ] = None
+    uplinkVLANID: Annotated[
+        Optional[str],
+        Field(
+            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN ID",
+        ),
+    ] = "pool"
+    uplinkVLANPool: Annotated[
+        Optional[str],
+        Field(
+            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
+            title="Uplink VLAN Pool",
+        ),
+    ] = None
 
 
 class VirtualNetworkSpecVlanSpec(BaseModel):
@@ -4989,58 +4704,58 @@ class VirtualNetworkSpecVlanSpec(BaseModel):
     ] = None
 
 
-VirtualNetworkSpecVlanSpecEgress = BridgeInterfaceSpecEgress
+class VirtualNetworkSpecVlan(BaseModel):
+    name: Annotated[str, Field(description="The name of the VLAN.", title="VLAN Name")]
+    spec: Annotated[
+        VirtualNetworkSpecVlanSpec,
+        Field(description="Specification of the Vlan", title="VLAN Spec"),
+    ]
 
 
-VirtualNetworkSpecVlanSpecIngress = BridgeInterfaceSpecIngress
-
-
-class VirtualNetworkSpecVlanSpecUplink(BaseModel):
+class VirtualNetworkSpec(BaseModel):
     """
-    The Uplink between your access breakout switch and your leaf switch.
+    VirtualNetworkSpec defines the desired state of VirtualNetwork
     """
 
-    egress: Annotated[
-        Optional[VirtualNetworkSpecVlanSpecUplinkEgress],
+    bridgeDomains: Annotated[
+        Optional[List[VirtualNetworkSpecBridgeDomain]],
         Field(
-            description="Manages actions on traffic at Egress of the Local enpoint of the Uplink.",
-            title="Egress",
+            description="List of Subnets. [emits=BridgeDomain]", title="Bridge Domains"
         ),
     ] = None
-    ingress: Annotated[
-        Optional[VirtualNetworkSpecVlanSpecUplinkIngress],
+    bridgeInterfaces: Annotated[
+        Optional[List[VirtualNetworkSpecBridgeInterface]],
         Field(
-            description="Manages actions on traffic at Ingress of the Local enpoint of the Uplink.",
-            title="Ingress",
+            description="List of BridgeInterfaces. [emits=BridgeInterface]",
+            title="Bridge Interfaces",
         ),
     ] = None
-    uplinkSelector: Annotated[
-        Optional[List[str]],
+    irbInterfaces: Annotated[
+        Optional[List[VirtualNetworkSpecIrbInterface]],
         Field(
-            description="Selects TopoLinks which connect a leaf switch to a breakout switch. This is the uplink between your access breakout switch and your leaf switch.  There can only be a single TopoLink between the access breakout switch and the leaf switch, if more than one TopoLink is present between two devices the transaction will fail.",
-            title="Uplink Selector",
+            description="List of IRBInterfaces. [emits=IRBInterface]",
+            title="IRB Interfaces",
         ),
     ] = None
-    uplinkVLANID: Annotated[
-        Optional[str],
+    protocols: Annotated[
+        Optional[VirtualNetworkSpecProtocols],
+        Field(description="Protocols to configure.", title="Protocols"),
+    ] = None
+    routedInterfaces: Annotated[
+        Optional[List[VirtualNetworkSpecRoutedInterface]],
         Field(
-            description="The VLAN ID to be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN ID",
-        ),
-    ] = "pool"
-    uplinkVLANPool: Annotated[
-        Optional[str],
-        Field(
-            description="A VLAN from this pool will be utilized to isolate traffic from the VLAN on the access breakout switch to the leaf switch on the selected uplink TopoLink.",
-            title="Uplink VLAN Pool",
+            description="List of RoutedInterface. [emits=RoutedInterface]",
+            title="Routed Interfaces",
         ),
     ] = None
-
-
-VirtualNetworkSpecVlanSpecUplinkEgress = BridgeInterfaceSpecUplinkEgress
-
-
-VirtualNetworkSpecVlanSpecUplinkIngress = BridgeInterfaceSpecUplinkIngress
+    routers: Annotated[
+        Optional[List[VirtualNetworkSpecRouter]],
+        Field(description="List of Routers.[emits=Router]", title="Routers"),
+    ] = None
+    vlans: Annotated[
+        Optional[List[VirtualNetworkSpecVlan]],
+        Field(description="List of VLANs. [emits=VLAN]", title="VLAN"),
+    ] = None
 
 
 class VirtualNetworkStatus(BaseModel):
@@ -5135,3 +4850,288 @@ class VirtualNetworkStatus(BaseModel):
         Optional[str],
         Field(description="Operational state of the VNET.", title="Operational State"),
     ] = None
+
+
+VirtualNetworkDeletedResourceEntry = BridgeDomainDeletedResourceEntry
+
+
+class VirtualNetworkDeletedResources(
+    RootModel[List[VirtualNetworkDeletedResourceEntry]]
+):
+    root: List[VirtualNetworkDeletedResourceEntry]
+
+
+VirtualNetworkMetadata = BridgeDomainMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class BridgeDomain(BaseModel):
+    """
+    BridgeDomain is the Schema for the bridgedomains API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BridgeDomainMetadata
+    spec: Annotated[
+        BridgeDomainSpec,
+        Field(
+            description="The BridgeDomain enables the configuration and management of Layer 2 virtual networks. It includes settings for VNI, EVI, route targets for import and export, and tunnel index allocation. Additionally, the specification allows for advanced features such as MAC address table limits, aging, Proxy ARP and detection of MAC and IP duplication.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[BridgeDomainStatus],
+        Field(
+            description="BridgeDomainStatus defines the observed state of BridgeDomain",
+            title="Status",
+        ),
+    ] = None
+
+
+class BridgeDomainList(BaseModel):
+    """
+    BridgeDomainList is a list of bridgedomains
+    """
+
+    apiVersion: str
+    items: Optional[List[BridgeDomain]] = None
+    kind: str
+
+
+class BridgeInterface(BaseModel):
+    """
+    BridgeInterface is the Schema for the bridgeinterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BridgeInterfaceMetadata
+    spec: Annotated[
+        BridgeInterfaceSpec,
+        Field(
+            description="The BridgeInterface enables the attachment of network interfaces to a Bridge Domain. It includes settings for VLAN ID allocation, interface attachment, and actions on ingress and egress traffic. The specification supports integration with other network resources, such as Bridge Domains and Interfaces, and provides advanced features like MAC Duplication Detection with configurable actions.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[Optional[BridgeInterfaceStatus], Field(title="Status")] = None
+
+
+class BridgeInterfaceList(BaseModel):
+    """
+    BridgeInterfaceList is a list of bridgeinterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[BridgeInterface]] = None
+    kind: str
+
+
+class DHCPRelay(BaseModel):
+    """
+    DHCPRelay is the Schema for the dhcprelays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DHCPRelayMetadata
+    spec: Annotated[
+        DHCPRelaySpec,
+        Field(
+            description="The DHCPRelay enables the forwarding of DHCP requests and responses between clients and servers across different networks. This resource allows for the configuration of various DHCP relay sub-options, such as CircuitID, RemoteID, and ClientLinkLayerAddress, to provide detailed client information. It also includes settings for specifying the router to reach the DHCP server, the list of DHCP servers to forward requests to, and selectors for Routed and IRB interfaces where the relay will be configured. Additionally, the GI Address option can be set to derive the Gateway IP address from the selected interface, ensuring correct routing of DHCP messages.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="DHCPRelayStatus defines the observed state of DHCPRelay",
+            title="Status",
+        ),
+    ] = None
+
+
+class DHCPRelayList(BaseModel):
+    """
+    DHCPRelayList is a list of dhcprelays
+    """
+
+    apiVersion: str
+    items: Optional[List[DHCPRelay]] = None
+    kind: str
+
+
+class IRBInterface(BaseModel):
+    """
+    IRBInterface is the Schema for the irbinterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IRBInterfaceMetadata
+    spec: Annotated[
+        IRBInterfaceSpec,
+        Field(
+            description="The IRBInterface enables the configuration and management of Layer 3 interfaces associated with a BridgeDomain. This resource allows for the specification of various parameters, including IP MTU, learning of unsolicited ARPs, IPv4 and IPv6 addresses, and unnumbered interface settings. It also supports advanced features such as BFD configuration, Virtual IP discovery, and ARP/ND-related settings like Proxy ARP/ND and EVPN route advertisement.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[IRBInterfaceStatus],
+        Field(
+            description="IRBInterfaceStatus defines the observed state of IRBInterface",
+            title="Status",
+        ),
+    ] = None
+
+
+class IRBInterfaceList(BaseModel):
+    """
+    IRBInterfaceList is a list of irbinterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[IRBInterface]] = None
+    kind: str
+
+
+class RoutedInterface(BaseModel):
+    """
+    RoutedInterface is the Schema for the routedinterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RoutedInterfaceMetadata
+    spec: Annotated[
+        RoutedInterfaceSpec,
+        Field(
+            description="The RoutedInterface enables the configuration and management of Layer 3 interfaces for routing traffic between different networks. This resource allows for specifying an underlying Interface and Router, configuring VLAN IDs, and setting the IP MTU. It also supports the learning of unsolicited ARPs, defining both IPv4 and IPv6 addresses, and enabling unnumbered interfaces. Advanced features such as BFD configuration, Proxy ARP/ND, and ARP timeout settings are included to ensure robust and efficient routing.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RoutedInterfaceStatus],
+        Field(
+            description="RoutedInterfaceStatus defines the observed state of RoutedInterface",
+            title="Status",
+        ),
+    ] = None
+
+
+class RoutedInterfaceList(BaseModel):
+    """
+    RoutedInterfaceList is a list of routedinterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[RoutedInterface]] = None
+    kind: str
+
+
+class Router(BaseModel):
+    """
+    Router is the Schema for the routers API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RouterMetadata
+    spec: Annotated[
+        RouterSpec,
+        Field(
+            description="The Router enables the configuration and management of routing functions within a network. This resource allows for setting a unique Router ID, configuring VNIs and EVIs with options for automatic allocation, and defining import and export route targets. It also includes advanced configuration options such as BGP settings, including autonomous system numbers, AFI/SAFI options, and route advertisement preferences. Node selectors can be used to constrain the deployment of the router to specific nodes within the network.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RouterStatus],
+        Field(
+            description="RouterStatus defines the observed state of Router",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouterList(BaseModel):
+    """
+    RouterList is a list of routers
+    """
+
+    apiVersion: str
+    items: Optional[List[Router]] = None
+    kind: str
+
+
+class VLAN(BaseModel):
+    """
+    VLAN is the Schema for the vlans API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: VLANMetadata
+    spec: Annotated[
+        VLANSpec,
+        Field(
+            description="The VLAN enables the configuration and management of VLAN and their association with BridgeDomains. This resource allows for specifying the associated BridgeDomain, selecting interfaces based on label selectors, and configuring VLAN IDs with options for auto-allocation from a VLAN pool. It also supports advanced configurations such as ingress and egress traffic management, and overrides for MAC Duplication Detection actions when enabled in the associated BridgeDomain.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[Optional[VLANStatus], Field(title="Status")] = None
+
+
+class VLANList(BaseModel):
+    """
+    VLANList is a list of vlans
+    """
+
+    apiVersion: str
+    items: Optional[List[VLAN]] = None
+    kind: str
+
+
+class VirtualNetwork(BaseModel):
+    """
+    VirtualNetwork is the Schema for the virtualnetworks API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: VirtualNetworkMetadata
+    spec: Annotated[
+        VirtualNetworkSpec,
+        Field(
+            description="VirtualNetworkSpec defines the desired state of VirtualNetwork",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[Optional[VirtualNetworkStatus], Field(title="Status")] = None
+
+
+class VirtualNetworkList(BaseModel):
+    """
+    VirtualNetworkList is a list of virtualnetworks
+    """
+
+    apiVersion: str
+    items: Optional[List[VirtualNetwork]] = None
+    kind: str

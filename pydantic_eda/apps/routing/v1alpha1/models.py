@@ -7,141 +7,112 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class DefaultInterface(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    DefaultInterface is the Schema for the defaultinterfaces API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: DefaultInterfaceMetadata
-    spec: Annotated[
-        DefaultInterfaceSpec,
-        Field(
-            description="DefaultInterface enables the configuration of default interfaces, including Interface references, DefaultRouter, VLAN IDs, IP MTU settings, and options for IPv4 and IPv6 addresses. It also supports unnumbered interfaces and BFD (Bidirectional Forwarding Detection) configuration.",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
-        Optional[DefaultInterfaceStatus],
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
+        Optional[Dict[str, Any]],
         Field(
-            description="DefaultInterfaceStatus defines the observed state of DefaultInterface",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class DefaultInterfaceDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class DefaultInterfaceDeletedResources(
-    RootModel[List[DefaultInterfaceDeletedResourceEntry]]
-):
-    root: List[DefaultInterfaceDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class DefaultInterfaceList(BaseModel):
-    """
-    DefaultInterfaceList is a list of defaultinterfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultInterface]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class DefaultInterfaceMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class DefaultInterfaceSpec(BaseModel):
-    """
-    DefaultInterface enables the configuration of default interfaces, including Interface references, DefaultRouter, VLAN IDs, IP MTU settings, and options for IPv4 and IPv6 addresses. It also supports unnumbered interfaces and BFD (Bidirectional Forwarding Detection) configuration.
-    """
-
-    bfd: Annotated[
-        Optional[DefaultInterfaceSpecBfd],
-        Field(
-            description="Enable or disable BFD on this DefaultInterface.",
-            title="BFD Configuration",
-        ),
-    ] = None
-    defaultRouter: Annotated[
-        str, Field(description="Reference to a DefaultRouter.", title="Default Router")
-    ]
-    interface: Annotated[
-        str,
-        Field(
-            description="Reference to an Interface to use for attachment.",
-            title="Interface Reference",
-        ),
-    ]
-    ipMTU: Annotated[
-        Optional[int],
-        Field(
-            description="Set the IP MTU for the DefaultInterface.",
-            ge=1280,
-            le=9486,
-            title="IP MTU",
-        ),
-    ] = None
-    ipv4Addresses: Annotated[
-        Optional[List[DefaultInterfaceSpecIpv4Address]],
-        Field(
-            description="List of IPv4 addresses in ip/mask form, e.g., 192.168.0.1/24.",
-            title="IPv4 Addresses",
-        ),
-    ] = None
-    ipv6Addresses: Annotated[
-        Optional[List[DefaultInterfaceSpecIpv6Address]],
-        Field(
-            description="List of IPv6 addresses in ip/mask form, e.g., fc00::1/120.",
-            title="IPv6 Addresses",
-        ),
-    ] = None
-    unnumbered: Annotated[
-        Optional[Literal["IPV6"]],
-        Field(
-            description="Enables the use of unnumbered interfaces on the ISL. For IPv6, no IP address are configured on the sub-interface and only the link local address will be used. If any allocation pool is specified for IPv6 that will take precedence and IPs will be assigned to the interfaces.  When using eBGP for an underlay protocol, the DefaultInterfaces which are a part of the ISL will be added to the BGP dynamic neighbor list.",
-            title="Unnumbered",
-        ),
-    ] = None
-    vlanID: Annotated[
-        Optional[int],
-        Field(
-            description="VLAN to use with this DefaultInterface.",
-            ge=1,
-            le=4094,
-            title="VLAN ID",
-        ),
-    ] = None
+class UIResult(RootModel[str]):
+    root: str
 
 
 class DefaultInterfaceSpecBfd(BaseModel):
@@ -209,6 +180,69 @@ class DefaultInterfaceSpecIpv4Address(BaseModel):
 DefaultInterfaceSpecIpv6Address = DefaultInterfaceSpecIpv4Address
 
 
+class DefaultInterfaceSpec(BaseModel):
+    """
+    DefaultInterface enables the configuration of default interfaces, including Interface references, DefaultRouter, VLAN IDs, IP MTU settings, and options for IPv4 and IPv6 addresses. It also supports unnumbered interfaces and BFD (Bidirectional Forwarding Detection) configuration.
+    """
+
+    bfd: Annotated[
+        Optional[DefaultInterfaceSpecBfd],
+        Field(
+            description="Enable or disable BFD on this DefaultInterface.",
+            title="BFD Configuration",
+        ),
+    ] = None
+    defaultRouter: Annotated[
+        str, Field(description="Reference to a DefaultRouter.", title="Default Router")
+    ]
+    interface: Annotated[
+        str,
+        Field(
+            description="Reference to an Interface to use for attachment.",
+            title="Interface Reference",
+        ),
+    ]
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="Set the IP MTU for the DefaultInterface.",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = None
+    ipv4Addresses: Annotated[
+        Optional[List[DefaultInterfaceSpecIpv4Address]],
+        Field(
+            description="List of IPv4 addresses in ip/mask form, e.g., 192.168.0.1/24.",
+            title="IPv4 Addresses",
+        ),
+    ] = None
+    ipv6Addresses: Annotated[
+        Optional[List[DefaultInterfaceSpecIpv6Address]],
+        Field(
+            description="List of IPv6 addresses in ip/mask form, e.g., fc00::1/120.",
+            title="IPv6 Addresses",
+        ),
+    ] = None
+    unnumbered: Annotated[
+        Optional[Literal["IPV6"]],
+        Field(
+            description="Enables the use of unnumbered interfaces on the ISL. For IPv6, no IP address are configured on the sub-interface and only the link local address will be used. If any allocation pool is specified for IPv6 that will take precedence and IPs will be assigned to the interfaces.  When using eBGP for an underlay protocol, the DefaultInterfaces which are a part of the ISL will be added to the BGP dynamic neighbor list.",
+            title="Unnumbered",
+        ),
+    ] = None
+    vlanID: Annotated[
+        Optional[int],
+        Field(
+            description="VLAN to use with this DefaultInterface.",
+            ge=1,
+            le=4094,
+            title="VLAN ID",
+        ),
+    ] = None
+
+
 class DefaultInterfaceStatus(BaseModel):
     """
     DefaultInterfaceStatus defines the observed state of DefaultInterface
@@ -244,97 +278,159 @@ class DefaultInterfaceStatus(BaseModel):
     ] = None
 
 
-class DefaultRouter(BaseModel):
-    """
-    DefaultRouter is the Schema for the defaultrouters API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DefaultRouterMetadata
-    spec: Annotated[
-        DefaultRouterSpec,
-        Field(
-            description="DefaultRouter enables the configuration of default routing instances on a specified Node, including options for BGP configuration, import and export policies, and router IDs.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DefaultRouterStatus],
-        Field(
-            description="DefaultRouterStatus defines the observed state of DefaultRouter",
-            title="Status",
-        ),
-    ] = None
+class DefaultInterfaceDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-DefaultRouterDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
+class DefaultInterfaceDeletedResources(
+    RootModel[List[DefaultInterfaceDeletedResourceEntry]]
+):
+    root: List[DefaultInterfaceDeletedResourceEntry]
 
 
-class DefaultRouterDeletedResources(RootModel[List[DefaultRouterDeletedResourceEntry]]):
-    root: List[DefaultRouterDeletedResourceEntry]
-
-
-class DefaultRouterList(BaseModel):
-    """
-    DefaultRouterList is a list of defaultrouters
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultRouter]] = None
-    kind: str
-
-
-DefaultRouterMetadata = DefaultInterfaceMetadata
-
-
-class DefaultRouterSpec(BaseModel):
-    """
-    DefaultRouter enables the configuration of default routing instances on a specified Node, including options for BGP configuration, import and export policies, and router IDs.
-    """
-
-    bgp: Annotated[
-        Optional[DefaultRouterSpecBgp],
-        Field(description="BGP configuration.", title="BGP Configuration"),
-    ] = None
-    description: Annotated[
-        Optional[str],
-        Field(
-            description="Sets the description on the Default router.",
-            title="Description",
-        ),
-    ] = None
-    exportPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
-            title="Export Policy",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
-            title="Import Policy",
-        ),
-    ] = None
-    node: Annotated[
+class DefaultInterfaceMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
         str,
         Field(
-            description="Reference to a TopoNode on which to configure the default routing instance.",
-            title="Node",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    routeLeaking: Annotated[
-        Optional[DefaultRouterSpecRouteLeaking],
+    namespace: str
+
+
+class DefaultRouterSpecBgpIpv4UnicastMultipath(BaseModel):
+    """
+    Enable multipath.
+    """
+
+    allowMultipleAS: Annotated[
+        bool,
         Field(
-            description="Route leaking controlled by routing policies in and out of the DefaultRouter.",
-            title="Route Leaking",
+            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
+            title="Allow Multiple Autonomous Systems Per Path",
+        ),
+    ]
+    maxAllowedPaths: Annotated[
+        int,
+        Field(
+            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
+            ge=1,
+            le=256,
+            title="Maximum Number of Paths",
+        ),
+    ]
+
+
+class DefaultRouterSpecBgpIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
         ),
     ] = None
-    routerID: Annotated[
-        str, Field(description="Router ID in dotted quad notation.", title="Router ID")
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    multipath: Annotated[
+        Optional[DefaultRouterSpecBgpIpv4UnicastMultipath],
+        Field(description="Enable multipath.", title="Multipath"),
+    ] = None
+    rapidUpdate: Annotated[
+        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+class DefaultRouterSpecBgpIpv6UnicastMultipath(BaseModel):
+    """
+    Enable multipath
+    """
+
+    allowMultipleAS: Annotated[
+        bool,
+        Field(
+            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
+            title="Allow Multiple Autonomous Systems Per Path",
+        ),
     ]
+    maxAllowedPaths: Annotated[
+        int,
+        Field(
+            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
+            ge=1,
+            le=256,
+            title="Maximum Number of Paths",
+        ),
+    ]
+
+
+class DefaultRouterSpecBgpIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    multipath: Annotated[
+        Optional[DefaultRouterSpecBgpIpv6UnicastMultipath],
+        Field(description="Enable multipath", title="Multipath"),
+    ] = None
+    rapidUpdate: Annotated[
+        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
+    ] = None
+
+
+DefaultRouterSpecBgpL2VPNEVPNMultipath = DefaultRouterSpecBgpIpv6UnicastMultipath
+
+
+class DefaultRouterSpecBgpL2VPNEVPN(BaseModel):
+    """
+    Parameters relating to the EVPN AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
+    ] = None
+    interASVPN: Annotated[
+        Optional[bool],
+        Field(description="Enable inter-AS VPN for EVPN.", title="EVPN InterAS VPN"),
+    ] = False
+    multipath: Annotated[
+        Optional[DefaultRouterSpecBgpL2VPNEVPNMultipath],
+        Field(description="Enable multipath", title="Multipath"),
+    ] = None
+    rapidUpdate: Annotated[
+        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
+    ] = None
 
 
 class DefaultRouterSpecBgp(BaseModel):
@@ -436,134 +532,6 @@ class DefaultRouterSpecBgp(BaseModel):
     ] = False
 
 
-class DefaultRouterSpecBgpIpv4Unicast(BaseModel):
-    """
-    Parameters relating to the IPv4 unicast AFI/SAFI.
-    """
-
-    advertiseIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
-            title="Advertise IPv6 Next Hops",
-        ),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
-    ] = None
-    multipath: Annotated[
-        Optional[DefaultRouterSpecBgpIpv4UnicastMultipath],
-        Field(description="Enable multipath.", title="Multipath"),
-    ] = None
-    rapidUpdate: Annotated[
-        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
-    ] = None
-    receiveIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
-            title="Receive IPv6 Next Hops",
-        ),
-    ] = None
-
-
-class DefaultRouterSpecBgpIpv4UnicastMultipath(BaseModel):
-    """
-    Enable multipath.
-    """
-
-    allowMultipleAS: Annotated[
-        bool,
-        Field(
-            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
-            title="Allow Multiple Autonomous Systems Per Path",
-        ),
-    ]
-    maxAllowedPaths: Annotated[
-        int,
-        Field(
-            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
-            ge=1,
-            le=256,
-            title="Maximum Number of Paths",
-        ),
-    ]
-
-
-class DefaultRouterSpecBgpIpv6Unicast(BaseModel):
-    """
-    Parameters relating to the IPv6 unicast AFI/SAFI.
-    """
-
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
-    ] = None
-    multipath: Annotated[
-        Optional[DefaultRouterSpecBgpIpv6UnicastMultipath],
-        Field(description="Enable multipath", title="Multipath"),
-    ] = None
-    rapidUpdate: Annotated[
-        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
-    ] = None
-
-
-class DefaultRouterSpecBgpIpv6UnicastMultipath(BaseModel):
-    """
-    Enable multipath
-    """
-
-    allowMultipleAS: Annotated[
-        bool,
-        Field(
-            description="When set to true, BGP is allowed to build a multipath set using BGP routes with different neighbor AS (most recent AS in the AS_PATH), When set to false, BGP is only allowed to use non-best paths for ECMP if they meet the multipath criteria and they have the same neighbor AS as the best path.",
-            title="Allow Multiple Autonomous Systems Per Path",
-        ),
-    ]
-    maxAllowedPaths: Annotated[
-        int,
-        Field(
-            description="The maximum number of BGP ECMP next-hops for BGP routes with an NLRI belonging to the address family of this configuration context.",
-            ge=1,
-            le=256,
-            title="Maximum Number of Paths",
-        ),
-    ]
-
-
-class DefaultRouterSpecBgpL2VPNEVPN(BaseModel):
-    """
-    Parameters relating to the EVPN AFI/SAFI.
-    """
-
-    advertiseIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
-            title="Advertise IPv6 Next Hops",
-        ),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
-    ] = None
-    interASVPN: Annotated[
-        Optional[bool],
-        Field(description="Enable inter-AS VPN for EVPN.", title="EVPN InterAS VPN"),
-    ] = False
-    multipath: Annotated[
-        Optional[DefaultRouterSpecBgpL2VPNEVPNMultipath],
-        Field(description="Enable multipath", title="Multipath"),
-    ] = None
-    rapidUpdate: Annotated[
-        Optional[bool], Field(description="Enables rapid update.", title="Rapid Update")
-    ] = None
-
-
-DefaultRouterSpecBgpL2VPNEVPNMultipath = DefaultRouterSpecBgpIpv6UnicastMultipath
-
-
 class DefaultRouterSpecRouteLeaking(BaseModel):
     """
     Route leaking controlled by routing policies in and out of the DefaultRouter.
@@ -582,6 +550,55 @@ class DefaultRouterSpecRouteLeaking(BaseModel):
             description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
             title="Import Policy",
         ),
+    ]
+
+
+class DefaultRouterSpec(BaseModel):
+    """
+    DefaultRouter enables the configuration of default routing instances on a specified Node, including options for BGP configuration, import and export policies, and router IDs.
+    """
+
+    bgp: Annotated[
+        Optional[DefaultRouterSpecBgp],
+        Field(description="BGP configuration.", title="BGP Configuration"),
+    ] = None
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="Sets the description on the Default router.",
+            title="Description",
+        ),
+    ] = None
+    exportPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
+            title="Export Policy",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
+            title="Import Policy",
+        ),
+    ] = None
+    node: Annotated[
+        str,
+        Field(
+            description="Reference to a TopoNode on which to configure the default routing instance.",
+            title="Node",
+        ),
+    ]
+    routeLeaking: Annotated[
+        Optional[DefaultRouterSpecRouteLeaking],
+        Field(
+            description="Route leaking controlled by routing policies in and out of the DefaultRouter.",
+            title="Route Leaking",
+        ),
+    ] = None
+    routerID: Annotated[
+        str, Field(description="Router ID in dotted quad notation.", title="Router ID")
     ]
 
 
@@ -616,48 +633,14 @@ class DefaultRouterStatus(BaseModel):
     ] = None
 
 
-class Drain(BaseModel):
-    """
-    Drain is the Schema for the drains API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DrainMetadata
-    spec: Annotated[
-        DrainSpec,
-        Field(
-            description="Drain allows for the controlled disabling or draining of specific DefaultRouters, either by selecting them through labels or directly referencing them, ensuring traffic is safely rerouted or dropped before the routers are decommissioned.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DrainStatus],
-        Field(
-            description="DrainStatus defines the observed state of Drain.",
-            title="Status",
-        ),
-    ] = None
+DefaultRouterDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
 
 
-DrainDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
+class DefaultRouterDeletedResources(RootModel[List[DefaultRouterDeletedResourceEntry]]):
+    root: List[DefaultRouterDeletedResourceEntry]
 
 
-class DrainDeletedResources(RootModel[List[DrainDeletedResourceEntry]]):
-    root: List[DrainDeletedResourceEntry]
-
-
-class DrainList(BaseModel):
-    """
-    DrainList is a list of drains
-    """
-
-    apiVersion: str
-    items: Optional[List[Drain]] = None
-    kind: str
-
-
-DrainMetadata = DefaultInterfaceMetadata
+DefaultRouterMetadata = DefaultInterfaceMetadata
 
 
 class DrainSpec(BaseModel):
@@ -697,191 +680,14 @@ class DrainStatus(BaseModel):
     ] = None
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
+DrainDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
 
 
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
+class DrainDeletedResources(RootModel[List[DrainDeletedResourceEntry]]):
+    root: List[DrainDeletedResourceEntry]
 
 
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class SystemInterface(BaseModel):
-    """
-    SystemInterface is the Schema for the systeminterfaces API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: SystemInterfaceMetadata
-    spec: Annotated[
-        SystemInterfaceSpec,
-        Field(
-            description="SystemInterfaceSpec defines the desired state of SystemInterface",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[SystemInterfaceStatus],
-        Field(
-            description="SystemInterfaceStatus defines the observed state of SystemInterface",
-            title="Status",
-        ),
-    ] = None
-
-
-SystemInterfaceDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
-
-
-class SystemInterfaceDeletedResources(
-    RootModel[List[SystemInterfaceDeletedResourceEntry]]
-):
-    root: List[SystemInterfaceDeletedResourceEntry]
-
-
-class SystemInterfaceList(BaseModel):
-    """
-    SystemInterfaceList is a list of systeminterfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[SystemInterface]] = None
-    kind: str
-
-
-SystemInterfaceMetadata = DefaultInterfaceMetadata
-
-
-class SystemInterfaceSpec(BaseModel):
-    """
-    SystemInterfaceSpec defines the desired state of SystemInterface
-    """
-
-    bfd: Annotated[
-        Optional[SystemInterfaceSpecBfd],
-        Field(
-            description="Enable or disable BFD on this SystemInterface.",
-            title="BFD Configuration",
-        ),
-    ] = None
-    defaultRouter: Annotated[
-        str, Field(description="Reference to a DefaultRouter.", title="Default Router")
-    ]
-    ipv4Address: Annotated[
-        Optional[str],
-        Field(
-            description="IPv4 address in ip/mask form, e.g., 192.168.0.1/32.",
-            title="IPv4 Address",
-        ),
-    ] = None
-    ipv6Address: Annotated[
-        Optional[str],
-        Field(
-            description="IPv6 address in ip/mask form, e.g., fc00::1/128.",
-            title="IPv6 Address",
-        ),
-    ] = None
+DrainMetadata = DefaultInterfaceMetadata
 
 
 class SystemInterfaceSpecBfd(BaseModel):
@@ -933,6 +739,37 @@ class SystemInterfaceSpecBfd(BaseModel):
     ]
 
 
+class SystemInterfaceSpec(BaseModel):
+    """
+    SystemInterfaceSpec defines the desired state of SystemInterface
+    """
+
+    bfd: Annotated[
+        Optional[SystemInterfaceSpecBfd],
+        Field(
+            description="Enable or disable BFD on this SystemInterface.",
+            title="BFD Configuration",
+        ),
+    ] = None
+    defaultRouter: Annotated[
+        str, Field(description="Reference to a DefaultRouter.", title="Default Router")
+    ]
+    ipv4Address: Annotated[
+        Optional[str],
+        Field(
+            description="IPv4 address in ip/mask form, e.g., 192.168.0.1/32.",
+            title="IPv4 Address",
+        ),
+    ] = None
+    ipv6Address: Annotated[
+        Optional[str],
+        Field(
+            description="IPv6 address in ip/mask form, e.g., fc00::1/128.",
+            title="IPv6 Address",
+        ),
+    ] = None
+
+
 class SystemInterfaceStatus(BaseModel):
     """
     SystemInterfaceStatus defines the observed state of SystemInterface
@@ -968,5 +805,168 @@ class SystemInterfaceStatus(BaseModel):
     ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+SystemInterfaceDeletedResourceEntry = DefaultInterfaceDeletedResourceEntry
+
+
+class SystemInterfaceDeletedResources(
+    RootModel[List[SystemInterfaceDeletedResourceEntry]]
+):
+    root: List[SystemInterfaceDeletedResourceEntry]
+
+
+SystemInterfaceMetadata = DefaultInterfaceMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class DefaultInterface(BaseModel):
+    """
+    DefaultInterface is the Schema for the defaultinterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultInterfaceMetadata
+    spec: Annotated[
+        DefaultInterfaceSpec,
+        Field(
+            description="DefaultInterface enables the configuration of default interfaces, including Interface references, DefaultRouter, VLAN IDs, IP MTU settings, and options for IPv4 and IPv6 addresses. It also supports unnumbered interfaces and BFD (Bidirectional Forwarding Detection) configuration.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultInterfaceStatus],
+        Field(
+            description="DefaultInterfaceStatus defines the observed state of DefaultInterface",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultInterfaceList(BaseModel):
+    """
+    DefaultInterfaceList is a list of defaultinterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultInterface]] = None
+    kind: str
+
+
+class DefaultRouter(BaseModel):
+    """
+    DefaultRouter is the Schema for the defaultrouters API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultRouterMetadata
+    spec: Annotated[
+        DefaultRouterSpec,
+        Field(
+            description="DefaultRouter enables the configuration of default routing instances on a specified Node, including options for BGP configuration, import and export policies, and router IDs.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultRouterStatus],
+        Field(
+            description="DefaultRouterStatus defines the observed state of DefaultRouter",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultRouterList(BaseModel):
+    """
+    DefaultRouterList is a list of defaultrouters
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultRouter]] = None
+    kind: str
+
+
+class Drain(BaseModel):
+    """
+    Drain is the Schema for the drains API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DrainMetadata
+    spec: Annotated[
+        DrainSpec,
+        Field(
+            description="Drain allows for the controlled disabling or draining of specific DefaultRouters, either by selecting them through labels or directly referencing them, ensuring traffic is safely rerouted or dropped before the routers are decommissioned.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DrainStatus],
+        Field(
+            description="DrainStatus defines the observed state of Drain.",
+            title="Status",
+        ),
+    ] = None
+
+
+class DrainList(BaseModel):
+    """
+    DrainList is a list of drains
+    """
+
+    apiVersion: str
+    items: Optional[List[Drain]] = None
+    kind: str
+
+
+class SystemInterface(BaseModel):
+    """
+    SystemInterface is the Schema for the systeminterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: SystemInterfaceMetadata
+    spec: Annotated[
+        SystemInterfaceSpec,
+        Field(
+            description="SystemInterfaceSpec defines the desired state of SystemInterface",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[SystemInterfaceStatus],
+        Field(
+            description="SystemInterfaceStatus defines the observed state of SystemInterface",
+            title="Status",
+        ),
+    ] = None
+
+
+class SystemInterfaceList(BaseModel):
+    """
+    SystemInterfaceList is a list of systeminterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[SystemInterface]] = None
+    kind: str

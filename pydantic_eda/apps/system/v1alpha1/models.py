@@ -6,14 +6,6 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -83,160 +75,86 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class Monitor(BaseModel):
-    """
-    Monitor is the Schema for the monitors API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: MonitorMetadata
-    spec: Annotated[
-        MonitorSpec,
-        Field(
-            description="MonitorSpec defines the desired state of Monitor",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[MonitorStatus],
-        Field(
-            description="MonitorStatus defines the observed state of Monitor",
-            title="Status",
-        ),
-    ] = None
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
 
 
-class MonitorAggregateState(BaseModel):
-    """
-    MonitorAggregateState is the Schema for the monitoraggregatestates API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: MonitorAggregateStateMetadata
-    spec: Annotated[
-        MonitorAggregateStateSpec,
-        Field(
-            description="MonitorAggregateStateSpec defines the desired state of MonitorAggregateState",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="MonitorAggregateStateStatus defines the observed state of MonitorAggregateState",
-            title="Status",
-        ),
-    ] = None
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
 
 
-class MonitorAggregateStateDeletedResourceEntry(BaseModel):
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class MonitorAggregateStateDeletedResources(
-    RootModel[List[MonitorAggregateStateDeletedResourceEntry]]
-):
-    root: List[MonitorAggregateStateDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class MonitorAggregateStateList(BaseModel):
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class MonitorSpecCpuUtilization(BaseModel):
     """
-    MonitorAggregateStateList is a list of monitoraggregatestates
+    Parameters relating to CPU utilization monitoring.
     """
 
-    apiVersion: str
-    items: Optional[List[MonitorAggregateState]] = None
-    kind: str
-
-
-class MonitorAggregateStateMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
+    criticalThreshold: Annotated[
+        Optional[int],
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
+            ge=1,
+            le=100,
+            title="Critical Threshold",
         ),
-    ]
-    namespace: str
-
-
-class MonitorAggregateStateSpec(BaseModel):
-    """
-    MonitorAggregateStateSpec defines the desired state of MonitorAggregateState
-    """
-
-    nodes: Annotated[
-        Optional[List[str]],
+    ] = 95
+    fallingDelta: Annotated[
+        Optional[int],
         Field(
-            description="List of TopoNodes monitored by this instance", title="Nodes"
+            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
+            ge=1,
+            le=25,
+            title="Falling Delta",
         ),
-    ] = None
-
-
-MonitorDeletedResourceEntry = MonitorAggregateStateDeletedResourceEntry
-
-
-class MonitorDeletedResources(RootModel[List[MonitorDeletedResourceEntry]]):
-    root: List[MonitorDeletedResourceEntry]
-
-
-class MonitorList(BaseModel):
-    """
-    MonitorList is a list of monitors
-    """
-
-    apiVersion: str
-    items: Optional[List[Monitor]] = None
-    kind: str
-
-
-MonitorMetadata = MonitorAggregateStateMetadata
-
-
-class MonitorSpec(BaseModel):
-    """
-    MonitorSpec defines the desired state of Monitor
-    """
-
-    cpu: Annotated[
-        Optional[MonitorSpecCpu],
+    ] = 5
+    majorThreshold: Annotated[
+        Optional[int],
         Field(
-            description="CPU monitoring for targets matching this Monitor.", title="CPU"
+            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
+            ge=1,
+            le=100,
+            title="Major Threshold",
         ),
-    ] = None
-    disk: Annotated[
-        Optional[MonitorSpecDisk],
+    ] = 90
+    minorThreshold: Annotated[
+        Optional[int],
         Field(
-            description="Disk monitoring for targets matching this Monitor.",
-            title="Disk",
+            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
+            ge=1,
+            le=100,
+            title="Minor Threshold",
         ),
-    ] = None
-    memory: Annotated[
-        Optional[MonitorSpecMemory],
-        Field(
-            description="Memory monitoring for targets matching this Monitor.",
-            title="Memory",
-        ),
-    ] = None
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selector to use when including TopoNodes to monitor.",
-            title="Node Selector",
-        ),
-    ] = None
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(description="References to TopoNodes to monitor.", title="Nodes"),
-    ] = None
+    ] = 80
 
 
 class MonitorSpecCpu(BaseModel):
@@ -256,9 +174,9 @@ class MonitorSpecCpu(BaseModel):
     ] = None
 
 
-class MonitorSpecCpuUtilization(BaseModel):
+class MonitorSpecDiskUtilization(BaseModel):
     """
-    Parameters relating to CPU utilization monitoring.
+    Parameters relating to disk utilization monitoring.
     """
 
     criticalThreshold: Annotated[
@@ -316,9 +234,9 @@ class MonitorSpecDisk(BaseModel):
     ] = None
 
 
-class MonitorSpecDiskUtilization(BaseModel):
+class MonitorSpecMemoryUtilization(BaseModel):
     """
-    Parameters relating to disk utilization monitoring.
+    Parameters relating to memory utilization monitoring.
     """
 
     criticalThreshold: Annotated[
@@ -376,108 +294,153 @@ class MonitorSpecMemory(BaseModel):
     ] = None
 
 
-class MonitorSpecMemoryUtilization(BaseModel):
+class MonitorSpec(BaseModel):
     """
-    Parameters relating to memory utilization monitoring.
-    """
-
-    criticalThreshold: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
-            ge=1,
-            le=100,
-            title="Critical Threshold",
-        ),
-    ] = 95
-    fallingDelta: Annotated[
-        Optional[int],
-        Field(
-            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
-            ge=1,
-            le=25,
-            title="Falling Delta",
-        ),
-    ] = 5
-    majorThreshold: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
-            ge=1,
-            le=100,
-            title="Major Threshold",
-        ),
-    ] = 90
-    minorThreshold: Annotated[
-        Optional[int],
-        Field(
-            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
-            ge=1,
-            le=100,
-            title="Minor Threshold",
-        ),
-    ] = 80
-
-
-class MonitorState(BaseModel):
-    """
-    MonitorState is the Schema for the monitorstates API
+    MonitorSpec defines the desired state of Monitor
     """
 
-    apiVersion: str
-    kind: str
-    metadata: MonitorStateMetadata
-    spec: Annotated[
-        MonitorStateSpec,
+    cpu: Annotated[
+        Optional[MonitorSpecCpu],
         Field(
-            description="MonitorStateSpec defines the desired state of MonitorState",
-            title="Specification",
+            description="CPU monitoring for targets matching this Monitor.", title="CPU"
         ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    ] = None
+    disk: Annotated[
+        Optional[MonitorSpecDisk],
         Field(
-            description="MonitorStateStatus defines the observed state of MonitorState",
-            title="Status",
+            description="Disk monitoring for targets matching this Monitor.",
+            title="Disk",
+        ),
+    ] = None
+    memory: Annotated[
+        Optional[MonitorSpecMemory],
+        Field(
+            description="Memory monitoring for targets matching this Monitor.",
+            title="Memory",
+        ),
+    ] = None
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selector to use when including TopoNodes to monitor.",
+            title="Node Selector",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(description="References to TopoNodes to monitor.", title="Nodes"),
+    ] = None
+
+
+class MonitorStatus(BaseModel):
+    """
+    MonitorStatus defines the observed state of Monitor
+    """
+
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(description="TopoNodes being monitored.", title="Nodes"),
+    ] = None
+
+
+class MonitorAggregateStateSpec(BaseModel):
+    """
+    MonitorAggregateStateSpec defines the desired state of MonitorAggregateState
+    """
+
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of TopoNodes monitored by this instance", title="Nodes"
         ),
     ] = None
 
 
-MonitorStateDeletedResourceEntry = MonitorAggregateStateDeletedResourceEntry
+class MonitorAggregateStateDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class MonitorStateDeletedResources(RootModel[List[MonitorStateDeletedResourceEntry]]):
-    root: List[MonitorStateDeletedResourceEntry]
+class MonitorAggregateStateDeletedResources(
+    RootModel[List[MonitorAggregateStateDeletedResourceEntry]]
+):
+    root: List[MonitorAggregateStateDeletedResourceEntry]
 
 
-class MonitorStateList(BaseModel):
-    """
-    MonitorStateList is a list of monitorstates
-    """
-
-    apiVersion: str
-    items: Optional[List[MonitorState]] = None
-    kind: str
-
-
-MonitorStateMetadata = MonitorAggregateStateMetadata
-
-
-class MonitorStateSpec(BaseModel):
-    """
-    MonitorStateSpec defines the desired state of MonitorState
-    """
-
-    monitorSpec: Annotated[
-        MonitorStateSpecMonitorSpec, Field(description="The spec of the input Monitor")
+class MonitorAggregateStateMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
     ]
-    node: Annotated[str, Field(description="Reference to the TopoNode being monitored")]
-    operatingSystem: Annotated[
-        str, Field(description="The operating system of the TopoNode being monitored")
+    namespace: str
+
+
+MonitorStateSpecMonitorSpecCpuUtilization = MonitorSpecCpuUtilization
+
+
+class MonitorStateSpecMonitorSpecCpu(BaseModel):
+    """
+    CPU monitoring for targets matching this Monitor.
+    """
+
+    enabled: Annotated[
+        bool, Field(description="Enable or disable CPU monitoring.", title="Enabled")
     ]
-    version: Annotated[
-        str, Field(description="The version of the TopoNode being monitored")
+    utilization: Annotated[
+        Optional[MonitorStateSpecMonitorSpecCpuUtilization],
+        Field(
+            description="Parameters relating to CPU utilization monitoring.",
+            title="Thresholds",
+        ),
+    ] = None
+
+
+MonitorStateSpecMonitorSpecDiskUtilization = MonitorSpecDiskUtilization
+
+
+class MonitorStateSpecMonitorSpecDisk(BaseModel):
+    """
+    Disk monitoring for targets matching this Monitor.
+    """
+
+    enabled: Annotated[
+        bool, Field(description="Enable or disable disk monitoring.", title="Enabled")
     ]
+    utilization: Annotated[
+        Optional[MonitorStateSpecMonitorSpecDiskUtilization],
+        Field(
+            description="Parameters relating to disk utilization monitoring.",
+            title="Thresholds",
+        ),
+    ] = None
+
+
+MonitorStateSpecMonitorSpecMemoryUtilization = MonitorSpecMemoryUtilization
+
+
+class MonitorStateSpecMonitorSpecMemory(BaseModel):
+    """
+    Memory monitoring for targets matching this Monitor.
+    """
+
+    enabled: Annotated[
+        bool, Field(description="Enable or disable memory monitoring.", title="Enabled")
+    ]
+    utilization: Annotated[
+        Optional[MonitorStateSpecMonitorSpecMemoryUtilization],
+        Field(
+            description="Parameters relating to memory utilization monitoring.",
+            title="Thresholds",
+        ),
+    ] = None
 
 
 class MonitorStateSpecMonitorSpec(BaseModel):
@@ -518,108 +481,53 @@ class MonitorStateSpecMonitorSpec(BaseModel):
     ] = None
 
 
-class MonitorStateSpecMonitorSpecCpu(BaseModel):
+class MonitorStateSpec(BaseModel):
     """
-    CPU monitoring for targets matching this Monitor.
+    MonitorStateSpec defines the desired state of MonitorState
     """
 
-    enabled: Annotated[
-        bool, Field(description="Enable or disable CPU monitoring.", title="Enabled")
+    monitorSpec: Annotated[
+        MonitorStateSpecMonitorSpec, Field(description="The spec of the input Monitor")
     ]
-    utilization: Annotated[
-        Optional[MonitorStateSpecMonitorSpecCpuUtilization],
-        Field(
-            description="Parameters relating to CPU utilization monitoring.",
-            title="Thresholds",
-        ),
-    ] = None
-
-
-MonitorStateSpecMonitorSpecCpuUtilization = MonitorSpecCpuUtilization
-
-
-class MonitorStateSpecMonitorSpecDisk(BaseModel):
-    """
-    Disk monitoring for targets matching this Monitor.
-    """
-
-    enabled: Annotated[
-        bool, Field(description="Enable or disable disk monitoring.", title="Enabled")
+    node: Annotated[str, Field(description="Reference to the TopoNode being monitored")]
+    operatingSystem: Annotated[
+        str, Field(description="The operating system of the TopoNode being monitored")
     ]
-    utilization: Annotated[
-        Optional[MonitorStateSpecMonitorSpecDiskUtilization],
-        Field(
-            description="Parameters relating to disk utilization monitoring.",
-            title="Thresholds",
-        ),
-    ] = None
-
-
-MonitorStateSpecMonitorSpecDiskUtilization = MonitorSpecDiskUtilization
-
-
-class MonitorStateSpecMonitorSpecMemory(BaseModel):
-    """
-    Memory monitoring for targets matching this Monitor.
-    """
-
-    enabled: Annotated[
-        bool, Field(description="Enable or disable memory monitoring.", title="Enabled")
+    version: Annotated[
+        str, Field(description="The version of the TopoNode being monitored")
     ]
-    utilization: Annotated[
-        Optional[MonitorStateSpecMonitorSpecMemoryUtilization],
-        Field(
-            description="Parameters relating to memory utilization monitoring.",
-            title="Thresholds",
-        ),
-    ] = None
 
 
-MonitorStateSpecMonitorSpecMemoryUtilization = MonitorSpecMemoryUtilization
+MonitorStateDeletedResourceEntry = MonitorAggregateStateDeletedResourceEntry
 
 
-class MonitorStatus(BaseModel):
-    """
-    MonitorStatus defines the observed state of Monitor
-    """
-
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(description="TopoNodes being monitored.", title="Nodes"),
-    ] = None
+class MonitorStateDeletedResources(RootModel[List[MonitorStateDeletedResourceEntry]]):
+    root: List[MonitorStateDeletedResourceEntry]
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+MonitorStateMetadata = MonitorAggregateStateMetadata
 
 
-class Resource(BaseModel):
+MonitorDeletedResourceEntry = MonitorAggregateStateDeletedResourceEntry
+
+
+class MonitorDeletedResources(RootModel[List[MonitorDeletedResourceEntry]]):
+    root: List[MonitorDeletedResourceEntry]
+
+
+MonitorMetadata = MonitorAggregateStateMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -629,11 +537,103 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class Monitor(BaseModel):
+    """
+    Monitor is the Schema for the monitors API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MonitorMetadata
+    spec: Annotated[
+        MonitorSpec,
+        Field(
+            description="MonitorSpec defines the desired state of Monitor",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[MonitorStatus],
+        Field(
+            description="MonitorStatus defines the observed state of Monitor",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class MonitorAggregateState(BaseModel):
+    """
+    MonitorAggregateState is the Schema for the monitoraggregatestates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MonitorAggregateStateMetadata
+    spec: Annotated[
+        MonitorAggregateStateSpec,
+        Field(
+            description="MonitorAggregateStateSpec defines the desired state of MonitorAggregateState",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="MonitorAggregateStateStatus defines the observed state of MonitorAggregateState",
+            title="Status",
+        ),
+    ] = None
+
+
+class MonitorAggregateStateList(BaseModel):
+    """
+    MonitorAggregateStateList is a list of monitoraggregatestates
+    """
+
+    apiVersion: str
+    items: Optional[List[MonitorAggregateState]] = None
+    kind: str
+
+
+class MonitorList(BaseModel):
+    """
+    MonitorList is a list of monitors
+    """
+
+    apiVersion: str
+    items: Optional[List[Monitor]] = None
+    kind: str
+
+
+class MonitorState(BaseModel):
+    """
+    MonitorState is the Schema for the monitorstates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MonitorStateMetadata
+    spec: Annotated[
+        MonitorStateSpec,
+        Field(
+            description="MonitorStateSpec defines the desired state of MonitorState",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="MonitorStateStatus defines the observed state of MonitorState",
+            title="Status",
+        ),
+    ] = None
+
+
+class MonitorStateList(BaseModel):
+    """
+    MonitorStateList is a list of monitorstates
+    """
+
+    apiVersion: str
+    items: Optional[List[MonitorState]] = None
+    kind: str

@@ -7,359 +7,9 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class Backend(BaseModel):
-    """
-    Backend is the Schema for the backends API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: BackendMetadata
-    spec: Annotated[
-        BackendSpec,
-        Field(
-            description="BackendSpec defines the desired state of Backend",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[BackendStatus],
-        Field(
-            description="BackendStatus defines the observed state of Backend",
-            title="Status",
-        ),
-    ] = None
-
-
-class BackendDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class BackendDeletedResources(RootModel[List[BackendDeletedResourceEntry]]):
-    root: List[BackendDeletedResourceEntry]
-
-
-class BackendList(BaseModel):
-    """
-    BackendList is a list of backends
-    """
-
-    apiVersion: str
-    items: Optional[List[Backend]] = None
-    kind: str
-
-
-class BackendMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class BackendSpec(BaseModel):
-    """
-    BackendSpec defines the desired state of Backend
-    """
-
-    asnPool: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.  Used when eBGP is configured as an underlay protocol.",
-            title="Autonomous System Pool",
-        ),
-    ] = None
-    gpuIsolationGroups: Annotated[
-        List[BackendSpecGpuIsolationGroup],
-        Field(
-            description="GPU Isolation Groups are used to isolate GPU traffic over the network, GPUs in different GPU isolation groups will not be able to communicate with each other.  If all GPUs across all stripes need to be able to communicate with each other, create a single GPUIsolationGroup selecting all GPU facing interfaces.",
-            title="GPU Isolation Groups",
-        ),
-    ]
-    rocev2QoS: Annotated[
-        BackendSpecRocev2QoS,
-        Field(
-            description="Set of properties to configure the RoCEv2 QoS.",
-            title="RoCEv2 QoS",
-        ),
-    ]
-    stripeConnector: Annotated[
-        Optional[BackendSpecStripeConnector],
-        Field(
-            description="StripeConnector is the spine layer interconnecting multiple stripes.",
-            title="Stripe Connector",
-        ),
-    ] = None
-    stripes: Annotated[
-        List[BackendSpecStripe],
-        Field(
-            description="A list of stripes, stripes contain a set of nodes (rails).",
-            title="Stripes",
-        ),
-    ]
-    systemPoolIPV4: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.",
-            title="IPv4 Pool - System IP",
-        ),
-    ] = None
-
-
-class BackendSpecGpuIsolationGroup(BaseModel):
-    interfaceSelector: Annotated[List[str], Field(title="Interface Selector")]
-    name: Annotated[
-        str, Field(description="Name of the IsolationGroup.", title="Isolation Group")
-    ]
-
-
-class BackendSpecRocev2QoS(BaseModel):
-    """
-    Set of properties to configure the RoCEv2 QoS.
-    """
-
-    ecnMaxDropProbabilityPercent: Annotated[
-        int,
-        Field(
-            description="If the queue depth is between min and max threshold then this the probability with which packets are dropped or marked.",
-            title="ECN Max Drop Probability Percent",
-        ),
-    ]
-    ecnSlopeMaxThresholdPercent: Annotated[
-        int,
-        Field(
-            description="The maximum threshold parameter for a RED-managed queue in percent. When the average queue length exceeds the max value, all packets are dropped (or marked if ECN is enabled). Mutually exclusive with min-threshold and max-threshold.",
-            title="ECN Max Threshold Percent",
-        ),
-    ]
-    ecnSlopeMinThresholdPercent: Annotated[
-        int,
-        Field(
-            description="The mininum threshold parameter for a RED-managed queue in percent. When the average queue length is less than min, all packets are admitted to the queue. Mutually exclusive with min-threshold and max-threshold.",
-            title="ECN Min Threshold Percent",
-        ),
-    ]
-    pfcDeadlockDetectionTimer: Annotated[
-        int,
-        Field(
-            description="Number of milliseconds during which outgoing interface is receiving pfc-pause-frames before triggering recovery-timer.",
-            title="PFC Deadlock Detection Timer",
-        ),
-    ]
-    pfcDeadlockRecoveryTimer: Annotated[
-        int,
-        Field(
-            description="Number of milliseconds during which the pfc-pause-frames will be ignored.",
-            title="PFC Deadlock Recovery Timer",
-        ),
-    ]
-    queueMaximumBurstSize: Annotated[
-        int,
-        Field(
-            description="Maximum amount of shared buffer memory available to the queue in bytes.",
-            ge=0,
-            le=4294967295,
-            title="Maximum Burst Size",
-        ),
-    ]
-
-
-class BackendSpecStripe(BaseModel):
-    asnPool: Annotated[
-        Optional[str],
-        Field(
-            description="Optional reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.  If left blank, ASN allocation will be done from the ASNAllocationRange.",
-            title="Autonomous System Pool",
-        ),
-    ] = None
-    gpuVlan: Annotated[
-        int,
-        Field(
-            description="The VLAN used on interfaces facing the GPU servers.",
-            title="GPU VLAN",
-        ),
-    ]
-    name: Annotated[
-        str, Field(description="The name of the Stripe.", title="Stripe Name")
-    ]
-    nodeSelector: Annotated[
-        List[str],
-        Field(
-            description="Node selector to select the nodes to be used for this stripe.",
-            title="Node Selector",
-        ),
-    ]
-    stripeID: Annotated[
-        int, Field(description="Unique ID for a stripe", title="Stripe ID")
-    ]
-    systemPoolIPV4: Annotated[
-        Optional[str],
-        Field(
-            description="Optional reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces. If left blank, system IP allocation will be done from the SystemIPV4Subnet.",
-            title="IPv4 Pool - System IP",
-        ),
-    ] = None
-
-
-class BackendSpecStripeConnector(BaseModel):
-    """
-    StripeConnector is the spine layer interconnecting multiple stripes.
-    """
-
-    asnPool: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.",
-            title="Autonomous System Pool",
-        ),
-    ] = None
-    linkSelector: Annotated[
-        List[str],
-        Field(
-            description="Selects TopoLinks to include in this AI Fabric, the selected TopoLinks will be used to create ISLs between the stripe connector devices and the leaf devices.",
-            title="Link Selector",
-        ),
-    ]
-    name: Annotated[
-        str,
-        Field(
-            description="The name of the Stripe Connector.",
-            title="Stripe Connector Name",
-        ),
-    ]
-    nodeSelector: Annotated[
-        List[str],
-        Field(
-            description="Node selector to select the nodes to be used for this stripe connector.",
-            title="Node Selector",
-        ),
-    ]
-    systemPoolIPV4: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces for the stripe connector devices.  If not specified, the system will use the default IPAllocationPool.",
-            title="IPv4 Pool - System IP",
-        ),
-    ] = None
-
-
-class BackendStatus(BaseModel):
-    """
-    BackendStatus defines the observed state of Backend
-    """
-
-    health: Annotated[
-        Optional[int],
-        Field(
-            description="Indicates the health score of the Fabric.  The health score of the Fabric is determined by the aggregate health score of the resources emited by the Fabric such as ISL, DefaultRouteReflectors etc.",
-            title="Health",
-        ),
-    ] = None
-    healthScoreReason: Annotated[
-        Optional[str],
-        Field(
-            description="Indicates the reason for the health score.",
-            title="Health Score Reason",
-        ),
-    ] = None
-    lastChange: Annotated[
-        Optional[date],
-        Field(
-            description="The time when the state of the resource last changed.",
-            title="Last Change",
-        ),
-    ] = None
-    operationalState: Annotated[
-        Optional[str],
-        Field(
-            description="Operational state of the Fabric.  The operational state of the fabric is determined by monitoring the operational state of the following resources (if applicable): DefaultRouters, ISLs.",
-            title="Operational State",
-        ),
-    ] = None
-    stripeConnector: Annotated[
-        Optional[BackendStatusStripeConnector],
-        Field(description="Stripe connector in the Backend.", title="Stripe Connector"),
-    ] = None
-    stripes: Annotated[
-        Optional[List[BackendStatusStripe]],
-        Field(description="List of stripes in the Backend.", title="Stripes"),
-    ] = None
-
-
-class BackendStatusStripe(BaseModel):
-    leafNodes: Annotated[
-        Optional[List[BackendStatusStripeLeafNode]],
-        Field(description="List of leaf nodes in the Stripe.", title="Leaf Nodes"),
-    ] = None
-    name: Annotated[
-        Optional[str], Field(description="The name of the Stripe.", title="Stripe Name")
-    ] = None
-
-
-class BackendStatusStripeConnector(BaseModel):
-    """
-    Stripe connector in the Backend.
-    """
-
-    name: Annotated[
-        Optional[str],
-        Field(
-            description="The name of the Stripe Connector.",
-            title="Stripe Connector Name",
-        ),
-    ] = None
-    stripeConnectorNodes: Annotated[
-        Optional[List[BackendStatusStripeConnectorStripeConnectorNode]],
-        Field(
-            description="List of stripe connector nodes in the Stripe.",
-            title="Leaf Nodes",
-        ),
-    ] = None
-
-
-class BackendStatusStripeConnectorStripeConnectorNode(BaseModel):
-    node: Annotated[
-        Optional[str], Field(description="Name of the TopoNode.", title="Node")
-    ] = None
-    operatingSystem: Annotated[
-        Optional[str],
-        Field(
-            description="Operating system running on the node.",
-            title="Operating System",
-        ),
-    ] = None
-    operatingSystemVersion: Annotated[
-        Optional[str],
-        Field(
-            description="Operating system version running on the node.",
-            title="Operating System Version",
-        ),
-    ] = None
-
-
-BackendStatusStripeLeafNode = BackendStatusStripeConnectorStripeConnectorNode
 
 
 class ErrorIndex(BaseModel):
@@ -439,10 +89,6 @@ class Resource(BaseModel):
     uiCategory: Optional[str] = None
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
@@ -459,13 +105,6 @@ class ResourceList(BaseModel):
     resources: Optional[List[Resource]] = None
 
 
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
 class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
@@ -474,3 +113,364 @@ class StatusDetails(BaseModel):
 
 class UIResult(RootModel[str]):
     root: str
+
+
+class BackendSpecGpuIsolationGroup(BaseModel):
+    interfaceSelector: Annotated[List[str], Field(title="Interface Selector")]
+    name: Annotated[
+        str, Field(description="Name of the IsolationGroup.", title="Isolation Group")
+    ]
+
+
+class BackendSpecRocev2QoS(BaseModel):
+    """
+    Set of properties to configure the RoCEv2 QoS.
+    """
+
+    ecnMaxDropProbabilityPercent: Annotated[
+        int,
+        Field(
+            description="If the queue depth is between min and max threshold then this the probability with which packets are dropped or marked.",
+            title="ECN Max Drop Probability Percent",
+        ),
+    ]
+    ecnSlopeMaxThresholdPercent: Annotated[
+        int,
+        Field(
+            description="The maximum threshold parameter for a RED-managed queue in percent. When the average queue length exceeds the max value, all packets are dropped (or marked if ECN is enabled). Mutually exclusive with min-threshold and max-threshold.",
+            title="ECN Max Threshold Percent",
+        ),
+    ]
+    ecnSlopeMinThresholdPercent: Annotated[
+        int,
+        Field(
+            description="The mininum threshold parameter for a RED-managed queue in percent. When the average queue length is less than min, all packets are admitted to the queue. Mutually exclusive with min-threshold and max-threshold.",
+            title="ECN Min Threshold Percent",
+        ),
+    ]
+    pfcDeadlockDetectionTimer: Annotated[
+        int,
+        Field(
+            description="Number of milliseconds during which outgoing interface is receiving pfc-pause-frames before triggering recovery-timer.",
+            title="PFC Deadlock Detection Timer",
+        ),
+    ]
+    pfcDeadlockRecoveryTimer: Annotated[
+        int,
+        Field(
+            description="Number of milliseconds during which the pfc-pause-frames will be ignored.",
+            title="PFC Deadlock Recovery Timer",
+        ),
+    ]
+    queueMaximumBurstSize: Annotated[
+        int,
+        Field(
+            description="Maximum amount of shared buffer memory available to the queue in bytes.",
+            ge=0,
+            le=4294967295,
+            title="Maximum Burst Size",
+        ),
+    ]
+
+
+class BackendSpecStripeConnector(BaseModel):
+    """
+    StripeConnector is the spine layer interconnecting multiple stripes.
+    """
+
+    asnPool: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.",
+            title="Autonomous System Pool",
+        ),
+    ] = None
+    linkSelector: Annotated[
+        List[str],
+        Field(
+            description="Selects TopoLinks to include in this AI Fabric, the selected TopoLinks will be used to create ISLs between the stripe connector devices and the leaf devices.",
+            title="Link Selector",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the Stripe Connector.",
+            title="Stripe Connector Name",
+        ),
+    ]
+    nodeSelector: Annotated[
+        List[str],
+        Field(
+            description="Node selector to select the nodes to be used for this stripe connector.",
+            title="Node Selector",
+        ),
+    ]
+    systemPoolIPV4: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces for the stripe connector devices.  If not specified, the system will use the default IPAllocationPool.",
+            title="IPv4 Pool - System IP",
+        ),
+    ] = None
+
+
+class BackendSpecStripe(BaseModel):
+    asnPool: Annotated[
+        Optional[str],
+        Field(
+            description="Optional reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.  If left blank, ASN allocation will be done from the ASNAllocationRange.",
+            title="Autonomous System Pool",
+        ),
+    ] = None
+    gpuVlan: Annotated[
+        int,
+        Field(
+            description="The VLAN used on interfaces facing the GPU servers.",
+            title="GPU VLAN",
+        ),
+    ]
+    name: Annotated[
+        str, Field(description="The name of the Stripe.", title="Stripe Name")
+    ]
+    nodeSelector: Annotated[
+        List[str],
+        Field(
+            description="Node selector to select the nodes to be used for this stripe.",
+            title="Node Selector",
+        ),
+    ]
+    stripeID: Annotated[
+        int, Field(description="Unique ID for a stripe", title="Stripe ID")
+    ]
+    systemPoolIPV4: Annotated[
+        Optional[str],
+        Field(
+            description="Optional reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces. If left blank, system IP allocation will be done from the SystemIPV4Subnet.",
+            title="IPv4 Pool - System IP",
+        ),
+    ] = None
+
+
+class BackendSpec(BaseModel):
+    """
+    BackendSpec defines the desired state of Backend
+    """
+
+    asnPool: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IndexAllocationPool pool to use for Autonomous System Number allocations.  Used when eBGP is configured as an underlay protocol.",
+            title="Autonomous System Pool",
+        ),
+    ] = None
+    gpuIsolationGroups: Annotated[
+        List[BackendSpecGpuIsolationGroup],
+        Field(
+            description="GPU Isolation Groups are used to isolate GPU traffic over the network, GPUs in different GPU isolation groups will not be able to communicate with each other.  If all GPUs across all stripes need to be able to communicate with each other, create a single GPUIsolationGroup selecting all GPU facing interfaces.",
+            title="GPU Isolation Groups",
+        ),
+    ]
+    rocev2QoS: Annotated[
+        BackendSpecRocev2QoS,
+        Field(
+            description="Set of properties to configure the RoCEv2 QoS.",
+            title="RoCEv2 QoS",
+        ),
+    ]
+    stripeConnector: Annotated[
+        Optional[BackendSpecStripeConnector],
+        Field(
+            description="StripeConnector is the spine layer interconnecting multiple stripes.",
+            title="Stripe Connector",
+        ),
+    ] = None
+    stripes: Annotated[
+        List[BackendSpecStripe],
+        Field(
+            description="A list of stripes, stripes contain a set of nodes (rails).",
+            title="Stripes",
+        ),
+    ]
+    systemPoolIPV4: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.",
+            title="IPv4 Pool - System IP",
+        ),
+    ] = None
+
+
+class BackendStatusStripeConnectorStripeConnectorNode(BaseModel):
+    node: Annotated[
+        Optional[str], Field(description="Name of the TopoNode.", title="Node")
+    ] = None
+    operatingSystem: Annotated[
+        Optional[str],
+        Field(
+            description="Operating system running on the node.",
+            title="Operating System",
+        ),
+    ] = None
+    operatingSystemVersion: Annotated[
+        Optional[str],
+        Field(
+            description="Operating system version running on the node.",
+            title="Operating System Version",
+        ),
+    ] = None
+
+
+class BackendStatusStripeConnector(BaseModel):
+    """
+    Stripe connector in the Backend.
+    """
+
+    name: Annotated[
+        Optional[str],
+        Field(
+            description="The name of the Stripe Connector.",
+            title="Stripe Connector Name",
+        ),
+    ] = None
+    stripeConnectorNodes: Annotated[
+        Optional[List[BackendStatusStripeConnectorStripeConnectorNode]],
+        Field(
+            description="List of stripe connector nodes in the Stripe.",
+            title="Leaf Nodes",
+        ),
+    ] = None
+
+
+BackendStatusStripeLeafNode = BackendStatusStripeConnectorStripeConnectorNode
+
+
+class BackendStatusStripe(BaseModel):
+    leafNodes: Annotated[
+        Optional[List[BackendStatusStripeLeafNode]],
+        Field(description="List of leaf nodes in the Stripe.", title="Leaf Nodes"),
+    ] = None
+    name: Annotated[
+        Optional[str], Field(description="The name of the Stripe.", title="Stripe Name")
+    ] = None
+
+
+class BackendStatus(BaseModel):
+    """
+    BackendStatus defines the observed state of Backend
+    """
+
+    health: Annotated[
+        Optional[int],
+        Field(
+            description="Indicates the health score of the Fabric.  The health score of the Fabric is determined by the aggregate health score of the resources emited by the Fabric such as ISL, DefaultRouteReflectors etc.",
+            title="Health",
+        ),
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the reason for the health score.",
+            title="Health Score Reason",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The time when the state of the resource last changed.",
+            title="Last Change",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(
+            description="Operational state of the Fabric.  The operational state of the fabric is determined by monitoring the operational state of the following resources (if applicable): DefaultRouters, ISLs.",
+            title="Operational State",
+        ),
+    ] = None
+    stripeConnector: Annotated[
+        Optional[BackendStatusStripeConnector],
+        Field(description="Stripe connector in the Backend.", title="Stripe Connector"),
+    ] = None
+    stripes: Annotated[
+        Optional[List[BackendStatusStripe]],
+        Field(description="List of stripes in the Backend.", title="Stripes"),
+    ] = None
+
+
+class BackendDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class BackendDeletedResources(RootModel[List[BackendDeletedResourceEntry]]):
+    root: List[BackendDeletedResourceEntry]
+
+
+class BackendMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class Backend(BaseModel):
+    """
+    Backend is the Schema for the backends API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BackendMetadata
+    spec: Annotated[
+        BackendSpec,
+        Field(
+            description="BackendSpec defines the desired state of Backend",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[BackendStatus],
+        Field(
+            description="BackendStatus defines the observed state of Backend",
+            title="Status",
+        ),
+    ] = None
+
+
+class BackendList(BaseModel):
+    """
+    BackendList is a list of backends
+    """
+
+    apiVersion: str
+    items: Optional[List[Backend]] = None
+    kind: str

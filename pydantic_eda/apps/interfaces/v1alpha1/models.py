@@ -7,117 +7,9 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class Breakout(BaseModel):
-    """
-    Breakout is the Schema for the breakouts API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: BreakoutMetadata
-    spec: Annotated[
-        BreakoutSpec,
-        Field(
-            description="Breakout allows for the configuration of interface breakouts on specified Nodes. This resource specifies the Nodes, parent Interfaces, the number of breakout channels, and the speed of each channel.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="BreakoutStatus defines the observed state of Breakout",
-            title="Status",
-        ),
-    ] = None
-
-
-class BreakoutDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class BreakoutDeletedResources(RootModel[List[BreakoutDeletedResourceEntry]]):
-    root: List[BreakoutDeletedResourceEntry]
-
-
-class BreakoutList(BaseModel):
-    """
-    BreakoutList is a list of breakouts
-    """
-
-    apiVersion: str
-    items: Optional[List[Breakout]] = None
-    kind: str
-
-
-class BreakoutMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class BreakoutSpec(BaseModel):
-    """
-    Breakout allows for the configuration of interface breakouts on specified Nodes. This resource specifies the Nodes, parent Interfaces, the number of breakout channels, and the speed of each channel.
-    """
-
-    channels: Annotated[
-        int,
-        Field(
-            description="The number of breakout channels to create.",
-            ge=1,
-            le=8,
-            title="Number of Channels",
-        ),
-    ]
-    interface: Annotated[
-        Optional[List[str]],
-        Field(
-            description="A list of normalized parent interface/port.",
-            title="Nomalized Parent Interface",
-        ),
-    ] = None
-    node: Annotated[
-        List[str],
-        Field(
-            description="Reference to a list of TopoNodes where the parent interfaces are to be broken out.",
-            title="Nodes",
-        ),
-    ]
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="TopoNode where the parent interfaces are to be broken out.",
-            title="TopoNode",
-        ),
-    ] = None
-    speed: Annotated[
-        Literal["800G", "400G", "200G", "100G", "50G", "40G", "25G", "10G"],
-        Field(description="The speed of each breakout channel.", title="Speed"),
-    ]
 
 
 class ErrorIndex(BaseModel):
@@ -176,106 +68,158 @@ class ErrorResponse(BaseModel):
     ] = None
 
 
-class Interface(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class BreakoutSpec(BaseModel):
     """
-    Interface is the Schema for the interfaces API
+    Breakout allows for the configuration of interface breakouts on specified Nodes. This resource specifies the Nodes, parent Interfaces, the number of breakout channels, and the speed of each channel.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: InterfaceMetadata
-    spec: Annotated[
-        InterfaceSpec,
+    channels: Annotated[
+        int,
         Field(
-            description="Interface allows for the configuration of various interface properties such as enabling/disabling the interface, setting descriptions, specifying interface types (e.g., LAG, interface, loopback), configuring VLAN encapsulation, and setting Ethernet or LAG-specific options.",
-            title="Specification",
+            description="The number of breakout channels to create.",
+            ge=1,
+            le=8,
+            title="Number of Channels",
         ),
     ]
-    status: Annotated[Optional[InterfaceStatus], Field(title="Status")] = None
-
-
-InterfaceDeletedResourceEntry = BreakoutDeletedResourceEntry
-
-
-class InterfaceDeletedResources(RootModel[List[InterfaceDeletedResourceEntry]]):
-    root: List[InterfaceDeletedResourceEntry]
-
-
-class InterfaceList(BaseModel):
-    """
-    InterfaceList is a list of interfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[Interface]] = None
-    kind: str
-
-
-InterfaceMetadata = BreakoutMetadata
-
-
-class InterfaceSpec(BaseModel):
-    """
-    Interface allows for the configuration of various interface properties such as enabling/disabling the interface, setting descriptions, specifying interface types (e.g., LAG, interface, loopback), configuring VLAN encapsulation, and setting Ethernet or LAG-specific options.
-    """
-
-    ddm: Annotated[
-        Optional[bool],
-        Field(description="Enables reporting of DDM events.", title="DDM"),
-    ] = None
-    description: Annotated[
-        Optional[str],
-        Field(description="Description of the interface.", title="Description"),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enable or disable the interface.", title="Enabled"),
-    ] = True
-    encapType: Annotated[
-        Optional[Literal["null", "dot1q"]],
+    interface: Annotated[
+        Optional[List[str]],
         Field(
-            description='Enable or disable VLAN tagging on this interface. [default="null"]',
-            title="Encapsulation Type",
+            description="A list of normalized parent interface/port.",
+            title="Nomalized Parent Interface",
         ),
-    ] = "null"
-    ethernet: Annotated[
-        Optional[InterfaceSpecEthernet],
-        Field(description="Ethernet configuration options.", title="Ethernet"),
     ] = None
-    lag: Annotated[
-        Optional[InterfaceSpecLag],
-        Field(description="LAG configuration options.", title="LAG"),
-    ] = None
-    lldp: Annotated[
-        Optional[bool],
+    node: Annotated[
+        List[str],
         Field(
-            description="Enable or disable LLDP on the members of the interface.",
-            title="Link Layer Discovery Protocol",
-        ),
-    ] = True
-    members: Annotated[
-        List[InterfaceSpecMember],
-        Field(
-            description="List of members on which to apply properties, for single interface this would be a list of 1.",
-            title="Members",
+            description="Reference to a list of TopoNodes where the parent interfaces are to be broken out.",
+            title="Nodes",
         ),
     ]
-    mtu: Annotated[
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="TopoNode where the parent interfaces are to be broken out.",
+            title="TopoNode",
+        ),
+    ] = None
+    speed: Annotated[
+        Literal["800G", "400G", "200G", "100G", "50G", "40G", "25G", "10G"],
+        Field(description="The speed of each breakout channel.", title="Speed"),
+    ]
+
+
+class BreakoutDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class BreakoutDeletedResources(RootModel[List[BreakoutDeletedResourceEntry]]):
+    root: List[BreakoutDeletedResourceEntry]
+
+
+class BreakoutMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class InterfaceSpecEthernetStormControl(BaseModel):
+    """
+    Enables storm control.
+    """
+
+    broadcastRate: Annotated[
         Optional[int],
         Field(
-            description="MTU to apply on the interface(s).",
-            ge=1450,
-            le=9500,
-            title="MTU",
+            description="Sets the maximum rate allowed for ingress broadcast frames on the interface.",
+            ge=0,
+            le=100000000,
+            title="Broadcast Rate",
         ),
     ] = None
-    type: Annotated[
-        Optional[Literal["lag", "interface", "loopback"]],
+    enabled: Annotated[
+        Optional[bool], Field(description="Enables storm control.", title="Enabled")
+    ] = None
+    multicastRate: Annotated[
+        Optional[int],
         Field(
-            description="Type defines whether the interface is a Lag or Interface.",
-            title="Type",
+            description="Sets the maximum rate allowed for ingress multicast frames on the interface.",
+            ge=0,
+            le=100000000,
+            title="Multicast Rate",
         ),
-    ] = "interface"
+    ] = None
+    units: Annotated[
+        Optional[Literal["kbps", "percentage"]],
+        Field(description="Set the units to be used for measurement.", title="Units"),
+    ] = None
+    unknownUnicastRate: Annotated[
+        Optional[int],
+        Field(
+            description="Sets the maximum rate allowed for ingress unknown unicast frames on the interface.",
+            ge=0,
+            le=100000000,
+            title="Unknown Unicast Rate",
+        ),
+    ] = None
 
 
 class InterfaceSpecEthernet(BaseModel):
@@ -344,72 +288,24 @@ class InterfaceSpecEthernet(BaseModel):
     ] = None
 
 
-class InterfaceSpecEthernetStormControl(BaseModel):
+class InterfaceSpecLagLacpLacpFallback(BaseModel):
     """
-    Enables storm control.
-    """
-
-    broadcastRate: Annotated[
-        Optional[int],
-        Field(
-            description="Sets the maximum rate allowed for ingress broadcast frames on the interface.",
-            ge=0,
-            le=100000000,
-            title="Broadcast Rate",
-        ),
-    ] = None
-    enabled: Annotated[
-        Optional[bool], Field(description="Enables storm control.", title="Enabled")
-    ] = None
-    multicastRate: Annotated[
-        Optional[int],
-        Field(
-            description="Sets the maximum rate allowed for ingress multicast frames on the interface.",
-            ge=0,
-            le=100000000,
-            title="Multicast Rate",
-        ),
-    ] = None
-    units: Annotated[
-        Optional[Literal["kbps", "percentage"]],
-        Field(description="Set the units to be used for measurement.", title="Units"),
-    ] = None
-    unknownUnicastRate: Annotated[
-        Optional[int],
-        Field(
-            description="Sets the maximum rate allowed for ingress unknown unicast frames on the interface.",
-            ge=0,
-            le=100000000,
-            title="Unknown Unicast Rate",
-        ),
-    ] = None
-
-
-class InterfaceSpecLag(BaseModel):
-    """
-    LAG configuration options.
+    LACP fallback allows one or more designated links of an LACP controlled LAG to go into forwarding mode if LACP is not yet operational after a configured timeout period. [default=disabled]
     """
 
-    lacp: Annotated[Optional[InterfaceSpecLagLacp], Field(title="LACP")] = None
-    minLinks: Annotated[
+    mode: Annotated[
+        Optional[Literal["static"]],
+        Field(description="Specifies lacp-fallback mode if enabled.", title="Mode"),
+    ] = "static"
+    timeout: Annotated[
         Optional[int],
         Field(
-            description="The min-link threshold specifies the minimum number of member links that must be active in order for the LAG to be operationally up. If the number of active links falls below this threshold, the entire LAG is brought operationally down.[default=1]",
-            ge=1,
-            le=64,
-            title="Minimum Links",
+            description="Specifies the LACP-fallback timeout interval in seconds. [default=60]",
+            ge=4,
+            le=3600,
+            title="Timeout",
         ),
-    ] = 1
-    multihoming: Annotated[
-        Optional[InterfaceSpecLagMultihoming], Field(title="Multi Homing")
-    ] = None
-    type: Annotated[
-        Optional[Literal["lacp", "static"]],
-        Field(
-            description="This type defines whether whether it is a static or LACP LAG. [default=lacp]",
-            title="Type",
-        ),
-    ] = "lacp"
+    ] = 60
 
 
 class InterfaceSpecLagLacp(BaseModel):
@@ -461,26 +357,6 @@ class InterfaceSpecLagLacp(BaseModel):
     ] = 32768
 
 
-class InterfaceSpecLagLacpLacpFallback(BaseModel):
-    """
-    LACP fallback allows one or more designated links of an LACP controlled LAG to go into forwarding mode if LACP is not yet operational after a configured timeout period. [default=disabled]
-    """
-
-    mode: Annotated[
-        Optional[Literal["static"]],
-        Field(description="Specifies lacp-fallback mode if enabled.", title="Mode"),
-    ] = "static"
-    timeout: Annotated[
-        Optional[int],
-        Field(
-            description="Specifies the LACP-fallback timeout interval in seconds. [default=60]",
-            ge=4,
-            le=3600,
-            title="Timeout",
-        ),
-    ] = 60
-
-
 class InterfaceSpecLagMultihoming(BaseModel):
     esi: Annotated[
         Optional[str],
@@ -521,6 +397,33 @@ class InterfaceSpecLagMultihoming(BaseModel):
     ] = False
 
 
+class InterfaceSpecLag(BaseModel):
+    """
+    LAG configuration options.
+    """
+
+    lacp: Annotated[Optional[InterfaceSpecLagLacp], Field(title="LACP")] = None
+    minLinks: Annotated[
+        Optional[int],
+        Field(
+            description="The min-link threshold specifies the minimum number of member links that must be active in order for the LAG to be operationally up. If the number of active links falls below this threshold, the entire LAG is brought operationally down.[default=1]",
+            ge=1,
+            le=64,
+            title="Minimum Links",
+        ),
+    ] = 1
+    multihoming: Annotated[
+        Optional[InterfaceSpecLagMultihoming], Field(title="Multi Homing")
+    ] = None
+    type: Annotated[
+        Optional[Literal["lacp", "static"]],
+        Field(
+            description="This type defines whether whether it is a static or LACP LAG. [default=lacp]",
+            title="Type",
+        ),
+    ] = "lacp"
+
+
 class InterfaceSpecMember(BaseModel):
     aggregateId: Annotated[
         Optional[str],
@@ -559,133 +462,90 @@ class InterfaceSpecMember(BaseModel):
     node: Annotated[str, Field(description="Node name.", title="Node Name")]
 
 
-class InterfaceState(BaseModel):
+class InterfaceSpec(BaseModel):
     """
-    InterfaceState is the Schema for the interfacestates API
+    Interface allows for the configuration of various interface properties such as enabling/disabling the interface, setting descriptions, specifying interface types (e.g., LAG, interface, loopback), configuring VLAN encapsulation, and setting Ethernet or LAG-specific options.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: InterfaceStateMetadata
-    spec: Annotated[InterfaceStateSpec, Field(title="Specification")]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="InterfaceStateStatus defines the observed state of Interface",
-            title="Status",
-        ),
+    ddm: Annotated[
+        Optional[bool],
+        Field(description="Enables reporting of DDM events.", title="DDM"),
     ] = None
-
-
-InterfaceStateDeletedResourceEntry = BreakoutDeletedResourceEntry
-
-
-class InterfaceStateDeletedResources(
-    RootModel[List[InterfaceStateDeletedResourceEntry]]
-):
-    root: List[InterfaceStateDeletedResourceEntry]
-
-
-class InterfaceStateList(BaseModel):
-    """
-    InterfaceStateList is a list of interfacestates
-    """
-
-    apiVersion: str
-    items: Optional[List[InterfaceState]] = None
-    kind: str
-
-
-InterfaceStateMetadata = BreakoutMetadata
-
-
-class InterfaceStateSpec(BaseModel):
-    enabled: Annotated[
-        Optional[bool], Field(description="Enable or disable the interface.")
-    ] = None
-    lag: Annotated[Optional[InterfaceStateSpecLag], Field(title="Lag")] = None
-    members: Annotated[
-        List[InterfaceStateSpecMember],
-        Field(description="List of members on which to monitor state for"),
-    ]
-    role: Annotated[
-        Optional[Literal["isl", "edge", "loopback"]],
-        Field(
-            description='Role of this interface. This is used to calculate severity of alarms. [default="edge"]'
-        ),
-    ] = "edge"
-
-
-class InterfaceStateSpecMember(BaseModel):
-    aggregateId: Annotated[
+    description: Annotated[
         Optional[str],
-        Field(description="LAG interface with which this interface is associated"),
+        Field(description="Description of the interface.", title="Description"),
     ] = None
-    enabled: Annotated[
-        Optional[bool], Field(description="Enable or disable this member.")
-    ] = None
-    interface: Annotated[str, Field(description="Normalized interface name")]
-    node: Annotated[
-        str, Field(description="Reference to the TopoNode on which this member resides")
-    ]
-    nodeInterface: Annotated[
-        str,
-        Field(
-            description='Node specific interface name, for example "ethernet-1/1", "1/1/c1/1"'
-        ),
-    ]
-    operatingSystem: Annotated[
-        str,
-        Field(
-            description="The operating system of the TopoNode on which this member resides"
-        ),
-    ]
-    version: Annotated[
-        str,
-        Field(
-            description="The version of the TopoNode on which this interface resides"
-        ),
-    ]
-
-
-class InterfaceStatus(BaseModel):
     enabled: Annotated[
         Optional[bool],
+        Field(description="Enable or disable the interface.", title="Enabled"),
+    ] = True
+    encapType: Annotated[
+        Optional[Literal["null", "dot1q"]],
         Field(
-            description="The administrative status of the Interface.", title="Enabled"
+            description='Enable or disable VLAN tagging on this interface. [default="null"]',
+            title="Encapsulation Type",
         ),
+    ] = "null"
+    ethernet: Annotated[
+        Optional[InterfaceSpecEthernet],
+        Field(description="Ethernet configuration options.", title="Ethernet"),
     ] = None
-    lag: Annotated[Optional[InterfaceStatusLag], Field(title="Lag")] = None
-    lastChange: Annotated[
-        Optional[date],
+    lag: Annotated[
+        Optional[InterfaceSpecLag],
+        Field(description="LAG configuration options.", title="LAG"),
+    ] = None
+    lldp: Annotated[
+        Optional[bool],
         Field(
-            description="Indicates when this Interface last changed state.",
-            title="Last Change",
+            description="Enable or disable LLDP on the members of the interface.",
+            title="Link Layer Discovery Protocol",
         ),
-    ] = None
+    ] = True
     members: Annotated[
-        Optional[List[InterfaceStatusMember]],
-        Field(description="List of members in this Interface.", title="Members"),
-    ] = None
-    operationalState: Annotated[
-        Optional[str],
+        List[InterfaceSpecMember],
         Field(
-            description="Indicates the current operational state of the Interface.",
-            title="Operational State",
+            description="List of members on which to apply properties, for single interface this would be a list of 1.",
+            title="Members",
+        ),
+    ]
+    mtu: Annotated[
+        Optional[int],
+        Field(
+            description="MTU to apply on the interface(s).",
+            ge=1450,
+            le=9500,
+            title="MTU",
         ),
     ] = None
-    speed: Annotated[
-        Optional[str],
+    type: Annotated[
+        Optional[Literal["lag", "interface", "loopback"]],
         Field(
-            description="Indicates the operational speed of the Interface in aggregate.",
-            title="Speed",
+            description="Type defines whether the interface is a Lag or Interface.",
+            title="Type",
         ),
-    ] = None
+    ] = "interface"
 
 
 class InterfaceStatusLag(BaseModel):
     adminKey: Annotated[Optional[int], Field(title="Admin Key")] = None
     systemIdMac: Annotated[Optional[str], Field(title="System ID MAC")] = None
+
+
+class InterfaceStatusMemberNeighbor(BaseModel):
+    interface: Annotated[
+        Optional[str],
+        Field(
+            description="The name of a neighbor interface of this member in node specific format.",
+            title="Interface",
+        ),
+    ] = None
+    node: Annotated[
+        Optional[str],
+        Field(
+            description="The name of a neighbor node of this member in node specific format.",
+            title="Node",
+        ),
+    ] = None
 
 
 class InterfaceStatusMember(BaseModel):
@@ -742,62 +602,125 @@ class InterfaceStatusMember(BaseModel):
     ] = None
 
 
-class InterfaceStatusMemberNeighbor(BaseModel):
-    interface: Annotated[
-        Optional[str],
+class InterfaceStatus(BaseModel):
+    enabled: Annotated[
+        Optional[bool],
         Field(
-            description="The name of a neighbor interface of this member in node specific format.",
-            title="Interface",
+            description="The administrative status of the Interface.", title="Enabled"
         ),
     ] = None
+    lag: Annotated[Optional[InterfaceStatusLag], Field(title="Lag")] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="Indicates when this Interface last changed state.",
+            title="Last Change",
+        ),
+    ] = None
+    members: Annotated[
+        Optional[List[InterfaceStatusMember]],
+        Field(description="List of members in this Interface.", title="Members"),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the current operational state of the Interface.",
+            title="Operational State",
+        ),
+    ] = None
+    speed: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the operational speed of the Interface in aggregate.",
+            title="Speed",
+        ),
+    ] = None
+
+
+InterfaceStateSpecLag = InterfaceStatusLag
+
+
+class InterfaceStateSpecMember(BaseModel):
+    aggregateId: Annotated[
+        Optional[str],
+        Field(description="LAG interface with which this interface is associated"),
+    ] = None
+    enabled: Annotated[
+        Optional[bool], Field(description="Enable or disable this member.")
+    ] = None
+    interface: Annotated[str, Field(description="Normalized interface name")]
     node: Annotated[
-        Optional[str],
+        str, Field(description="Reference to the TopoNode on which this member resides")
+    ]
+    nodeInterface: Annotated[
+        str,
         Field(
-            description="The name of a neighbor node of this member in node specific format.",
-            title="Node",
+            description='Node specific interface name, for example "ethernet-1/1", "1/1/c1/1"'
         ),
+    ]
+    operatingSystem: Annotated[
+        str,
+        Field(
+            description="The operating system of the TopoNode on which this member resides"
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the TopoNode on which this interface resides"
+        ),
+    ]
+
+
+class InterfaceStateSpec(BaseModel):
+    enabled: Annotated[
+        Optional[bool], Field(description="Enable or disable the interface.")
     ] = None
+    lag: Annotated[Optional[InterfaceStateSpecLag], Field(title="Lag")] = None
+    members: Annotated[
+        List[InterfaceStateSpecMember],
+        Field(description="List of members on which to monitor state for"),
+    ]
+    role: Annotated[
+        Optional[Literal["isl", "edge", "loopback"]],
+        Field(
+            description='Role of this interface. This is used to calculate severity of alarms. [default="edge"]'
+        ),
+    ] = "edge"
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+InterfaceStateDeletedResourceEntry = BreakoutDeletedResourceEntry
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class InterfaceStateDeletedResources(
+    RootModel[List[InterfaceStateDeletedResourceEntry]]
+):
+    root: List[InterfaceStateDeletedResourceEntry]
 
 
-class Resource(BaseModel):
+InterfaceStateMetadata = BreakoutMetadata
+
+
+InterfaceDeletedResourceEntry = BreakoutDeletedResourceEntry
+
+
+class InterfaceDeletedResources(RootModel[List[InterfaceDeletedResourceEntry]]):
+    root: List[InterfaceDeletedResourceEntry]
+
+
+InterfaceMetadata = BreakoutMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -807,14 +730,91 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class Breakout(BaseModel):
+    """
+    Breakout is the Schema for the breakouts API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BreakoutMetadata
+    spec: Annotated[
+        BreakoutSpec,
+        Field(
+            description="Breakout allows for the configuration of interface breakouts on specified Nodes. This resource specifies the Nodes, parent Interfaces, the number of breakout channels, and the speed of each channel.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="BreakoutStatus defines the observed state of Breakout",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class BreakoutList(BaseModel):
+    """
+    BreakoutList is a list of breakouts
+    """
+
+    apiVersion: str
+    items: Optional[List[Breakout]] = None
+    kind: str
 
 
-InterfaceStateSpecLag = InterfaceStatusLag
+class Interface(BaseModel):
+    """
+    Interface is the Schema for the interfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: InterfaceMetadata
+    spec: Annotated[
+        InterfaceSpec,
+        Field(
+            description="Interface allows for the configuration of various interface properties such as enabling/disabling the interface, setting descriptions, specifying interface types (e.g., LAG, interface, loopback), configuring VLAN encapsulation, and setting Ethernet or LAG-specific options.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[Optional[InterfaceStatus], Field(title="Status")] = None
+
+
+class InterfaceList(BaseModel):
+    """
+    InterfaceList is a list of interfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[Interface]] = None
+    kind: str
+
+
+class InterfaceState(BaseModel):
+    """
+    InterfaceState is the Schema for the interfacestates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: InterfaceStateMetadata
+    spec: Annotated[InterfaceStateSpec, Field(title="Specification")]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="InterfaceStateStatus defines the observed state of Interface",
+            title="Status",
+        ),
+    ] = None
+
+
+class InterfaceStateList(BaseModel):
+    """
+    InterfaceStateList is a list of interfacestates
+    """
+
+    apiVersion: str
+    items: Optional[List[InterfaceState]] = None
+    kind: str

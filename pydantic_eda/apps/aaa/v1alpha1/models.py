@@ -6,14 +6,6 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -83,60 +75,80 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class NodeGroup(BaseModel):
-    """
-    NodeGroup is the Schema for the nodegroups API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: NodeGroupMetadata
-    spec: Annotated[
-        NodeGroupSpec,
-        Field(
-            description="NodeGroup is a representation of a group on a node, including the services it has access to, any RBAC, and TACACS configuration.\nNodeGroups are deployed to nodes by NodeUser or other permission-consuming resources.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[NodeGroupStatus],
-        Field(description="Deployment status of this NodeGroup.", title="Status"),
-    ] = None
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
 
 
-class NodeGroupDeletedResourceEntry(BaseModel):
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class NodeGroupDeletedResources(RootModel[List[NodeGroupDeletedResourceEntry]]):
-    root: List[NodeGroupDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class NodeGroupList(BaseModel):
-    """
-    NodeGroupList is a list of nodegroups
-    """
-
-    apiVersion: str
-    items: Optional[List[NodeGroup]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class NodeGroupMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
+class UIResult(RootModel[str]):
+    root: str
+
+
+class NodeGroupSpecRule(BaseModel):
+    action: Annotated[
+        Literal["Deny", "ReadWrite", "Read"],
+        Field(description="Set the action for this entry.", title="Action"),
+    ]
+    match: Annotated[
+        Optional[str],
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description='Set the match for this entry. This is a string to match input against - for example "interface" for srl or "configure port" for sros.\nRules here should be specified in the target specific format.',
+            title="Match",
+        ),
+    ] = None
+    operatingSystem: Annotated[
+        Literal["srl", "sros"],
+        Field(
+            description="Operating system to match against for this rule.\nOperating system to deploy this rule to.",
+            title="Operating System",
         ),
     ]
-    namespace: str
+
+
+class NodeGroupSpecTacacs(BaseModel):
+    """
+    TACACS configuration.
+    """
+
+    privilegeLevel: Annotated[
+        Optional[int],
+        Field(
+            description="Set the privilege level for this group.",
+            ge=0,
+            le=15,
+            title="Privilege Level",
+        ),
+    ] = None
 
 
 class NodeGroupSpec(BaseModel):
@@ -182,43 +194,6 @@ class NodeGroupSpec(BaseModel):
     ] = None
 
 
-class NodeGroupSpecRule(BaseModel):
-    action: Annotated[
-        Literal["Deny", "ReadWrite", "Read"],
-        Field(description="Set the action for this entry.", title="Action"),
-    ]
-    match: Annotated[
-        Optional[str],
-        Field(
-            description='Set the match for this entry. This is a string to match input against - for example "interface" for srl or "configure port" for sros.\nRules here should be specified in the target specific format.',
-            title="Match",
-        ),
-    ] = None
-    operatingSystem: Annotated[
-        Literal["srl", "sros"],
-        Field(
-            description="Operating system to match against for this rule.\nOperating system to deploy this rule to.",
-            title="Operating System",
-        ),
-    ]
-
-
-class NodeGroupSpecTacacs(BaseModel):
-    """
-    TACACS configuration.
-    """
-
-    privilegeLevel: Annotated[
-        Optional[int],
-        Field(
-            description="Set the privilege level for this group.",
-            ge=0,
-            le=15,
-            title="Privilege Level",
-        ),
-    ] = None
-
-
 class NodeGroupStatus(BaseModel):
     """
     Deployment status of this NodeGroup.
@@ -232,37 +207,41 @@ class NodeGroupStatus(BaseModel):
     ] = None
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class NodeGroupDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class Resource(BaseModel):
+class NodeGroupDeletedResources(RootModel[List[NodeGroupDeletedResourceEntry]]):
+    root: List[NodeGroupDeletedResourceEntry]
+
+
+class NodeGroupMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -272,11 +251,32 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class NodeGroup(BaseModel):
+    """
+    NodeGroup is the Schema for the nodegroups API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: NodeGroupMetadata
+    spec: Annotated[
+        NodeGroupSpec,
+        Field(
+            description="NodeGroup is a representation of a group on a node, including the services it has access to, any RBAC, and TACACS configuration.\nNodeGroups are deployed to nodes by NodeUser or other permission-consuming resources.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[NodeGroupStatus],
+        Field(description="Deployment status of this NodeGroup.", title="Status"),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class NodeGroupList(BaseModel):
+    """
+    NodeGroupList is a list of nodegroups
+    """
+
+    apiVersion: str
+    items: Optional[List[NodeGroup]] = None
+    kind: str

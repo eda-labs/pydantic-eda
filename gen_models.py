@@ -142,7 +142,9 @@ class Generator:
             "--collapse-root-models",
             "--disable-timestamp",
             "--reuse-model",
-            "--keep-model-order",
+            # can't use model order, since Topologies are defined before Topology
+            # maybe worth fixing the order in the model
+            # "--keep-model-order",
             "--use-schema-description",
             "--enum-field-as-literal",
             "all",

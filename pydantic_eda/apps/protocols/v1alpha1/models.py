@@ -7,65 +7,112 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AggregateRoute(BaseModel):
+class AppGroupVersion(BaseModel):
+    groupVersion: Optional[str] = None
+    version: Optional[str] = None
+
+
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    AggregateRoute is the Schema for the aggregateroutes API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: AggregateRouteMetadata
-    spec: Annotated[
-        AggregateRouteSpec,
-        Field(
-            description="The AggregateRoute enables the configuration of aggregated routes on a specified Router. This resource allows for the definition of destination prefixes, the selection of a router, and optionally, specific nodes where the aggregate routes should be configured. Advanced options include the ability to generate ICMP unreachable messages for packets matching the aggregate route, and the ability to block the advertisement of all contributing routes in dynamic protocols like BGP.",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
         Optional[Dict[str, Any]],
         Field(
-            description="AggregateRouteStatus defines the observed state of AggregateRoute",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class AggregateRouteDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class AggregateRouteDeletedResources(
-    RootModel[List[AggregateRouteDeletedResourceEntry]]
-):
-    root: List[AggregateRouteDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class AggregateRouteList(BaseModel):
-    """
-    AggregateRouteList is a list of aggregateroutes
-    """
-
-    apiVersion: str
-    items: Optional[List[AggregateRoute]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class AggregateRouteMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
+class UIResult(RootModel[str]):
+    root: str
 
 
 class AggregateRouteSpec(BaseModel):
@@ -120,230 +167,31 @@ class AggregateRouteSpec(BaseModel):
     ] = None
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
+class AggregateRouteDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
     name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class AppGroupVersion(BaseModel):
-    groupVersion: Optional[str] = None
-    version: Optional[str] = None
+class AggregateRouteDeletedResources(
+    RootModel[List[AggregateRouteDeletedResourceEntry]]
+):
+    root: List[AggregateRouteDeletedResourceEntry]
 
 
-class BGPGroup(BaseModel):
-    """
-    BGPGroup is the Schema for the bgpgroups API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: BGPGroupMetadata
-    spec: Annotated[
-        BGPGroupSpec,
+class AggregateRouteMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
         Field(
-            description="The BGPGroup enables centralized management of BGP peer configurations. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS.",
-            title="Specification",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[
-        Optional[BGPGroupStatus],
-        Field(
-            description="BGPGroupStatus defines the observed state of BGPGroup",
-            title="Status",
-        ),
-    ] = None
-
-
-BGPGroupDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class BGPGroupDeletedResources(RootModel[List[BGPGroupDeletedResourceEntry]]):
-    root: List[BGPGroupDeletedResourceEntry]
-
-
-class BGPGroupList(BaseModel):
-    """
-    BGPGroupList is a list of bgpgroups
-    """
-
-    apiVersion: str
-    items: Optional[List[BGPGroup]] = None
-    kind: str
-
-
-BGPGroupMetadata = AggregateRouteMetadata
-
-
-class BGPGroupSpec(BaseModel):
-    """
-    The BGPGroup enables centralized management of BGP peer configurations. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS.
-    """
-
-    asPathOptions: Annotated[
-        Optional[BGPGroupSpecAsPathOptions],
-        Field(description="AS Path Options", title="AS Path Options"),
-    ] = None
-    bfd: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
-            title="BFD",
-        ),
-    ] = None
-    client: Annotated[
-        Optional[bool],
-        Field(
-            description="When set to true, all configured and dynamic BGP peers are considered RR clients.",
-            title="Route Reflector Client",
-        ),
-    ] = None
-    clusterID: Annotated[
-        Optional[str],
-        Field(
-            description="Enables route reflect client and sets the cluster ID.",
-            title="Cluster ID",
-        ),
-    ] = None
-    description: Annotated[
-        Optional[str],
-        Field(
-            description="Sets the description on the BGP group.", title="Description"
-        ),
-    ] = None
-    exportPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
-            title="Export Policy",
-        ),
-    ] = None
-    grStaleRouteTime: Annotated[
-        Optional[int],
-        Field(
-            description="Enables Graceful Restart on the peer and sets the stale route time.",
-            ge=1,
-            le=3600,
-            title="GR Stale Route Time",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes received from peers.",
-            title="Import Policy",
-        ),
-    ] = None
-    ipv4Unicast: Annotated[
-        Optional[BGPGroupSpecIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[BGPGroupSpecIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
-            title="Keychain",
-        ),
-    ] = None
-    localAS: Annotated[
-        Optional[BGPGroupSpecLocalAS],
-        Field(
-            description="The local autonomous system number advertised to peers.",
-            title="Local AS",
-        ),
-    ] = None
-    localPreference: Annotated[
-        Optional[int],
-        Field(
-            description="Local Preference attribute added to received routes from the BGP peers, also sets local preference for generated routes.",
-            ge=0,
-            le=4294967295,
-            title="Local Preference",
-        ),
-    ] = None
-    multiHopMaxHop: Annotated[
-        Optional[int],
-        Field(
-            description="Enable multihop for eBGP peers and sets the maximum number of hops allowed.",
-            ge=1,
-            le=255,
-            title="Multihop Max Hop Count",
-        ),
-    ] = None
-    nextHopSelf: Annotated[
-        Optional[bool],
-        Field(
-            description="When set to true, the next-hop in all IPv4-unicast, IPv6-unicast and EVPN BGP routes advertised to the peer is set to the local-address.",
-            title="Next Hop Self",
-        ),
-    ] = None
-    peerAS: Annotated[
-        Optional[BGPGroupSpecPeerAS],
-        Field(
-            description="The autonomous system number expected from peers.",
-            title="Peer AS",
-        ),
-    ] = None
-    sendCommunityLarge: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Large",
-        ),
-    ] = None
-    sendCommunityStandard: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Standard",
-        ),
-    ] = None
-    sendDefaultRoute: Annotated[
-        Optional[BGPGroupSpecSendDefaultRoute],
-        Field(
-            description="Options for controlling the generation of default routes towards BGP peers.",
-            title="Send Default Route",
-        ),
-    ] = None
-    timers: Annotated[
-        Optional[BGPGroupSpecTimers],
-        Field(description="Timer configurations", title="Timers"),
-    ] = None
-
-
-class BGPGroupSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[BGPGroupSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
+    namespace: str
 
 
 class BGPGroupSpecAsPathOptionsRemovePrivateAS(BaseModel):
@@ -372,6 +220,29 @@ class BGPGroupSpecAsPathOptionsRemovePrivateAS(BaseModel):
             title="Remove Private AS Mode",
         ),
     ]
+
+
+class BGPGroupSpecAsPathOptions(BaseModel):
+    """
+    AS Path Options
+    """
+
+    allowOwnAS: Annotated[
+        int,
+        Field(
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
+        ),
+    ]
+    removePrivateAS: Annotated[
+        Optional[BGPGroupSpecAsPathOptionsRemovePrivateAS],
+        Field(
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
+        ),
+    ] = None
 
 
 class BGPGroupSpecIpv4Unicast(BaseModel):
@@ -538,6 +409,152 @@ class BGPGroupSpecTimers(BaseModel):
     ] = None
 
 
+class BGPGroupSpec(BaseModel):
+    """
+    The BGPGroup enables centralized management of BGP peer configurations. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS.
+    """
+
+    asPathOptions: Annotated[
+        Optional[BGPGroupSpecAsPathOptions],
+        Field(description="AS Path Options", title="AS Path Options"),
+    ] = None
+    bfd: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
+            title="BFD",
+        ),
+    ] = None
+    client: Annotated[
+        Optional[bool],
+        Field(
+            description="When set to true, all configured and dynamic BGP peers are considered RR clients.",
+            title="Route Reflector Client",
+        ),
+    ] = None
+    clusterID: Annotated[
+        Optional[str],
+        Field(
+            description="Enables route reflect client and sets the cluster ID.",
+            title="Cluster ID",
+        ),
+    ] = None
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="Sets the description on the BGP group.", title="Description"
+        ),
+    ] = None
+    exportPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
+            title="Export Policy",
+        ),
+    ] = None
+    grStaleRouteTime: Annotated[
+        Optional[int],
+        Field(
+            description="Enables Graceful Restart on the peer and sets the stale route time.",
+            ge=1,
+            le=3600,
+            title="GR Stale Route Time",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes received from peers.",
+            title="Import Policy",
+        ),
+    ] = None
+    ipv4Unicast: Annotated[
+        Optional[BGPGroupSpecIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[BGPGroupSpecIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
+            title="Keychain",
+        ),
+    ] = None
+    localAS: Annotated[
+        Optional[BGPGroupSpecLocalAS],
+        Field(
+            description="The local autonomous system number advertised to peers.",
+            title="Local AS",
+        ),
+    ] = None
+    localPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Local Preference attribute added to received routes from the BGP peers, also sets local preference for generated routes.",
+            ge=0,
+            le=4294967295,
+            title="Local Preference",
+        ),
+    ] = None
+    multiHopMaxHop: Annotated[
+        Optional[int],
+        Field(
+            description="Enable multihop for eBGP peers and sets the maximum number of hops allowed.",
+            ge=1,
+            le=255,
+            title="Multihop Max Hop Count",
+        ),
+    ] = None
+    nextHopSelf: Annotated[
+        Optional[bool],
+        Field(
+            description="When set to true, the next-hop in all IPv4-unicast, IPv6-unicast and EVPN BGP routes advertised to the peer is set to the local-address.",
+            title="Next Hop Self",
+        ),
+    ] = None
+    peerAS: Annotated[
+        Optional[BGPGroupSpecPeerAS],
+        Field(
+            description="The autonomous system number expected from peers.",
+            title="Peer AS",
+        ),
+    ] = None
+    sendCommunityLarge: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Large",
+        ),
+    ] = None
+    sendCommunityStandard: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Standard",
+        ),
+    ] = None
+    sendDefaultRoute: Annotated[
+        Optional[BGPGroupSpecSendDefaultRoute],
+        Field(
+            description="Options for controlling the generation of default routes towards BGP peers.",
+            title="Send Default Route",
+        ),
+    ] = None
+    timers: Annotated[
+        Optional[BGPGroupSpecTimers],
+        Field(description="Timer configurations", title="Timers"),
+    ] = None
+
+
 class BGPGroupStatus(BaseModel):
     """
     BGPGroupStatus defines the observed state of BGPGroup
@@ -592,48 +609,58 @@ class BGPGroupStatus(BaseModel):
     ] = None
 
 
-class BGPPeer(BaseModel):
+BGPGroupDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class BGPGroupDeletedResources(RootModel[List[BGPGroupDeletedResourceEntry]]):
+    root: List[BGPGroupDeletedResourceEntry]
+
+
+BGPGroupMetadata = AggregateRouteMetadata
+
+
+BGPPeerSpecAsPathOptionsRemovePrivateAS = BGPGroupSpecAsPathOptionsRemovePrivateAS
+
+
+class BGPPeerSpecAsPathOptions(BaseModel):
     """
-    BGPPeer is the Schema for the bgppeers API
+    AS Path Options
     """
 
-    apiVersion: str
-    kind: str
-    metadata: BGPPeerMetadata
-    spec: Annotated[
-        BGPPeerSpec,
+    allowOwnAS: Annotated[
+        int,
         Field(
-            description="BGPPeer enables the configuration of BGP sessions. It allows specifying a description, an interface reference (either RoutedInterface or IrbInterface), and the peer IP address. The resource also supports dynamic neighbors, common BGP settings, and peer-specific configurations.",
-            title="Specification",
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
         ),
     ]
-    status: Annotated[
-        Optional[BGPPeerStatus],
+    removePrivateAS: Annotated[
+        Optional[BGPPeerSpecAsPathOptionsRemovePrivateAS],
         Field(
-            description="BGPPeerStatus defines the observed state of BGPPeer",
-            title="Status",
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
         ),
     ] = None
 
 
-BGPPeerDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+BGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-class BGPPeerDeletedResources(RootModel[List[BGPPeerDeletedResourceEntry]]):
-    root: List[BGPPeerDeletedResourceEntry]
+BGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-class BGPPeerList(BaseModel):
-    """
-    BGPPeerList is a list of bgppeers
-    """
-
-    apiVersion: str
-    items: Optional[List[BGPPeer]] = None
-    kind: str
+BGPPeerSpecLocalAS = BGPGroupSpecLocalAS
 
 
-BGPPeerMetadata = AggregateRouteMetadata
+BGPPeerSpecPeerAS = BGPGroupSpecPeerAS
+
+
+BGPPeerSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
+
+
+BGPPeerSpecTimers = BGPGroupSpecTimers
 
 
 class BGPPeerSpec(BaseModel):
@@ -829,144 +856,6 @@ class BGPPeerSpec(BaseModel):
     ] = None
 
 
-class BGPPeerSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[BGPPeerSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-BGPPeerSpecAsPathOptionsRemovePrivateAS = BGPGroupSpecAsPathOptionsRemovePrivateAS
-
-
-BGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
-
-
-BGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
-
-
-BGPPeerSpecLocalAS = BGPGroupSpecLocalAS
-
-
-BGPPeerSpecPeerAS = BGPGroupSpecPeerAS
-
-
-BGPPeerSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-BGPPeerSpecTimers = BGPGroupSpecTimers
-
-
-class BGPPeerState(BaseModel):
-    """
-    BGPPeerState is the Schema for the bgppeerstates API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: BGPPeerStateMetadata
-    spec: Annotated[
-        BGPPeerStateSpec,
-        Field(
-            description="BGPPeerStateSpec defines the desired state of BGPPeerState",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="BGPPeerStateStatus defines the observed state of BGPPeerState",
-            title="Status",
-        ),
-    ] = None
-
-
-BGPPeerStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class BGPPeerStateDeletedResources(RootModel[List[BGPPeerStateDeletedResourceEntry]]):
-    root: List[BGPPeerStateDeletedResourceEntry]
-
-
-class BGPPeerStateList(BaseModel):
-    """
-    BGPPeerStateList is a list of bgppeerstates
-    """
-
-    apiVersion: str
-    items: Optional[List[BGPPeerState]] = None
-    kind: str
-
-
-BGPPeerStateMetadata = AggregateRouteMetadata
-
-
-class BGPPeerStateSpec(BaseModel):
-    """
-    BGPPeerStateSpec defines the desired state of BGPPeerState
-    """
-
-    afiSAFI: Annotated[
-        Optional[List[str]],
-        Field(description="List of configured AFI-SAFI on the BGP peer"),
-    ] = None
-    defaultNetworkInstance: Annotated[
-        bool, Field(description="Denotes if the router is a DefaultRouter or Router")
-    ]
-    dynamicNeighbor: Annotated[
-        bool,
-        Field(
-            description="When set to true the PeerDefaultInterface is added to the dynamic-neighbor list for dynamic peering."
-        ),
-    ]
-    group: Annotated[Optional[str], Field(description="Reference to a BGPGroup")] = None
-    networkInstanceName: Annotated[
-        str,
-        Field(
-            description="The name of the network-instance or VPRN in which the BGP peer is configured"
-        ),
-    ]
-    node: Annotated[
-        Optional[str],
-        Field(description="The Node on which the BGP peer configuration resides"),
-    ] = None
-    nodeInterface: Annotated[
-        Optional[str],
-        Field(
-            description="Node interface of the default interface which is configured to peer as a dynamic neighbor"
-        ),
-    ] = None
-    operatingSystem: Annotated[
-        Optional[str], Field(description="Operating System of the Node")
-    ] = None
-    peerIP: Annotated[Optional[str], Field(description="The IP of the BGP peer")] = None
-    router: Annotated[
-        str, Field(description="Router to which the BGP peer is attached")
-    ]
-    subInterfaceIndex: Annotated[
-        Optional[int],
-        Field(
-            description="Sub interface index of the default interface which is configured to peer as a dynamic neighbor"
-        ),
-    ] = None
-
-
 class BGPPeerStatus(BaseModel):
     """
     BGPPeerStatus defines the observed state of BGPPeer
@@ -1043,50 +932,74 @@ class BGPPeerStatus(BaseModel):
     ] = None
 
 
-class DefaultAggregateRoute(BaseModel):
+class BGPPeerStateSpec(BaseModel):
     """
-    DefaultAggregateRoute is the Schema for the defaultaggregateroutes API
+    BGPPeerStateSpec defines the desired state of BGPPeerState
     """
 
-    apiVersion: str
-    kind: str
-    metadata: DefaultAggregateRouteMetadata
-    spec: Annotated[
-        DefaultAggregateRouteSpec,
+    afiSAFI: Annotated[
+        Optional[List[str]],
+        Field(description="List of configured AFI-SAFI on the BGP peer"),
+    ] = None
+    defaultNetworkInstance: Annotated[
+        bool, Field(description="Denotes if the router is a DefaultRouter or Router")
+    ]
+    dynamicNeighbor: Annotated[
+        bool,
         Field(
-            description="DefaultAggregateRoute allows the configuration of aggregate routes on a DefaultRouter. It includes specifying destination prefixes, the DefaultRouter, and settings for generating ICMP unreachable messages or blocking route advertisement. Additionally, it configures the aggregator’s IP address and ASN for efficient route management.",
-            title="Specification",
+            description="When set to true the PeerDefaultInterface is added to the dynamic-neighbor list for dynamic peering."
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    group: Annotated[Optional[str], Field(description="Reference to a BGPGroup")] = None
+    networkInstanceName: Annotated[
+        str,
         Field(
-            description="DefaultAggregateRouteStatus defines the observed state of DefaultAggregateRoute",
-            title="Status",
+            description="The name of the network-instance or VPRN in which the BGP peer is configured"
+        ),
+    ]
+    node: Annotated[
+        Optional[str],
+        Field(description="The Node on which the BGP peer configuration resides"),
+    ] = None
+    nodeInterface: Annotated[
+        Optional[str],
+        Field(
+            description="Node interface of the default interface which is configured to peer as a dynamic neighbor"
+        ),
+    ] = None
+    operatingSystem: Annotated[
+        Optional[str], Field(description="Operating System of the Node")
+    ] = None
+    peerIP: Annotated[Optional[str], Field(description="The IP of the BGP peer")] = None
+    router: Annotated[
+        str, Field(description="Router to which the BGP peer is attached")
+    ]
+    subInterfaceIndex: Annotated[
+        Optional[int],
+        Field(
+            description="Sub interface index of the default interface which is configured to peer as a dynamic neighbor"
         ),
     ] = None
 
 
-DefaultAggregateRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+BGPPeerStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
 
 
-class DefaultAggregateRouteDeletedResources(
-    RootModel[List[DefaultAggregateRouteDeletedResourceEntry]]
-):
-    root: List[DefaultAggregateRouteDeletedResourceEntry]
+class BGPPeerStateDeletedResources(RootModel[List[BGPPeerStateDeletedResourceEntry]]):
+    root: List[BGPPeerStateDeletedResourceEntry]
 
 
-class DefaultAggregateRouteList(BaseModel):
-    """
-    DefaultAggregateRouteList is a list of defaultaggregateroutes
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultAggregateRoute]] = None
-    kind: str
+BGPPeerStateMetadata = AggregateRouteMetadata
 
 
-DefaultAggregateRouteMetadata = AggregateRouteMetadata
+BGPPeerDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class BGPPeerDeletedResources(RootModel[List[BGPPeerDeletedResourceEntry]]):
+    root: List[BGPPeerDeletedResourceEntry]
+
+
+BGPPeerMetadata = AggregateRouteMetadata
 
 
 class DefaultAggregateRouteSpec(BaseModel):
@@ -1134,50 +1047,89 @@ class DefaultAggregateRouteSpec(BaseModel):
     ] = None
 
 
-class DefaultBGPGroup(BaseModel):
+DefaultAggregateRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class DefaultAggregateRouteDeletedResources(
+    RootModel[List[DefaultAggregateRouteDeletedResourceEntry]]
+):
+    root: List[DefaultAggregateRouteDeletedResourceEntry]
+
+
+DefaultAggregateRouteMetadata = AggregateRouteMetadata
+
+
+DefaultBGPGroupSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
+
+
+class DefaultBGPGroupSpecAsPathOptions(BaseModel):
     """
-    DefaultBGPGroup is the Schema for the defaultbgpgroups API
+    AS Path Options
     """
 
-    apiVersion: str
-    kind: str
-    metadata: DefaultBGPGroupMetadata
-    spec: Annotated[
-        DefaultBGPGroupSpec,
+    allowOwnAS: Annotated[
+        int,
         Field(
-            description="The DefaultBGPGroup enables centralized management of BGP peer configurations within a DefaultRouter. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS. type DefaultBGPGroupSpec struct {",
-            title="Specification",
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
         ),
     ]
-    status: Annotated[
-        Optional[DefaultBGPGroupStatus],
+    removePrivateAS: Annotated[
+        Optional[DefaultBGPGroupSpecAsPathOptionsRemovePrivateAS],
         Field(
-            description="DefaultBGPGroupStatus defines the observed state of DefaultBGPGroup.",
-            title="Status",
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
         ),
     ] = None
 
 
-DefaultBGPGroupDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+DefaultBGPGroupSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-class DefaultBGPGroupDeletedResources(
-    RootModel[List[DefaultBGPGroupDeletedResourceEntry]]
-):
-    root: List[DefaultBGPGroupDeletedResourceEntry]
+DefaultBGPGroupSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-class DefaultBGPGroupList(BaseModel):
+class DefaultBGPGroupSpecL2VPNEVPN(BaseModel):
     """
-    DefaultBGPGroupList is a list of defaultbgpgroups
+    Parameters relating to the EVPN AFI/SAFI.
     """
 
-    apiVersion: str
-    items: Optional[List[DefaultBGPGroup]] = None
-    kind: str
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
+    ] = None
+    maxReceivedRoutes: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of EVPN routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
+            ge=1,
+            le=4294967295,
+            title="Max Received Routes",
+        ),
+    ] = None
 
 
-DefaultBGPGroupMetadata = AggregateRouteMetadata
+DefaultBGPGroupSpecLocalAS = BGPGroupSpecLocalAS
+
+
+DefaultBGPGroupSpecPeerAS = BGPGroupSpecPeerAS
+
+
+DefaultBGPGroupSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
+
+
+DefaultBGPGroupSpecTimers = BGPGroupSpecTimers
 
 
 class DefaultBGPGroupSpec(BaseModel):
@@ -1333,79 +1285,6 @@ class DefaultBGPGroupSpec(BaseModel):
     ] = None
 
 
-class DefaultBGPGroupSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[DefaultBGPGroupSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-DefaultBGPGroupSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
-
-
-DefaultBGPGroupSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
-
-
-DefaultBGPGroupSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
-
-
-class DefaultBGPGroupSpecL2VPNEVPN(BaseModel):
-    """
-    Parameters relating to the EVPN AFI/SAFI.
-    """
-
-    advertiseIPV6NextHops: Annotated[
-        Optional[bool],
-        Field(
-            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
-            title="Advertise IPv6 Next Hops",
-        ),
-    ] = None
-    enabled: Annotated[
-        Optional[bool],
-        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
-    ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of EVPN routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
-    ] = None
-
-
-DefaultBGPGroupSpecLocalAS = BGPGroupSpecLocalAS
-
-
-DefaultBGPGroupSpecPeerAS = BGPGroupSpecPeerAS
-
-
-DefaultBGPGroupSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-DefaultBGPGroupSpecTimers = BGPGroupSpecTimers
-
-
 class DefaultBGPGroupStatus(BaseModel):
     """
     DefaultBGPGroupStatus defines the observed state of DefaultBGPGroup.
@@ -1460,50 +1339,65 @@ class DefaultBGPGroupStatus(BaseModel):
     ] = None
 
 
-class DefaultBGPPeer(BaseModel):
+DefaultBGPGroupDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class DefaultBGPGroupDeletedResources(
+    RootModel[List[DefaultBGPGroupDeletedResourceEntry]]
+):
+    root: List[DefaultBGPGroupDeletedResourceEntry]
+
+
+DefaultBGPGroupMetadata = AggregateRouteMetadata
+
+
+DefaultBGPPeerSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
+
+
+class DefaultBGPPeerSpecAsPathOptions(BaseModel):
     """
-    DefaultBGPPeer is the Schema for the defaultbgppeers API
+    AS Path Options
     """
 
-    apiVersion: str
-    kind: str
-    metadata: DefaultBGPPeerMetadata
-    spec: Annotated[
-        DefaultBGPPeerSpec,
+    allowOwnAS: Annotated[
+        int,
         Field(
-            description="DefaultBGPPeer enables the configuration of BGP sessions within a DefaultRouter. It allows specifying a description, a DefaultInterface reference, and the peer IP address. The resource also supports dynamic neighbors, common BGP settings, and peer-specific configurations.",
-            title="Specification",
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
         ),
     ]
-    status: Annotated[
-        Optional[DefaultBGPPeerStatus],
+    removePrivateAS: Annotated[
+        Optional[DefaultBGPPeerSpecAsPathOptionsRemovePrivateAS],
         Field(
-            description="DefaultBGPPeerStatus defines the observed state of DefaultBGPPeer",
-            title="Status",
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
         ),
     ] = None
 
 
-DefaultBGPPeerDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+DefaultBGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-class DefaultBGPPeerDeletedResources(
-    RootModel[List[DefaultBGPPeerDeletedResourceEntry]]
-):
-    root: List[DefaultBGPPeerDeletedResourceEntry]
+DefaultBGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-class DefaultBGPPeerList(BaseModel):
-    """
-    DefaultBGPPeerList is a list of defaultbgppeers
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultBGPPeer]] = None
-    kind: str
+DefaultBGPPeerSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
 
 
-DefaultBGPPeerMetadata = AggregateRouteMetadata
+DefaultBGPPeerSpecLocalAS = BGPGroupSpecLocalAS
+
+
+DefaultBGPPeerSpecPeerAS = BGPGroupSpecPeerAS
+
+
+DefaultBGPPeerSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
+
+
+DefaultBGPPeerSpecTimers = BGPGroupSpecTimers
 
 
 class DefaultBGPPeerSpec(BaseModel):
@@ -1708,55 +1602,6 @@ class DefaultBGPPeerSpec(BaseModel):
     ] = None
 
 
-class DefaultBGPPeerSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[DefaultBGPPeerSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-DefaultBGPPeerSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
-
-
-DefaultBGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
-
-
-DefaultBGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
-
-
-DefaultBGPPeerSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
-
-
-DefaultBGPPeerSpecLocalAS = BGPGroupSpecLocalAS
-
-
-DefaultBGPPeerSpecPeerAS = BGPGroupSpecPeerAS
-
-
-DefaultBGPPeerSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-DefaultBGPPeerSpecTimers = BGPGroupSpecTimers
-
-
 class DefaultBGPPeerStatus(BaseModel):
     """
     DefaultBGPPeerStatus defines the observed state of DefaultBGPPeer
@@ -1833,219 +1678,24 @@ class DefaultBGPPeerStatus(BaseModel):
     ] = None
 
 
-class DefaultRouteReflector(BaseModel):
-    """
-    DefaultRouteReflector is the Schema for the defaultroutereflectors API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DefaultRouteReflectorMetadata
-    spec: Annotated[
-        DefaultRouteReflectorSpec,
-        Field(
-            description="DefaultRouteReflector enables the configuration of iBGP sessions to RouteReflectorClients. It includes settings for the DefaultInterface, BGP group, client selectors, and the Cluster ID. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DefaultRouteReflectorStatus],
-        Field(
-            description="DefaultRouteReflectorStatus defines the observed state of DefaultRouteReflector",
-            title="Status",
-        ),
-    ] = None
+DefaultBGPPeerDeletedResourceEntry = AggregateRouteDeletedResourceEntry
 
 
-class DefaultRouteReflectorClient(BaseModel):
-    """
-    DefaultRouteReflectorClient is the Schema for the defaultroutereflectorclients API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DefaultRouteReflectorClientMetadata
-    spec: Annotated[
-        DefaultRouteReflectorClientSpec,
-        Field(
-            description="DefaultRouteReflectorClient enables the configuration of iBGP sessions from a client to RouteReflectors. It includes settings for the DefaultInterface, BGP group, client selectors, and a list of Route Reflector IPs. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DefaultRouteReflectorClientStatus],
-        Field(
-            description="DefaultRouteReflectorClientStatus defines the observed state of DefaultRouteReflectorClient",
-            title="Status",
-        ),
-    ] = None
-
-
-DefaultRouteReflectorClientDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class DefaultRouteReflectorClientDeletedResources(
-    RootModel[List[DefaultRouteReflectorClientDeletedResourceEntry]]
+class DefaultBGPPeerDeletedResources(
+    RootModel[List[DefaultBGPPeerDeletedResourceEntry]]
 ):
-    root: List[DefaultRouteReflectorClientDeletedResourceEntry]
+    root: List[DefaultBGPPeerDeletedResourceEntry]
 
 
-class DefaultRouteReflectorClientList(BaseModel):
-    """
-    DefaultRouteReflectorClientList is a list of defaultroutereflectorclients
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultRouteReflectorClient]] = None
-    kind: str
+DefaultBGPPeerMetadata = AggregateRouteMetadata
 
 
-DefaultRouteReflectorClientMetadata = AggregateRouteMetadata
+DefaultRouteReflectorSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
 
 
-class DefaultRouteReflectorClientSpec(BaseModel):
-    """
-    DefaultRouteReflectorClient enables the configuration of iBGP sessions from a client to RouteReflectors. It includes settings for the DefaultInterface, BGP group, client selectors, and a list of Route Reflector IPs. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.
-    """
-
-    asPathOptions: Annotated[
-        Optional[DefaultRouteReflectorClientSpecAsPathOptions],
-        Field(description="AS Path Options", title="AS Path Options"),
-    ] = None
-    bfd: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
-            title="BFD",
-        ),
-    ] = None
-    defaultBgpClientGroup: Annotated[
-        str,
-        Field(
-            description="Reference to Default Bgp Group.",
-            title="Default BGP Client Group",
-        ),
-    ]
-    exportPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
-            title="Export Policy",
-        ),
-    ] = None
-    grStaleRouteTime: Annotated[
-        Optional[int],
-        Field(
-            description="Enables Graceful Restart on the peer and sets the stale route time.",
-            ge=1,
-            le=3600,
-            title="GR Stale Route Time",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes received from peers.",
-            title="Import Policy",
-        ),
-    ] = None
-    interface: Annotated[
-        str,
-        Field(
-            description="Reference to either a DefaultInterface or SystemInterface from which the session to the RR will be done from.",
-            title="Interface",
-        ),
-    ]
-    interfaceKind: Annotated[
-        Literal["DEFAULTINTERFACE", "SYSTEMINTERFACE"],
-        Field(
-            description="Reference to a the Kind of interface from which the session to the RR will be done from.",
-            title="Interface Kind",
-        ),
-    ]
-    ipv4Unicast: Annotated[
-        Optional[DefaultRouteReflectorClientSpecIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[DefaultRouteReflectorClientSpecIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
-            title="Keychain",
-        ),
-    ] = None
-    l2VPNEVPN: Annotated[
-        Optional[DefaultRouteReflectorClientSpecL2VPNEVPN],
-        Field(
-            description="Parameters relating to the EVPN AFI/SAFI.", title="L2VPN EVPN"
-        ),
-    ] = None
-    localAS: Annotated[
-        Optional[DefaultRouteReflectorClientSpecLocalAS],
-        Field(
-            description="The local autonomous system number advertised to peers.",
-            title="Local AS",
-        ),
-    ] = None
-    peerAS: Annotated[
-        Optional[DefaultRouteReflectorClientSpecPeerAS],
-        Field(
-            description="The autonomous system number expected from peers.",
-            title="Peer AS",
-        ),
-    ] = None
-    routeReflectorIPs: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of the peering IPs on the RRs to which peering session is established.",
-            title="Route Reflector IPs",
-        ),
-    ] = None
-    routeReflectorSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established.",
-            title="Route Reflector Selector",
-        ),
-    ] = None
-    sendCommunityLarge: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Large",
-        ),
-    ] = None
-    sendCommunityStandard: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Standard",
-        ),
-    ] = None
-    sendDefaultRoute: Annotated[
-        Optional[DefaultRouteReflectorClientSpecSendDefaultRoute],
-        Field(
-            description="Options for controlling the generation of default routes towards BGP peers.",
-            title="Send Default Route",
-        ),
-    ] = None
-    timers: Annotated[
-        Optional[DefaultRouteReflectorClientSpecTimers],
-        Field(description="Timer configurations", title="Timers"),
-    ] = None
-
-
-class DefaultRouteReflectorClientSpecAsPathOptions(BaseModel):
+class DefaultRouteReflectorSpecAsPathOptions(BaseModel):
     """
     AS Path Options
     """
@@ -2060,7 +1710,7 @@ class DefaultRouteReflectorClientSpecAsPathOptions(BaseModel):
         ),
     ]
     removePrivateAS: Annotated[
-        Optional[DefaultRouteReflectorClientSpecAsPathOptionsRemovePrivateAS],
+        Optional[DefaultRouteReflectorSpecAsPathOptionsRemovePrivateAS],
         Field(
             description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
             title="Remove Private AS",
@@ -2068,108 +1718,25 @@ class DefaultRouteReflectorClientSpecAsPathOptions(BaseModel):
     ] = None
 
 
-DefaultRouteReflectorClientSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
+DefaultRouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-DefaultRouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+DefaultRouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-DefaultRouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+DefaultRouteReflectorSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
 
 
-DefaultRouteReflectorClientSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
+DefaultRouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
 
 
-DefaultRouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
+DefaultRouteReflectorSpecPeerAS = BGPGroupSpecPeerAS
 
 
-DefaultRouteReflectorClientSpecPeerAS = BGPGroupSpecPeerAS
+DefaultRouteReflectorSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
 
 
-DefaultRouteReflectorClientSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-DefaultRouteReflectorClientSpecTimers = BGPGroupSpecTimers
-
-
-class DefaultRouteReflectorClientStatus(BaseModel):
-    """
-    DefaultRouteReflectorClientStatus defines the observed state of DefaultRouteReflectorClient
-    """
-
-    health: Annotated[
-        Optional[int],
-        Field(
-            description="Indicates the health score of the DefaultRouteReflectorClient.",
-            title="Health",
-        ),
-    ] = None
-    healthScoreReason: Annotated[
-        Optional[str],
-        Field(
-            description="Indicates the reason for the health score.",
-            title="Health Score Reason",
-        ),
-    ] = None
-    lastChange: Annotated[
-        Optional[date],
-        Field(
-            description="The time when the state of the resource last changed.",
-            title="Last Change",
-        ),
-    ] = None
-    numRouteReflectorClientBGPPeers: Annotated[
-        Optional[int],
-        Field(
-            description="Total number of configured route reflector peers on the route reflector client.",
-            title="Number of Route Reflector Client BGP Peers",
-        ),
-    ] = None
-    numRouteReflectorClientBGPPeersOperDown: Annotated[
-        Optional[int],
-        Field(
-            description="Total number of configured route reflector peers on the route reflector client that are operationally down.",
-            title="Number of Oper Down Route Reflector Client BGP Peers",
-        ),
-    ] = None
-    operDownRouteReflectorClientPeers: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of route reflector BGPPeers which are operationally down.",
-            title="Oper Down Route Reflector Client Peers",
-        ),
-    ] = None
-    operationalState: Annotated[
-        Optional[str],
-        Field(
-            description="Operational state of the DefaultRouteReflectorClient.",
-            title="Operational State",
-        ),
-    ] = None
-
-
-DefaultRouteReflectorDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class DefaultRouteReflectorDeletedResources(
-    RootModel[List[DefaultRouteReflectorDeletedResourceEntry]]
-):
-    root: List[DefaultRouteReflectorDeletedResourceEntry]
-
-
-class DefaultRouteReflectorList(BaseModel):
-    """
-    DefaultRouteReflectorList is a list of defaultroutereflectors
-    """
-
-    apiVersion: str
-    items: Optional[List[DefaultRouteReflector]] = None
-    kind: str
-
-
-DefaultRouteReflectorMetadata = AggregateRouteMetadata
+DefaultRouteReflectorSpecTimers = BGPGroupSpecTimers
 
 
 class DefaultRouteReflectorSpec(BaseModel):
@@ -2319,55 +1886,6 @@ class DefaultRouteReflectorSpec(BaseModel):
     ] = None
 
 
-class DefaultRouteReflectorSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[DefaultRouteReflectorSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-DefaultRouteReflectorSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
-
-
-DefaultRouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
-
-
-DefaultRouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
-
-
-DefaultRouteReflectorSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
-
-
-DefaultRouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
-
-
-DefaultRouteReflectorSpecPeerAS = BGPGroupSpecPeerAS
-
-
-DefaultRouteReflectorSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-DefaultRouteReflectorSpecTimers = BGPGroupSpecTimers
-
-
 class DefaultRouteReflectorStatus(BaseModel):
     """
     DefaultRouteReflectorStatus defines the observed state of DefaultRouteReflector
@@ -2424,119 +1942,314 @@ class DefaultRouteReflectorStatus(BaseModel):
     ] = None
 
 
-class DefaultStaticRoute(BaseModel):
+DefaultRouteReflectorClientSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
+
+
+class DefaultRouteReflectorClientSpecAsPathOptions(BaseModel):
     """
-    DefaultStaticRoute is the Schema for the defaultstaticroutes API
+    AS Path Options
     """
 
-    apiVersion: str
-    kind: str
-    metadata: DefaultStaticRouteMetadata
-    spec: Annotated[
-        DefaultStaticRouteSpec,
+    allowOwnAS: Annotated[
+        int,
         Field(
-            description="DefaultStaticRoute enables the configuration of static routes within a DefaultRouter. It allows specifying destination prefixes, route preference, and a nexthop group. This resource facilitates precise control over routing behavior, including options for BFD, route resolution, and blackholing traffic.",
-            title="Specification",
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
         ),
     ]
-    status: Annotated[
-        Optional[DefaultStaticRouteStatus],
+    removePrivateAS: Annotated[
+        Optional[DefaultRouteReflectorClientSpecAsPathOptionsRemovePrivateAS],
         Field(
-            description="DefaultStaticRouteStatus defines the observed state of default static route",
-            title="Status",
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
         ),
     ] = None
 
 
-DefaultStaticRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+DefaultRouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-class DefaultStaticRouteDeletedResources(
-    RootModel[List[DefaultStaticRouteDeletedResourceEntry]]
-):
-    root: List[DefaultStaticRouteDeletedResourceEntry]
+DefaultRouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-class DefaultStaticRouteList(BaseModel):
+DefaultRouteReflectorClientSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
+
+
+DefaultRouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
+
+
+DefaultRouteReflectorClientSpecPeerAS = BGPGroupSpecPeerAS
+
+
+DefaultRouteReflectorClientSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
+
+
+DefaultRouteReflectorClientSpecTimers = BGPGroupSpecTimers
+
+
+class DefaultRouteReflectorClientSpec(BaseModel):
     """
-    DefaultStaticRouteList is a list of defaultstaticroutes
+    DefaultRouteReflectorClient enables the configuration of iBGP sessions from a client to RouteReflectors. It includes settings for the DefaultInterface, BGP group, client selectors, and a list of Route Reflector IPs. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.
     """
 
-    apiVersion: str
-    items: Optional[List[DefaultStaticRoute]] = None
-    kind: str
-
-
-DefaultStaticRouteMetadata = AggregateRouteMetadata
-
-
-class DefaultStaticRouteSpec(BaseModel):
-    """
-    DefaultStaticRoute enables the configuration of static routes within a DefaultRouter. It allows specifying destination prefixes, route preference, and a nexthop group. This resource facilitates precise control over routing behavior, including options for BFD, route resolution, and blackholing traffic.
-    """
-
-    defaultRouter: Annotated[
-        str,
-        Field(
-            description="Reference to a DefaultRouter on which to configure the static routes.",
-            title="Default Router",
-        ),
-    ]
-    nexthopGroup: Annotated[
-        DefaultStaticRouteSpecNexthopGroup,
-        Field(
-            description="Group of nexthops for the list of prefixes.",
-            title="Nexthop Group",
-        ),
-    ]
-    preference: Annotated[
-        Optional[int],
-        Field(description="Defines the route preference.", title="Preference"),
+    asPathOptions: Annotated[
+        Optional[DefaultRouteReflectorClientSpecAsPathOptions],
+        Field(description="AS Path Options", title="AS Path Options"),
     ] = None
-    prefixes: Annotated[
-        List[str],
-        Field(
-            description="List of destination prefixes and mask to use for the static routes.",
-            title="Prefixes",
-        ),
-    ]
-
-
-class DefaultStaticRouteSpecNexthopGroup(BaseModel):
-    """
-    Group of nexthops for the list of prefixes.
-    """
-
     bfd: Annotated[
-        Optional[DefaultStaticRouteSpecNexthopGroupBfd],
+        Optional[bool],
         Field(
-            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
+            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
             title="BFD",
         ),
     ] = None
-    blackhole: Annotated[
-        Optional[bool],
+    defaultBgpClientGroup: Annotated[
+        str,
         Field(
-            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
-            title="Blackhole",
+            description="Reference to Default Bgp Group.",
+            title="Default BGP Client Group",
         ),
-    ] = False
-    nexthops: Annotated[
-        Optional[List[DefaultStaticRouteSpecNexthopGroupNexthop]],
-        Field(description="Ordered list of nexthops.", title="Nexthops"),
+    ]
+    exportPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
+            title="Export Policy",
+        ),
     ] = None
-    resolve: Annotated[
+    grStaleRouteTime: Annotated[
+        Optional[int],
+        Field(
+            description="Enables Graceful Restart on the peer and sets the stale route time.",
+            ge=1,
+            le=3600,
+            title="GR Stale Route Time",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes received from peers.",
+            title="Import Policy",
+        ),
+    ] = None
+    interface: Annotated[
+        str,
+        Field(
+            description="Reference to either a DefaultInterface or SystemInterface from which the session to the RR will be done from.",
+            title="Interface",
+        ),
+    ]
+    interfaceKind: Annotated[
+        Literal["DEFAULTINTERFACE", "SYSTEMINTERFACE"],
+        Field(
+            description="Reference to a the Kind of interface from which the session to the RR will be done from.",
+            title="Interface Kind",
+        ),
+    ]
+    ipv4Unicast: Annotated[
+        Optional[DefaultRouteReflectorClientSpecIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[DefaultRouteReflectorClientSpecIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
+            title="Keychain",
+        ),
+    ] = None
+    l2VPNEVPN: Annotated[
+        Optional[DefaultRouteReflectorClientSpecL2VPNEVPN],
+        Field(
+            description="Parameters relating to the EVPN AFI/SAFI.", title="L2VPN EVPN"
+        ),
+    ] = None
+    localAS: Annotated[
+        Optional[DefaultRouteReflectorClientSpecLocalAS],
+        Field(
+            description="The local autonomous system number advertised to peers.",
+            title="Local AS",
+        ),
+    ] = None
+    peerAS: Annotated[
+        Optional[DefaultRouteReflectorClientSpecPeerAS],
+        Field(
+            description="The autonomous system number expected from peers.",
+            title="Peer AS",
+        ),
+    ] = None
+    routeReflectorIPs: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of the peering IPs on the RRs to which peering session is established.",
+            title="Route Reflector IPs",
+        ),
+    ] = None
+    routeReflectorSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established.",
+            title="Route Reflector Selector",
+        ),
+    ] = None
+    sendCommunityLarge: Annotated[
         Optional[bool],
         Field(
-            description="If set to true the next-hops can be destinations which are resolved in the route table.",
-            title="Resolve",
+            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Large",
         ),
-    ] = False
+    ] = None
+    sendCommunityStandard: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Standard",
+        ),
+    ] = None
+    sendDefaultRoute: Annotated[
+        Optional[DefaultRouteReflectorClientSpecSendDefaultRoute],
+        Field(
+            description="Options for controlling the generation of default routes towards BGP peers.",
+            title="Send Default Route",
+        ),
+    ] = None
+    timers: Annotated[
+        Optional[DefaultRouteReflectorClientSpecTimers],
+        Field(description="Timer configurations", title="Timers"),
+    ] = None
+
+
+class DefaultRouteReflectorClientStatus(BaseModel):
+    """
+    DefaultRouteReflectorClientStatus defines the observed state of DefaultRouteReflectorClient
+    """
+
+    health: Annotated[
+        Optional[int],
+        Field(
+            description="Indicates the health score of the DefaultRouteReflectorClient.",
+            title="Health",
+        ),
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the reason for the health score.",
+            title="Health Score Reason",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The time when the state of the resource last changed.",
+            title="Last Change",
+        ),
+    ] = None
+    numRouteReflectorClientBGPPeers: Annotated[
+        Optional[int],
+        Field(
+            description="Total number of configured route reflector peers on the route reflector client.",
+            title="Number of Route Reflector Client BGP Peers",
+        ),
+    ] = None
+    numRouteReflectorClientBGPPeersOperDown: Annotated[
+        Optional[int],
+        Field(
+            description="Total number of configured route reflector peers on the route reflector client that are operationally down.",
+            title="Number of Oper Down Route Reflector Client BGP Peers",
+        ),
+    ] = None
+    operDownRouteReflectorClientPeers: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of route reflector BGPPeers which are operationally down.",
+            title="Oper Down Route Reflector Client Peers",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(
+            description="Operational state of the DefaultRouteReflectorClient.",
+            title="Operational State",
+        ),
+    ] = None
+
+
+DefaultRouteReflectorClientDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class DefaultRouteReflectorClientDeletedResources(
+    RootModel[List[DefaultRouteReflectorClientDeletedResourceEntry]]
+):
+    root: List[DefaultRouteReflectorClientDeletedResourceEntry]
+
+
+DefaultRouteReflectorClientMetadata = AggregateRouteMetadata
+
+
+DefaultRouteReflectorDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class DefaultRouteReflectorDeletedResources(
+    RootModel[List[DefaultRouteReflectorDeletedResourceEntry]]
+):
+    root: List[DefaultRouteReflectorDeletedResourceEntry]
+
+
+DefaultRouteReflectorMetadata = AggregateRouteMetadata
 
 
 class DefaultStaticRouteSpecNexthopGroupBfd(BaseModel):
     """
     Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines whether BFD should be enabled towards the nexthops.",
+            title="Enabled",
+        ),
+    ] = False
+    localAddress: Annotated[
+        Optional[str],
+        Field(
+            description="Defines the local address to use when establishing the BFD session with the nexthop.",
+            title="Local Address",
+        ),
+    ] = None
+    localDiscriminator: Annotated[
+        Optional[int],
+        Field(
+            description="Defines the local discriminator.", title="Local Discriminator"
+        ),
+    ] = None
+    remoteDiscriminator: Annotated[
+        Optional[int],
+        Field(
+            description="Defines the remote discriminator.",
+            title="Remote Discriminator",
+        ),
+    ] = None
+
+
+class DefaultStaticRouteSpecNexthopGroupNexthopBfd(BaseModel):
+    """
+    Enables BFD to the next-hops in the group. This overrides the configuration at the group.
     """
 
     enabled: Annotated[
@@ -2586,38 +2299,68 @@ class DefaultStaticRouteSpecNexthopGroupNexthop(BaseModel):
     ] = False
 
 
-class DefaultStaticRouteSpecNexthopGroupNexthopBfd(BaseModel):
+class DefaultStaticRouteSpecNexthopGroup(BaseModel):
     """
-    Enables BFD to the next-hops in the group. This overrides the configuration at the group.
+    Group of nexthops for the list of prefixes.
     """
 
-    enabled: Annotated[
+    bfd: Annotated[
+        Optional[DefaultStaticRouteSpecNexthopGroupBfd],
+        Field(
+            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
+            title="BFD",
+        ),
+    ] = None
+    blackhole: Annotated[
         Optional[bool],
         Field(
-            description="Defines whether BFD should be enabled towards the nexthops.",
-            title="Enabled",
+            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
+            title="Blackhole",
         ),
     ] = False
-    localAddress: Annotated[
-        Optional[str],
-        Field(
-            description="Defines the local address to use when establishing the BFD session with the nexthop.",
-            title="Local Address",
-        ),
+    nexthops: Annotated[
+        Optional[List[DefaultStaticRouteSpecNexthopGroupNexthop]],
+        Field(description="Ordered list of nexthops.", title="Nexthops"),
     ] = None
-    localDiscriminator: Annotated[
+    resolve: Annotated[
+        Optional[bool],
+        Field(
+            description="If set to true the next-hops can be destinations which are resolved in the route table.",
+            title="Resolve",
+        ),
+    ] = False
+
+
+class DefaultStaticRouteSpec(BaseModel):
+    """
+    DefaultStaticRoute enables the configuration of static routes within a DefaultRouter. It allows specifying destination prefixes, route preference, and a nexthop group. This resource facilitates precise control over routing behavior, including options for BFD, route resolution, and blackholing traffic.
+    """
+
+    defaultRouter: Annotated[
+        str,
+        Field(
+            description="Reference to a DefaultRouter on which to configure the static routes.",
+            title="Default Router",
+        ),
+    ]
+    nexthopGroup: Annotated[
+        DefaultStaticRouteSpecNexthopGroup,
+        Field(
+            description="Group of nexthops for the list of prefixes.",
+            title="Nexthop Group",
+        ),
+    ]
+    preference: Annotated[
         Optional[int],
-        Field(
-            description="Defines the local discriminator.", title="Local Discriminator"
-        ),
+        Field(description="Defines the route preference.", title="Preference"),
     ] = None
-    remoteDiscriminator: Annotated[
-        Optional[int],
+    prefixes: Annotated[
+        List[str],
         Field(
-            description="Defines the remote discriminator.",
-            title="Remote Discriminator",
+            description="List of destination prefixes and mask to use for the static routes.",
+            title="Prefixes",
         ),
-    ] = None
+    ]
 
 
 class DefaultStaticRouteStatus(BaseModel):
@@ -2655,313 +2398,24 @@ class DefaultStaticRouteStatus(BaseModel):
     ] = None
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
+DefaultStaticRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
 
 
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class RouteReflector(BaseModel):
-    """
-    RouteReflector is the Schema for the routereflectors API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: RouteReflectorMetadata
-    spec: Annotated[
-        RouteReflectorSpec,
-        Field(
-            description="RouteReflector enables the configuration of iBGP sessions with RouteReflectorClients. It includes settings for selecting Interfaces, client selectors for IPv4 and IPv6, and the option to specify a BGP group and cluster ID.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[RouteReflectorStatus],
-        Field(
-            description="RouteReflectorStatus defines the observed state of RouteReflector",
-            title="Status",
-        ),
-    ] = None
-
-
-class RouteReflectorClient(BaseModel):
-    """
-    RouteReflectorClient is the Schema for the routereflectorclients API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: RouteReflectorClientMetadata
-    spec: Annotated[
-        RouteReflectorClientSpec,
-        Field(
-            description="RouteReflectorClient manages the configuration of iBGP sessions between a client and RouteReflectors. This resource allows you to specify the Interface for BGP sessions, set selectors for RouteReflectors, and configure common BGP settings.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[RouteReflectorClientStatus],
-        Field(
-            description="RouteReflectorClientStatus defines the observed state of RouteReflectorClient",
-            title="Status",
-        ),
-    ] = None
-
-
-RouteReflectorClientDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class RouteReflectorClientDeletedResources(
-    RootModel[List[RouteReflectorClientDeletedResourceEntry]]
+class DefaultStaticRouteDeletedResources(
+    RootModel[List[DefaultStaticRouteDeletedResourceEntry]]
 ):
-    root: List[RouteReflectorClientDeletedResourceEntry]
+    root: List[DefaultStaticRouteDeletedResourceEntry]
 
 
-class RouteReflectorClientList(BaseModel):
-    """
-    RouteReflectorClientList is a list of routereflectorclients
-    """
-
-    apiVersion: str
-    items: Optional[List[RouteReflectorClient]] = None
-    kind: str
+DefaultStaticRouteMetadata = AggregateRouteMetadata
 
 
-RouteReflectorClientMetadata = AggregateRouteMetadata
+RouteReflectorSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
 
 
-class RouteReflectorClientSpec(BaseModel):
-    """
-    RouteReflectorClient manages the configuration of iBGP sessions between a client and RouteReflectors. This resource allows you to specify the Interface for BGP sessions, set selectors for RouteReflectors, and configure common BGP settings.
-    """
-
-    asPathOptions: Annotated[
-        Optional[RouteReflectorClientSpecAsPathOptions],
-        Field(description="AS Path Options", title="AS Path Options"),
-    ] = None
-    bfd: Annotated[
-        Optional[bool],
-        Field(
-            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
-            title="BFD",
-        ),
-    ] = None
-    bgpGroup: Annotated[
-        str, Field(description="Reference to BgpGroup.", title="BGP Group")
-    ]
-    exportPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
-            title="Export Policy",
-        ),
-    ] = None
-    grStaleRouteTime: Annotated[
-        Optional[int],
-        Field(
-            description="Enables Graceful Restart on the peer and sets the stale route time.",
-            ge=1,
-            le=3600,
-            title="GR Stale Route Time",
-        ),
-    ] = None
-    importPolicy: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a Policy CR that will be used to filter routes received from peers.",
-            title="Import Policy",
-        ),
-    ] = None
-    interface: Annotated[
-        str,
-        Field(
-            description="Reference to a RoutedInterface or IrbInterface resource whose IP will be used as a source IP for the BGP session.",
-            title="Interface Reference",
-        ),
-    ]
-    interfaceKind: Annotated[
-        Literal["ROUTEDINTERFACE", "IRBINTERFACE"],
-        Field(
-            description="InterfaceReference type defines whether the provided Reference is a RoutedInterface or IrbInterface.",
-            title="Interface Reference Type",
-        ),
-    ]
-    ipv4RouteReflectorSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established for IPv4.",
-            title="IPv4 Route Reflector Selector",
-        ),
-    ] = None
-    ipv4Unicast: Annotated[
-        Optional[RouteReflectorClientSpecIpv4Unicast],
-        Field(
-            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
-            title="IPv4 Unicast",
-        ),
-    ] = None
-    ipv6RouteReflectorSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established for IPv6.",
-            title="IPv6 Route Reflector Selector",
-        ),
-    ] = None
-    ipv6Unicast: Annotated[
-        Optional[RouteReflectorClientSpecIpv6Unicast],
-        Field(
-            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
-            title="IPv6 Unicast",
-        ),
-    ] = None
-    keychain: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
-            title="Keychain",
-        ),
-    ] = None
-    localAS: Annotated[
-        Optional[RouteReflectorClientSpecLocalAS],
-        Field(
-            description="The local autonomous system number advertised to peers.",
-            title="Local AS",
-        ),
-    ] = None
-    peerAS: Annotated[
-        Optional[RouteReflectorClientSpecPeerAS],
-        Field(
-            description="The autonomous system number expected from peers.",
-            title="Peer AS",
-        ),
-    ] = None
-    routeReflectorIPs: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of the peering IPs on the RRs to which peering session is established.",
-            title="Route Reflector IPs",
-        ),
-    ] = None
-    sendCommunityLarge: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Large",
-        ),
-    ] = None
-    sendCommunityStandard: Annotated[
-        Optional[bool],
-        Field(
-            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
-            title="Send Community Standard",
-        ),
-    ] = None
-    sendDefaultRoute: Annotated[
-        Optional[RouteReflectorClientSpecSendDefaultRoute],
-        Field(
-            description="Options for controlling the generation of default routes towards BGP peers.",
-            title="Send Default Route",
-        ),
-    ] = None
-    timers: Annotated[
-        Optional[RouteReflectorClientSpecTimers],
-        Field(description="Timer configurations", title="Timers"),
-    ] = None
-
-
-class RouteReflectorClientSpecAsPathOptions(BaseModel):
+class RouteReflectorSpecAsPathOptions(BaseModel):
     """
     AS Path Options
     """
@@ -2976,7 +2430,7 @@ class RouteReflectorClientSpecAsPathOptions(BaseModel):
         ),
     ]
     removePrivateAS: Annotated[
-        Optional[RouteReflectorClientSpecAsPathOptionsRemovePrivateAS],
+        Optional[RouteReflectorSpecAsPathOptionsRemovePrivateAS],
         Field(
             description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
             title="Remove Private AS",
@@ -2984,170 +2438,22 @@ class RouteReflectorClientSpecAsPathOptions(BaseModel):
     ] = None
 
 
-RouteReflectorClientSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
+RouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-RouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+RouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-RouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+RouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
 
 
-RouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
+RouteReflectorSpecPeerAS = BGPGroupSpecPeerAS
 
 
-RouteReflectorClientSpecPeerAS = BGPGroupSpecPeerAS
+RouteReflectorSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
 
 
-RouteReflectorClientSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-RouteReflectorClientSpecTimers = BGPGroupSpecTimers
-
-
-class RouteReflectorClientState(BaseModel):
-    """
-    RouteReflectorClientState is the Schema for the routereflectorclientstates API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: RouteReflectorClientStateMetadata
-    spec: Annotated[
-        RouteReflectorClientStateSpec,
-        Field(
-            description="RouteReflectorClientStateSpec defines the desired state of RouteReflectorClientState",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="RouteReflectorClientStateStatus defines the observed state of RouteReflectorClientState",
-            title="Status",
-        ),
-    ] = None
-
-
-RouteReflectorClientStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class RouteReflectorClientStateDeletedResources(
-    RootModel[List[RouteReflectorClientStateDeletedResourceEntry]]
-):
-    root: List[RouteReflectorClientStateDeletedResourceEntry]
-
-
-class RouteReflectorClientStateList(BaseModel):
-    """
-    RouteReflectorClientStateList is a list of routereflectorclientstates
-    """
-
-    apiVersion: str
-    items: Optional[List[RouteReflectorClientState]] = None
-    kind: str
-
-
-RouteReflectorClientStateMetadata = AggregateRouteMetadata
-
-
-class RouteReflectorClientStateSpec(BaseModel):
-    """
-    RouteReflectorClientStateSpec defines the desired state of RouteReflectorClientState
-    """
-
-    defaultRouteReflectorClient: Annotated[
-        Optional[bool],
-        Field(
-            description="Denotes if the route reflector client is a DefaultRouteReflectorClient or RouteReflectorClient"
-        ),
-    ] = None
-    routeReflectorClientBGPPeers: Annotated[
-        Optional[List[str]],
-        Field(
-            description="A list of BGPPeers configured on the route reflector client to peer with route reflectors"
-        ),
-    ] = None
-
-
-class RouteReflectorClientStatus(BaseModel):
-    """
-    RouteReflectorClientStatus defines the observed state of RouteReflectorClient
-    """
-
-    health: Annotated[
-        Optional[int],
-        Field(
-            description="Indicates the health score of the RouteReflectorClient.",
-            title="Health",
-        ),
-    ] = None
-    healthScoreReason: Annotated[
-        Optional[str],
-        Field(
-            description="Indicates the reason for the health score.",
-            title="Health Score Reason",
-        ),
-    ] = None
-    lastChange: Annotated[
-        Optional[date],
-        Field(
-            description="The time when the state of the resource last changed.",
-            title="Last Change",
-        ),
-    ] = None
-    numRouteReflectorClientBGPPeers: Annotated[
-        Optional[int],
-        Field(
-            description="Total number of configured route reflector peers on the route reflector client.",
-            title="Number of Route Reflector Client BGP Peers",
-        ),
-    ] = None
-    numRouteReflectorClientBGPPeersOperDown: Annotated[
-        Optional[int],
-        Field(
-            description="Total number of configured route reflector peers on the route reflector client that are operationally down.",
-            title="Number of Oper Down Route Reflector Client BGP Peers",
-        ),
-    ] = None
-    operDownRouteReflectorClientPeers: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of route reflector BGPPeers which are operationally down.",
-            title="Oper Down Route Reflector Client Peers",
-        ),
-    ] = None
-    operationalState: Annotated[
-        Optional[str],
-        Field(
-            description="Operational state of the RouteReflectorClient.",
-            title="Operational State",
-        ),
-    ] = None
-
-
-RouteReflectorDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class RouteReflectorDeletedResources(
-    RootModel[List[RouteReflectorDeletedResourceEntry]]
-):
-    root: List[RouteReflectorDeletedResourceEntry]
-
-
-class RouteReflectorList(BaseModel):
-    """
-    RouteReflectorList is a list of routereflectors
-    """
-
-    apiVersion: str
-    items: Optional[List[RouteReflector]] = None
-    kind: str
-
-
-RouteReflectorMetadata = AggregateRouteMetadata
+RouteReflectorSpecTimers = BGPGroupSpecTimers
 
 
 class RouteReflectorSpec(BaseModel):
@@ -3295,117 +2601,6 @@ class RouteReflectorSpec(BaseModel):
     ] = None
 
 
-class RouteReflectorSpecAsPathOptions(BaseModel):
-    """
-    AS Path Options
-    """
-
-    allowOwnAS: Annotated[
-        int,
-        Field(
-            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
-            ge=0,
-            le=255,
-            title="Allow Own AS",
-        ),
-    ]
-    removePrivateAS: Annotated[
-        Optional[RouteReflectorSpecAsPathOptionsRemovePrivateAS],
-        Field(
-            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
-            title="Remove Private AS",
-        ),
-    ] = None
-
-
-RouteReflectorSpecAsPathOptionsRemovePrivateAS = (
-    BGPGroupSpecAsPathOptionsRemovePrivateAS
-)
-
-
-RouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
-
-
-RouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
-
-
-RouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
-
-
-RouteReflectorSpecPeerAS = BGPGroupSpecPeerAS
-
-
-RouteReflectorSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
-
-
-RouteReflectorSpecTimers = BGPGroupSpecTimers
-
-
-class RouteReflectorState(BaseModel):
-    """
-    RouteReflectorState is the Schema for the routereflectorstates API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: RouteReflectorStateMetadata
-    spec: Annotated[
-        RouteReflectorStateSpec,
-        Field(
-            description="RouteReflectorStateSpec defines the desired state of RouteReflectorState",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="RouteReflectorStateStatus defines the observed state of RouteReflectorState",
-            title="Status",
-        ),
-    ] = None
-
-
-RouteReflectorStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
-
-
-class RouteReflectorStateDeletedResources(
-    RootModel[List[RouteReflectorStateDeletedResourceEntry]]
-):
-    root: List[RouteReflectorStateDeletedResourceEntry]
-
-
-class RouteReflectorStateList(BaseModel):
-    """
-    RouteReflectorStateList is a list of routereflectorstates
-    """
-
-    apiVersion: str
-    items: Optional[List[RouteReflectorState]] = None
-    kind: str
-
-
-RouteReflectorStateMetadata = AggregateRouteMetadata
-
-
-class RouteReflectorStateSpec(BaseModel):
-    """
-    RouteReflectorStateSpec defines the desired state of RouteReflectorState
-    """
-
-    defaultRouteReflector: Annotated[
-        Optional[bool],
-        Field(
-            description="Denotes if the route reflector is a DefaultRouteReflector or RouteReflector"
-        ),
-    ] = None
-    routeReflectorBGPPeers: Annotated[
-        Optional[List[str]],
-        Field(
-            description="A list of BGPPeers configured on the route reflector to peer with clients"
-        ),
-    ] = None
-
-
 class RouteReflectorStatus(BaseModel):
     """
     RouteReflectorStatus defines the observed state of RouteReflector
@@ -3462,48 +2657,387 @@ class RouteReflectorStatus(BaseModel):
     ] = None
 
 
-class StaticRoute(BaseModel):
+RouteReflectorClientSpecAsPathOptionsRemovePrivateAS = (
+    BGPGroupSpecAsPathOptionsRemovePrivateAS
+)
+
+
+class RouteReflectorClientSpecAsPathOptions(BaseModel):
     """
-    StaticRoute is the Schema for the staticroutes API
+    AS Path Options
     """
 
-    apiVersion: str
-    kind: str
-    metadata: StaticRouteMetadata
-    spec: Annotated[
-        StaticRouteSpec,
+    allowOwnAS: Annotated[
+        int,
         Field(
-            description="StaticRoute allows for the specification of destination prefixes, route preferences, and the associated Router. It also supports configuring nexthop groups and specifying the nodes where the static routes should be provisioned.",
-            title="Specification",
+            description="The maximum number of times the global AS number or a local AS number of the BGP instance can appear in any received AS_PATH before it is considered a loop and considered invalid.",
+            ge=0,
+            le=255,
+            title="Allow Own AS",
         ),
     ]
-    status: Annotated[
-        Optional[StaticRouteStatus],
+    removePrivateAS: Annotated[
+        Optional[RouteReflectorClientSpecAsPathOptionsRemovePrivateAS],
         Field(
-            description="StaticRouteStatus defines the observed state of Static Route",
-            title="Status",
+            description="Options for removing private AS numbers (2-byte and 4-byte) from the advertised AS path towards all peers.",
+            title="Remove Private AS",
         ),
     ] = None
 
 
-StaticRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+RouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
 
 
-class StaticRouteDeletedResources(RootModel[List[StaticRouteDeletedResourceEntry]]):
-    root: List[StaticRouteDeletedResourceEntry]
+RouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
 
 
-class StaticRouteList(BaseModel):
+RouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
+
+
+RouteReflectorClientSpecPeerAS = BGPGroupSpecPeerAS
+
+
+RouteReflectorClientSpecSendDefaultRoute = BGPGroupSpecSendDefaultRoute
+
+
+RouteReflectorClientSpecTimers = BGPGroupSpecTimers
+
+
+class RouteReflectorClientSpec(BaseModel):
     """
-    StaticRouteList is a list of staticroutes
+    RouteReflectorClient manages the configuration of iBGP sessions between a client and RouteReflectors. This resource allows you to specify the Interface for BGP sessions, set selectors for RouteReflectors, and configure common BGP settings.
     """
 
-    apiVersion: str
-    items: Optional[List[StaticRoute]] = None
-    kind: str
+    asPathOptions: Annotated[
+        Optional[RouteReflectorClientSpecAsPathOptions],
+        Field(description="AS Path Options", title="AS Path Options"),
+    ] = None
+    bfd: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable Bi-forward Forwarding Detection (BFD) with fast failover.",
+            title="BFD",
+        ),
+    ] = None
+    bgpGroup: Annotated[
+        str, Field(description="Reference to BgpGroup.", title="BGP Group")
+    ]
+    exportPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes advertised to peers.",
+            title="Export Policy",
+        ),
+    ] = None
+    grStaleRouteTime: Annotated[
+        Optional[int],
+        Field(
+            description="Enables Graceful Restart on the peer and sets the stale route time.",
+            ge=1,
+            le=3600,
+            title="GR Stale Route Time",
+        ),
+    ] = None
+    importPolicy: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a Policy CR that will be used to filter routes received from peers.",
+            title="Import Policy",
+        ),
+    ] = None
+    interface: Annotated[
+        str,
+        Field(
+            description="Reference to a RoutedInterface or IrbInterface resource whose IP will be used as a source IP for the BGP session.",
+            title="Interface Reference",
+        ),
+    ]
+    interfaceKind: Annotated[
+        Literal["ROUTEDINTERFACE", "IRBINTERFACE"],
+        Field(
+            description="InterfaceReference type defines whether the provided Reference is a RoutedInterface or IrbInterface.",
+            title="Interface Reference Type",
+        ),
+    ]
+    ipv4RouteReflectorSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established for IPv4.",
+            title="IPv4 Route Reflector Selector",
+        ),
+    ] = None
+    ipv4Unicast: Annotated[
+        Optional[RouteReflectorClientSpecIpv4Unicast],
+        Field(
+            description="Parameters relating to the IPv4 unicast AFI/SAFI.",
+            title="IPv4 Unicast",
+        ),
+    ] = None
+    ipv6RouteReflectorSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector used to select the RouteReflectors to which the iBGP sessions are established for IPv6.",
+            title="IPv6 Route Reflector Selector",
+        ),
+    ] = None
+    ipv6Unicast: Annotated[
+        Optional[RouteReflectorClientSpecIpv6Unicast],
+        Field(
+            description="Parameters relating to the IPv6 unicast AFI/SAFI.",
+            title="IPv6 Unicast",
+        ),
+    ] = None
+    keychain: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to a Keychain resource that will be used for authentication with the BGP peer.",
+            title="Keychain",
+        ),
+    ] = None
+    localAS: Annotated[
+        Optional[RouteReflectorClientSpecLocalAS],
+        Field(
+            description="The local autonomous system number advertised to peers.",
+            title="Local AS",
+        ),
+    ] = None
+    peerAS: Annotated[
+        Optional[RouteReflectorClientSpecPeerAS],
+        Field(
+            description="The autonomous system number expected from peers.",
+            title="Peer AS",
+        ),
+    ] = None
+    routeReflectorIPs: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of the peering IPs on the RRs to which peering session is established.",
+            title="Route Reflector IPs",
+        ),
+    ] = None
+    sendCommunityLarge: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all large (12 byte) BGP communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Large",
+        ),
+    ] = None
+    sendCommunityStandard: Annotated[
+        Optional[bool],
+        Field(
+            description="When false, all standard (4 byte) communities from all outbound routes advertised to the peer are stripped.",
+            title="Send Community Standard",
+        ),
+    ] = None
+    sendDefaultRoute: Annotated[
+        Optional[RouteReflectorClientSpecSendDefaultRoute],
+        Field(
+            description="Options for controlling the generation of default routes towards BGP peers.",
+            title="Send Default Route",
+        ),
+    ] = None
+    timers: Annotated[
+        Optional[RouteReflectorClientSpecTimers],
+        Field(description="Timer configurations", title="Timers"),
+    ] = None
 
 
-StaticRouteMetadata = AggregateRouteMetadata
+class RouteReflectorClientStatus(BaseModel):
+    """
+    RouteReflectorClientStatus defines the observed state of RouteReflectorClient
+    """
+
+    health: Annotated[
+        Optional[int],
+        Field(
+            description="Indicates the health score of the RouteReflectorClient.",
+            title="Health",
+        ),
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the reason for the health score.",
+            title="Health Score Reason",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The time when the state of the resource last changed.",
+            title="Last Change",
+        ),
+    ] = None
+    numRouteReflectorClientBGPPeers: Annotated[
+        Optional[int],
+        Field(
+            description="Total number of configured route reflector peers on the route reflector client.",
+            title="Number of Route Reflector Client BGP Peers",
+        ),
+    ] = None
+    numRouteReflectorClientBGPPeersOperDown: Annotated[
+        Optional[int],
+        Field(
+            description="Total number of configured route reflector peers on the route reflector client that are operationally down.",
+            title="Number of Oper Down Route Reflector Client BGP Peers",
+        ),
+    ] = None
+    operDownRouteReflectorClientPeers: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of route reflector BGPPeers which are operationally down.",
+            title="Oper Down Route Reflector Client Peers",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(
+            description="Operational state of the RouteReflectorClient.",
+            title="Operational State",
+        ),
+    ] = None
+
+
+class RouteReflectorClientStateSpec(BaseModel):
+    """
+    RouteReflectorClientStateSpec defines the desired state of RouteReflectorClientState
+    """
+
+    defaultRouteReflectorClient: Annotated[
+        Optional[bool],
+        Field(
+            description="Denotes if the route reflector client is a DefaultRouteReflectorClient or RouteReflectorClient"
+        ),
+    ] = None
+    routeReflectorClientBGPPeers: Annotated[
+        Optional[List[str]],
+        Field(
+            description="A list of BGPPeers configured on the route reflector client to peer with route reflectors"
+        ),
+    ] = None
+
+
+RouteReflectorClientStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class RouteReflectorClientStateDeletedResources(
+    RootModel[List[RouteReflectorClientStateDeletedResourceEntry]]
+):
+    root: List[RouteReflectorClientStateDeletedResourceEntry]
+
+
+RouteReflectorClientStateMetadata = AggregateRouteMetadata
+
+
+RouteReflectorClientDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class RouteReflectorClientDeletedResources(
+    RootModel[List[RouteReflectorClientDeletedResourceEntry]]
+):
+    root: List[RouteReflectorClientDeletedResourceEntry]
+
+
+RouteReflectorClientMetadata = AggregateRouteMetadata
+
+
+class RouteReflectorStateSpec(BaseModel):
+    """
+    RouteReflectorStateSpec defines the desired state of RouteReflectorState
+    """
+
+    defaultRouteReflector: Annotated[
+        Optional[bool],
+        Field(
+            description="Denotes if the route reflector is a DefaultRouteReflector or RouteReflector"
+        ),
+    ] = None
+    routeReflectorBGPPeers: Annotated[
+        Optional[List[str]],
+        Field(
+            description="A list of BGPPeers configured on the route reflector to peer with clients"
+        ),
+    ] = None
+
+
+RouteReflectorStateDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class RouteReflectorStateDeletedResources(
+    RootModel[List[RouteReflectorStateDeletedResourceEntry]]
+):
+    root: List[RouteReflectorStateDeletedResourceEntry]
+
+
+RouteReflectorStateMetadata = AggregateRouteMetadata
+
+
+RouteReflectorDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class RouteReflectorDeletedResources(
+    RootModel[List[RouteReflectorDeletedResourceEntry]]
+):
+    root: List[RouteReflectorDeletedResourceEntry]
+
+
+RouteReflectorMetadata = AggregateRouteMetadata
+
+
+StaticRouteSpecNexthopGroupBfd = DefaultStaticRouteSpecNexthopGroupBfd
+
+
+StaticRouteSpecNexthopGroupNexthopBfd = DefaultStaticRouteSpecNexthopGroupNexthopBfd
+
+
+class StaticRouteSpecNexthopGroupNexthop(BaseModel):
+    bfd: Annotated[
+        Optional[StaticRouteSpecNexthopGroupNexthopBfd],
+        Field(
+            description="Enables BFD to the next-hops in the group. This overrides the configuration at the group.",
+            title="BFD",
+        ),
+    ] = None
+    ipPrefix: Annotated[str, Field(description="Address to use.", title="IP Prefix")]
+    resolve: Annotated[
+        Optional[bool],
+        Field(
+            description="If set to true the next-hops can be destinations which are resolved in the route table. This overrides the configuration at the group.",
+            title="Resolve",
+        ),
+    ] = False
+
+
+class StaticRouteSpecNexthopGroup(BaseModel):
+    """
+    Group of nexthops for the list of prefixes.
+    """
+
+    bfd: Annotated[
+        Optional[StaticRouteSpecNexthopGroupBfd],
+        Field(
+            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
+            title="BFD",
+        ),
+    ] = None
+    blackhole: Annotated[
+        Optional[bool],
+        Field(
+            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
+            title="Blackhole",
+        ),
+    ] = False
+    nexthops: Annotated[
+        Optional[List[StaticRouteSpecNexthopGroupNexthop]],
+        Field(description="Ordered list of nexthops.", title="Nexthops"),
+    ] = None
+    resolve: Annotated[
+        Optional[bool],
+        Field(
+            description="If set to true the next-hops can be destinations which are resolved in the route table.",
+            title="Resolve",
+        ),
+    ] = False
 
 
 class StaticRouteSpec(BaseModel):
@@ -3543,62 +3077,6 @@ class StaticRouteSpec(BaseModel):
             title="Router",
         ),
     ]
-
-
-class StaticRouteSpecNexthopGroup(BaseModel):
-    """
-    Group of nexthops for the list of prefixes.
-    """
-
-    bfd: Annotated[
-        Optional[StaticRouteSpecNexthopGroupBfd],
-        Field(
-            description="Enables BFD to the next-hops in the group. Local and Remote discriminator parameters have been deprecated at this level. Use Nexthop to set these parameters.",
-            title="BFD",
-        ),
-    ] = None
-    blackhole: Annotated[
-        Optional[bool],
-        Field(
-            description="If set to true all traffic destined to the prefixes will be blackholed.  If enabled, next-hops are ignored and this takes precedence.",
-            title="Blackhole",
-        ),
-    ] = False
-    nexthops: Annotated[
-        Optional[List[StaticRouteSpecNexthopGroupNexthop]],
-        Field(description="Ordered list of nexthops.", title="Nexthops"),
-    ] = None
-    resolve: Annotated[
-        Optional[bool],
-        Field(
-            description="If set to true the next-hops can be destinations which are resolved in the route table.",
-            title="Resolve",
-        ),
-    ] = False
-
-
-StaticRouteSpecNexthopGroupBfd = DefaultStaticRouteSpecNexthopGroupBfd
-
-
-class StaticRouteSpecNexthopGroupNexthop(BaseModel):
-    bfd: Annotated[
-        Optional[StaticRouteSpecNexthopGroupNexthopBfd],
-        Field(
-            description="Enables BFD to the next-hops in the group. This overrides the configuration at the group.",
-            title="BFD",
-        ),
-    ] = None
-    ipPrefix: Annotated[str, Field(description="Address to use.", title="IP Prefix")]
-    resolve: Annotated[
-        Optional[bool],
-        Field(
-            description="If set to true the next-hops can be destinations which are resolved in the route table. This overrides the configuration at the group.",
-            title="Resolve",
-        ),
-    ] = False
-
-
-StaticRouteSpecNexthopGroupNexthopBfd = DefaultStaticRouteSpecNexthopGroupNexthopBfd
 
 
 class StaticRouteStatus(BaseModel):
@@ -3643,6 +3121,28 @@ class StaticRouteStatus(BaseModel):
     ] = None
 
 
+StaticRouteDeletedResourceEntry = AggregateRouteDeletedResourceEntry
+
+
+class StaticRouteDeletedResources(RootModel[List[StaticRouteDeletedResourceEntry]]):
+    root: List[StaticRouteDeletedResourceEntry]
+
+
+StaticRouteMetadata = AggregateRouteMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
 class Status(BaseModel):
     apiVersion: Optional[str] = None
     details: Optional[StatusDetails] = None
@@ -3650,11 +3150,511 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class AggregateRoute(BaseModel):
+    """
+    AggregateRoute is the Schema for the aggregateroutes API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: AggregateRouteMetadata
+    spec: Annotated[
+        AggregateRouteSpec,
+        Field(
+            description="The AggregateRoute enables the configuration of aggregated routes on a specified Router. This resource allows for the definition of destination prefixes, the selection of a router, and optionally, specific nodes where the aggregate routes should be configured. Advanced options include the ability to generate ICMP unreachable messages for packets matching the aggregate route, and the ability to block the advertisement of all contributing routes in dynamic protocols like BGP.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="AggregateRouteStatus defines the observed state of AggregateRoute",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class AggregateRouteList(BaseModel):
+    """
+    AggregateRouteList is a list of aggregateroutes
+    """
+
+    apiVersion: str
+    items: Optional[List[AggregateRoute]] = None
+    kind: str
+
+
+class BGPGroup(BaseModel):
+    """
+    BGPGroup is the Schema for the bgpgroups API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BGPGroupMetadata
+    spec: Annotated[
+        BGPGroupSpec,
+        Field(
+            description="The BGPGroup enables centralized management of BGP peer configurations. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[BGPGroupStatus],
+        Field(
+            description="BGPGroupStatus defines the observed state of BGPGroup",
+            title="Status",
+        ),
+    ] = None
+
+
+class BGPGroupList(BaseModel):
+    """
+    BGPGroupList is a list of bgpgroups
+    """
+
+    apiVersion: str
+    items: Optional[List[BGPGroup]] = None
+    kind: str
+
+
+class BGPPeer(BaseModel):
+    """
+    BGPPeer is the Schema for the bgppeers API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BGPPeerMetadata
+    spec: Annotated[
+        BGPPeerSpec,
+        Field(
+            description="BGPPeer enables the configuration of BGP sessions. It allows specifying a description, an interface reference (either RoutedInterface or IrbInterface), and the peer IP address. The resource also supports dynamic neighbors, common BGP settings, and peer-specific configurations.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[BGPPeerStatus],
+        Field(
+            description="BGPPeerStatus defines the observed state of BGPPeer",
+            title="Status",
+        ),
+    ] = None
+
+
+class BGPPeerList(BaseModel):
+    """
+    BGPPeerList is a list of bgppeers
+    """
+
+    apiVersion: str
+    items: Optional[List[BGPPeer]] = None
+    kind: str
+
+
+class BGPPeerState(BaseModel):
+    """
+    BGPPeerState is the Schema for the bgppeerstates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BGPPeerStateMetadata
+    spec: Annotated[
+        BGPPeerStateSpec,
+        Field(
+            description="BGPPeerStateSpec defines the desired state of BGPPeerState",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="BGPPeerStateStatus defines the observed state of BGPPeerState",
+            title="Status",
+        ),
+    ] = None
+
+
+class BGPPeerStateList(BaseModel):
+    """
+    BGPPeerStateList is a list of bgppeerstates
+    """
+
+    apiVersion: str
+    items: Optional[List[BGPPeerState]] = None
+    kind: str
+
+
+class DefaultAggregateRoute(BaseModel):
+    """
+    DefaultAggregateRoute is the Schema for the defaultaggregateroutes API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultAggregateRouteMetadata
+    spec: Annotated[
+        DefaultAggregateRouteSpec,
+        Field(
+            description="DefaultAggregateRoute allows the configuration of aggregate routes on a DefaultRouter. It includes specifying destination prefixes, the DefaultRouter, and settings for generating ICMP unreachable messages or blocking route advertisement. Additionally, it configures the aggregator’s IP address and ASN for efficient route management.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="DefaultAggregateRouteStatus defines the observed state of DefaultAggregateRoute",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultAggregateRouteList(BaseModel):
+    """
+    DefaultAggregateRouteList is a list of defaultaggregateroutes
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultAggregateRoute]] = None
+    kind: str
+
+
+class DefaultBGPGroup(BaseModel):
+    """
+    DefaultBGPGroup is the Schema for the defaultbgpgroups API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultBGPGroupMetadata
+    spec: Annotated[
+        DefaultBGPGroupSpec,
+        Field(
+            description="The DefaultBGPGroup enables centralized management of BGP peer configurations within a DefaultRouter. This resource allows setting a description, common BGP settings, and peer-specific configurations, simplifying the consistent application of policies across multiple peers. It also includes transport settings, such as local TCP address configuration, passive mode, and TCP MSS. type DefaultBGPGroupSpec struct {",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultBGPGroupStatus],
+        Field(
+            description="DefaultBGPGroupStatus defines the observed state of DefaultBGPGroup.",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultBGPGroupList(BaseModel):
+    """
+    DefaultBGPGroupList is a list of defaultbgpgroups
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultBGPGroup]] = None
+    kind: str
+
+
+class DefaultBGPPeer(BaseModel):
+    """
+    DefaultBGPPeer is the Schema for the defaultbgppeers API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultBGPPeerMetadata
+    spec: Annotated[
+        DefaultBGPPeerSpec,
+        Field(
+            description="DefaultBGPPeer enables the configuration of BGP sessions within a DefaultRouter. It allows specifying a description, a DefaultInterface reference, and the peer IP address. The resource also supports dynamic neighbors, common BGP settings, and peer-specific configurations.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultBGPPeerStatus],
+        Field(
+            description="DefaultBGPPeerStatus defines the observed state of DefaultBGPPeer",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultBGPPeerList(BaseModel):
+    """
+    DefaultBGPPeerList is a list of defaultbgppeers
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultBGPPeer]] = None
+    kind: str
+
+
+class DefaultRouteReflector(BaseModel):
+    """
+    DefaultRouteReflector is the Schema for the defaultroutereflectors API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultRouteReflectorMetadata
+    spec: Annotated[
+        DefaultRouteReflectorSpec,
+        Field(
+            description="DefaultRouteReflector enables the configuration of iBGP sessions to RouteReflectorClients. It includes settings for the DefaultInterface, BGP group, client selectors, and the Cluster ID. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultRouteReflectorStatus],
+        Field(
+            description="DefaultRouteReflectorStatus defines the observed state of DefaultRouteReflector",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultRouteReflectorClient(BaseModel):
+    """
+    DefaultRouteReflectorClient is the Schema for the defaultroutereflectorclients API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultRouteReflectorClientMetadata
+    spec: Annotated[
+        DefaultRouteReflectorClientSpec,
+        Field(
+            description="DefaultRouteReflectorClient enables the configuration of iBGP sessions from a client to RouteReflectors. It includes settings for the DefaultInterface, BGP group, client selectors, and a list of Route Reflector IPs. Additionally, it allows for the configuration of L2VPN EVPN settings and applies common BGP configuration settings to manage routing efficiently within the network.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultRouteReflectorClientStatus],
+        Field(
+            description="DefaultRouteReflectorClientStatus defines the observed state of DefaultRouteReflectorClient",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultRouteReflectorClientList(BaseModel):
+    """
+    DefaultRouteReflectorClientList is a list of defaultroutereflectorclients
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultRouteReflectorClient]] = None
+    kind: str
+
+
+class DefaultRouteReflectorList(BaseModel):
+    """
+    DefaultRouteReflectorList is a list of defaultroutereflectors
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultRouteReflector]] = None
+    kind: str
+
+
+class DefaultStaticRoute(BaseModel):
+    """
+    DefaultStaticRoute is the Schema for the defaultstaticroutes API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DefaultStaticRouteMetadata
+    spec: Annotated[
+        DefaultStaticRouteSpec,
+        Field(
+            description="DefaultStaticRoute enables the configuration of static routes within a DefaultRouter. It allows specifying destination prefixes, route preference, and a nexthop group. This resource facilitates precise control over routing behavior, including options for BFD, route resolution, and blackholing traffic.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DefaultStaticRouteStatus],
+        Field(
+            description="DefaultStaticRouteStatus defines the observed state of default static route",
+            title="Status",
+        ),
+    ] = None
+
+
+class DefaultStaticRouteList(BaseModel):
+    """
+    DefaultStaticRouteList is a list of defaultstaticroutes
+    """
+
+    apiVersion: str
+    items: Optional[List[DefaultStaticRoute]] = None
+    kind: str
+
+
+class RouteReflector(BaseModel):
+    """
+    RouteReflector is the Schema for the routereflectors API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RouteReflectorMetadata
+    spec: Annotated[
+        RouteReflectorSpec,
+        Field(
+            description="RouteReflector enables the configuration of iBGP sessions with RouteReflectorClients. It includes settings for selecting Interfaces, client selectors for IPv4 and IPv6, and the option to specify a BGP group and cluster ID.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RouteReflectorStatus],
+        Field(
+            description="RouteReflectorStatus defines the observed state of RouteReflector",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouteReflectorClient(BaseModel):
+    """
+    RouteReflectorClient is the Schema for the routereflectorclients API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RouteReflectorClientMetadata
+    spec: Annotated[
+        RouteReflectorClientSpec,
+        Field(
+            description="RouteReflectorClient manages the configuration of iBGP sessions between a client and RouteReflectors. This resource allows you to specify the Interface for BGP sessions, set selectors for RouteReflectors, and configure common BGP settings.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RouteReflectorClientStatus],
+        Field(
+            description="RouteReflectorClientStatus defines the observed state of RouteReflectorClient",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouteReflectorClientList(BaseModel):
+    """
+    RouteReflectorClientList is a list of routereflectorclients
+    """
+
+    apiVersion: str
+    items: Optional[List[RouteReflectorClient]] = None
+    kind: str
+
+
+class RouteReflectorClientState(BaseModel):
+    """
+    RouteReflectorClientState is the Schema for the routereflectorclientstates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RouteReflectorClientStateMetadata
+    spec: Annotated[
+        RouteReflectorClientStateSpec,
+        Field(
+            description="RouteReflectorClientStateSpec defines the desired state of RouteReflectorClientState",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="RouteReflectorClientStateStatus defines the observed state of RouteReflectorClientState",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouteReflectorClientStateList(BaseModel):
+    """
+    RouteReflectorClientStateList is a list of routereflectorclientstates
+    """
+
+    apiVersion: str
+    items: Optional[List[RouteReflectorClientState]] = None
+    kind: str
+
+
+class RouteReflectorList(BaseModel):
+    """
+    RouteReflectorList is a list of routereflectors
+    """
+
+    apiVersion: str
+    items: Optional[List[RouteReflector]] = None
+    kind: str
+
+
+class RouteReflectorState(BaseModel):
+    """
+    RouteReflectorState is the Schema for the routereflectorstates API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RouteReflectorStateMetadata
+    spec: Annotated[
+        RouteReflectorStateSpec,
+        Field(
+            description="RouteReflectorStateSpec defines the desired state of RouteReflectorState",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="RouteReflectorStateStatus defines the observed state of RouteReflectorState",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouteReflectorStateList(BaseModel):
+    """
+    RouteReflectorStateList is a list of routereflectorstates
+    """
+
+    apiVersion: str
+    items: Optional[List[RouteReflectorState]] = None
+    kind: str
+
+
+class StaticRoute(BaseModel):
+    """
+    StaticRoute is the Schema for the staticroutes API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: StaticRouteMetadata
+    spec: Annotated[
+        StaticRouteSpec,
+        Field(
+            description="StaticRoute allows for the specification of destination prefixes, route preferences, and the associated Router. It also supports configuring nexthop groups and specifying the nodes where the static routes should be provisioned.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[StaticRouteStatus],
+        Field(
+            description="StaticRouteStatus defines the observed state of Static Route",
+            title="Status",
+        ),
+    ] = None
+
+
+class StaticRouteList(BaseModel):
+    """
+    StaticRouteList is a list of staticroutes
+    """
+
+    apiVersion: str
+    items: Optional[List[StaticRoute]] = None
+    kind: str

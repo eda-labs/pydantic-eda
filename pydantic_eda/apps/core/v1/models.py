@@ -7,517 +7,9 @@ from pydantic import BaseModel, Field, RootModel, SecretStr
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class ClusterRole(BaseModel):
-    """
-    ClusterRole is the Schema for the clusterroles API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: ClusterRoleMetadata
-    spec: Annotated[
-        ClusterRoleSpec,
-        Field(
-            description="ClusterRole defines a set of permissions to access EDA resources.\nClusterRoles and users are bound via groups, selecting a set of users and a set of ClusterRoles to bind.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="RoleStatus defines the observed state of Role", title="Status"
-        ),
-    ] = None
-
-
-class ClusterRoleDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ClusterRoleDeletedResources(RootModel[List[ClusterRoleDeletedResourceEntry]]):
-    root: List[ClusterRoleDeletedResourceEntry]
-
-
-class ClusterRoleList(BaseModel):
-    """
-    ClusterRoleList is a list of clusterroles
-    """
-
-    apiVersion: str
-    items: Optional[List[ClusterRole]] = None
-    kind: str
-
-
-class ClusterRoleMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-
-
-class ClusterRoleSpec(BaseModel):
-    """
-    ClusterRole defines a set of permissions to access EDA resources.
-    ClusterRoles and users are bound via groups, selecting a set of users and a set of ClusterRoles to bind.
-    """
-
-    description: Annotated[
-        Optional[str],
-        Field(description="A description for the role.", title="Description"),
-    ] = None
-    resourceRules: Annotated[
-        Optional[List[ClusterRoleSpecResourceRule]],
-        Field(description="Rules for access to resources.", title="Resource Rules"),
-    ] = None
-    tableRules: Annotated[
-        Optional[List[ClusterRoleSpecTableRule]],
-        Field(
-            description="Rules for access to EDB tables, including via EQL.",
-            title="Table Rules",
-        ),
-    ] = None
-    urlRules: Annotated[
-        Optional[List[ClusterRoleSpecUrlRule]],
-        Field(
-            description="Rules for access to APIServer proxied routes.",
-            title="URL Rules",
-        ),
-    ] = None
-
-
-class ClusterRoleSpecResourceRule(BaseModel):
-    """
-    A role rule controlling access to a kubernetes resource.
-    """
-
-    apiGroups: Annotated[
-        List[ClusterRoleSpecResourceRuleApiGroup],
-        Field(
-            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.',
-            min_length=1,
-            title="API Groups",
-        ),
-    ]
-    permissions: Annotated[
-        Literal["none", "read", "readWrite"],
-        Field(
-            description="Permissions for resources specified by the rule.",
-            title="Permissions",
-        ),
-    ]
-    resources: Annotated[
-        List[ClusterRoleSpecResourceRuleResource],
-        Field(
-            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.',
-            min_length=1,
-            title="Resources",
-        ),
-    ]
-
-
-class ClusterRoleSpecResourceRuleApiGroup(RootModel[str]):
-    root: Annotated[str, Field(min_length=1)]
-
-
-class ClusterRoleSpecResourceRuleResource(ClusterRoleSpecResourceRuleApiGroup):
-    pass
-
-
-class ClusterRoleSpecTableRule(BaseModel):
-    """
-    A role rule controlling access to a EDB table.  Note that
-    there is never write access to EDB.
-    """
-
-    path: Annotated[
-        str,
-        Field(
-            description='EDB path to which this rule applies. It can end in ".*"\nin which case the final portion of the table path can be anything, if the\nprefix matches. It can end in ".**" in which case the table path can be\nanything if the prefix matches.',
-            min_length=1,
-            pattern="^\\..*",
-            title="Path",
-        ),
-    ]
-    permissions: Annotated[
-        Literal["none", "read"],
-        Field(description="Permissions for the given EDB path.", title="Permissions"),
-    ]
-
-
-class ClusterRoleSpecUrlRule(BaseModel):
-    """
-    A role rule controlling access to an API server proxy.
-    """
-
-    path: Annotated[
-        str,
-        Field(
-            description='The API server URL path to which this rule applies. It can end in "/*"\nin which case the final portion of the URL path can be anything, if the\nprefix matches. It can end in "/**" in which case the URL path can be\nanything if the prefix matches.',
-            min_length=1,
-            pattern="^/.*",
-            title="Path",
-        ),
-    ]
-    permissions: Annotated[
-        Literal["none", "read", "readWrite"],
-        Field(
-            description="The permissions for the API server URL for the rule.",
-            title="Permissions",
-        ),
-    ]
-
-
-class Deviation(BaseModel):
-    """
-    Deviation is the Schema for the deviations API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DeviationMetadata
-    spec: Annotated[
-        DeviationSpec,
-        Field(
-            description="Deviations are used to represent differences between the intended and actual state of a target.\nThey indicate the intended state - or the computed configuration EDA expects, and compare this to the actual or running state, or the configuration retrieved from the target.\nDeviations are most often generated by out-of-band changes to a target by an external system or user, and\ncan be accepted or rejected. Rejecting a Deviation will result in the intended configuration being re-applied, undoing the out-of-band change.\nDeviations are raised per table, meaning a single change on a target may result in more than one Deviation.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="DeviationStatus defines the observed state of Deviation",
-            title="Status",
-        ),
-    ] = None
-
-
-class DeviationAction(BaseModel):
-    """
-    DeviationAction is the Schema for the deviationactions API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DeviationActionMetadata
-    spec: Annotated[
-        DeviationActionSpec,
-        Field(
-            description="DeviationAction allows manual and API-driven actions to be performed on Deviation resources.\nThey are the only means to which and end user can accept or reject deviations, as Deviation resources themselves are read only.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DeviationActionStatus],
-        Field(
-            description="DeviationActionStatus defines the observed state of DeviationAction",
-            title="Status",
-        ),
-    ] = None
-
-
-class DeviationActionDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class DeviationActionDeletedResources(
-    RootModel[List[DeviationActionDeletedResourceEntry]]
-):
-    root: List[DeviationActionDeletedResourceEntry]
-
-
-class DeviationActionList(BaseModel):
-    """
-    DeviationActionList is a list of deviationactions
-    """
-
-    apiVersion: str
-    items: Optional[List[DeviationAction]] = None
-    kind: str
-
-
-class DeviationActionMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class DeviationActionSpec(BaseModel):
-    """
-    DeviationAction allows manual and API-driven actions to be performed on Deviation resources.
-    They are the only means to which and end user can accept or reject deviations, as Deviation resources themselves are read only.
-    """
-
-    actions: Annotated[
-        List[DeviationActionSpecAction],
-        Field(
-            description="The set of actions to perform on the target.", title="Actions"
-        ),
-    ]
-    nodeEndpoint: Annotated[
-        str,
-        Field(
-            description="The target on which this action is to be performed.",
-            title="Target",
-        ),
-    ]
-
-
-class DeviationActionSpecAction(BaseModel):
-    action: Annotated[
-        Literal["setAccept", "clearAccept", "reject"],
-        Field(description="Action to perform on matching Deviations.", title="Action"),
-    ]
-    path: Annotated[
-        str,
-        Field(
-            description="Path to match Deviation resources on this target. Only one action is allowed per path.",
-            title="Path",
-        ),
-    ]
-    recurse: Annotated[
-        Optional[bool],
-        Field(
-            description="Recursively accept/reject Deviations from the specified path.",
-            title="Recurse",
-        ),
-    ] = None
-
-
-class DeviationActionStatus(BaseModel):
-    """
-    DeviationActionStatus defines the observed state of DeviationAction
-    """
-
-    result: Annotated[
-        Optional[Literal["OK", "Failed"]],
-        Field(description="The result of the set of actions.", title="Result"),
-    ] = None
-    transactionId: Annotated[
-        Optional[int],
-        Field(
-            description="The transaction id these actions were part of.",
-            title="Transaction Id",
-        ),
-    ] = None
-
-
-class DeviationList(BaseModel):
-    """
-    DeviationList is a list of deviations
-    """
-
-    apiVersion: str
-    items: Optional[List[Deviation]] = None
-    kind: str
-
-
-DeviationMetadata = DeviationActionMetadata
-
-
-class DeviationSpec(BaseModel):
-    """
-    Deviations are used to represent differences between the intended and actual state of a target.
-    They indicate the intended state - or the computed configuration EDA expects, and compare this to the actual or running state, or the configuration retrieved from the target.
-    Deviations are most often generated by out-of-band changes to a target by an external system or user, and
-    can be accepted or rejected. Rejecting a Deviation will result in the intended configuration being re-applied, undoing the out-of-band change.
-    Deviations are raised per table, meaning a single change on a target may result in more than one Deviation.
-    """
-
-    accepted: Annotated[
-        Optional[bool],
-        Field(
-            description="Indicates whether this Deviation has been accepted.",
-            title="Accepted",
-        ),
-    ] = None
-    associatedCrs: Annotated[
-        Optional[List[DeviationSpecAssociatedCr]],
-        Field(
-            description="Resources impacted by this Deviation.",
-            title="Associated Resources",
-        ),
-    ] = None
-    intendedValues: Annotated[
-        Optional[str],
-        Field(
-            description="JSON object containing intended values of fields at the specified path.",
-            title="Intended Values",
-        ),
-    ] = None
-    nodeEndpoint: Annotated[
-        str,
-        Field(description="Target on which this Deviation is present.", title="Target"),
-    ]
-    operation: Annotated[
-        Literal["create", "delete"],
-        Field(
-            description="Indicates the operation in this Deviation.", title="Operation"
-        ),
-    ]
-    path: Annotated[
-        str,
-        Field(
-            description='Path on the target this Deviation is present at. This path is relative to the target\'s root, without any EDA prefixes - for example ".system" rather than ".namespace.node.srl.system".',
-            title="Path",
-        ),
-    ]
-    runningValues: Annotated[
-        Optional[str],
-        Field(
-            description="JSON object containing running values of fields at the specified path.",
-            title="Running Values",
-        ),
-    ] = None
-
-
-class DeviationSpecAssociatedCr(BaseModel):
-    groupVersion: Annotated[
-        str,
-        Field(
-            description="Group and version of the resource.", title="Group + Version"
-        ),
-    ]
-    kind: Annotated[str, Field(description="Kind of the resource.", title="Kind")]
-    name: Annotated[str, Field(description="Name of the resource.", title="Name")]
-
-
-class EdgeInterface(BaseModel):
-    """
-    EdgeInterface is the Schema for the edgeinterfaces API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: EdgeInterfaceMetadata
-    spec: Annotated[
-        EdgeInterfaceSpec,
-        Field(
-            description="EdgeInterfaceSpec defines the desired state of EdgeInterface",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="EdgeInterfaceStatus defines the observed state of EdgeInterface",
-            title="Status",
-        ),
-    ] = None
-
-
-EdgeInterfaceDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class EdgeInterfaceDeletedResources(RootModel[List[EdgeInterfaceDeletedResourceEntry]]):
-    root: List[EdgeInterfaceDeletedResourceEntry]
-
-
-class EdgeInterfaceList(BaseModel):
-    """
-    EdgeInterfaceList is a list of edgeinterfaces
-    """
-
-    apiVersion: str
-    items: Optional[List[EdgeInterface]] = None
-    kind: str
-
-
-EdgeInterfaceMetadata = DeviationActionMetadata
-
-
-class EdgeInterfaceSpec(BaseModel):
-    """
-    EdgeInterfaceSpec defines the desired state of EdgeInterface
-    """
-
-    bridgeDomain: Annotated[
-        Optional[str],
-        Field(description="Reference to a Bridge Domain", title="bridgeDomain"),
-    ] = None
-    encapType: Annotated[
-        Literal["null", "dot1q"],
-        Field(
-            description="Indicates if the EdgeInterface uses VLAN tagging",
-            title="Encapsulation",
-        ),
-    ]
-    gatewayIPV4Addresses: Annotated[
-        Optional[List[EdgeInterfaceSpecGatewayIPV4Address]],
-        Field(
-            description="List of gateway IPv4 addresses in ip/mask form - e.g. 192.168.0.1/24",
-            title="Gateway IPv4 Addresses",
-        ),
-    ] = None
-    gatewayIPV6Addresses: Annotated[
-        Optional[List[EdgeInterfaceSpecGatewayIPV6Address]],
-        Field(
-            description="List of gateway IPv6 addresses in ip/mask form - e.g. fc00::1/120",
-            title="Gateway IPv6 Addresses",
-        ),
-    ] = None
-    interfaceResource: Annotated[
-        str, Field(description="Reference to an interface", title="Interface Resource")
-    ]
-    router: Annotated[
-        Optional[str], Field(description="Reference to a Router", title="Router")
-    ] = None
-    vlanID: Annotated[
-        Optional[int],
-        Field(
-            description="Single value between 0-4094 supported",
-            ge=0,
-            le=4094,
-            title="VLAN ID",
-        ),
-    ] = None
-
-
-class EdgeInterfaceSpecGatewayIPV4Address(BaseModel):
-    ipPrefix: Annotated[
-        str, Field(description="Address and mask to use", title="IP Prefix")
-    ]
-    primary: Annotated[
-        Optional[bool],
-        Field(
-            description="Indicates which address to use as primary for broadcast",
-            title="Primary",
-        ),
-    ] = None
-
-
-EdgeInterfaceSpecGatewayIPV6Address = EdgeInterfaceSpecGatewayIPV4Address
 
 
 class ErrorIndex(BaseModel):
@@ -576,48 +68,416 @@ class ErrorResponse(BaseModel):
     ] = None
 
 
-class HttpProxy(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class ClusterRoleSpecResourceRuleApiGroup(RootModel[str]):
+    root: Annotated[str, Field(min_length=1)]
+
+
+class ClusterRoleSpecResourceRuleResource(ClusterRoleSpecResourceRuleApiGroup):
+    pass
+
+
+class ClusterRoleSpecResourceRule(BaseModel):
     """
-    HttpProxy is the Schema for the httpproxies API
+    A role rule controlling access to a kubernetes resource.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: HttpProxyMetadata
-    spec: Annotated[
-        HttpProxySpec,
+    apiGroups: Annotated[
+        List[ClusterRoleSpecResourceRuleApiGroup],
         Field(
-            description="HttpProxySpec defines the desired state of HttpProxy",
-            title="Specification",
+            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.',
+            min_length=1,
+            title="API Groups",
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    permissions: Annotated[
+        Literal["none", "read", "readWrite"],
         Field(
-            description="HttpProxyStatus defines the observed state of HttpProxy",
-            title="Status",
+            description="Permissions for resources specified by the rule.",
+            title="Permissions",
+        ),
+    ]
+    resources: Annotated[
+        List[ClusterRoleSpecResourceRuleResource],
+        Field(
+            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.',
+            min_length=1,
+            title="Resources",
+        ),
+    ]
+
+
+class ClusterRoleSpecTableRule(BaseModel):
+    """
+    A role rule controlling access to a EDB table.  Note that
+    there is never write access to EDB.
+    """
+
+    path: Annotated[
+        str,
+        Field(
+            description='EDB path to which this rule applies. It can end in ".*"\nin which case the final portion of the table path can be anything, if the\nprefix matches. It can end in ".**" in which case the table path can be\nanything if the prefix matches.',
+            min_length=1,
+            pattern="^\\..*",
+            title="Path",
+        ),
+    ]
+    permissions: Annotated[
+        Literal["none", "read"],
+        Field(description="Permissions for the given EDB path.", title="Permissions"),
+    ]
+
+
+class ClusterRoleSpecUrlRule(BaseModel):
+    """
+    A role rule controlling access to an API server proxy.
+    """
+
+    path: Annotated[
+        str,
+        Field(
+            description='The API server URL path to which this rule applies. It can end in "/*"\nin which case the final portion of the URL path can be anything, if the\nprefix matches. It can end in "/**" in which case the URL path can be\nanything if the prefix matches.',
+            min_length=1,
+            pattern="^/.*",
+            title="Path",
+        ),
+    ]
+    permissions: Annotated[
+        Literal["none", "read", "readWrite"],
+        Field(
+            description="The permissions for the API server URL for the rule.",
+            title="Permissions",
+        ),
+    ]
+
+
+class ClusterRoleSpec(BaseModel):
+    """
+    ClusterRole defines a set of permissions to access EDA resources.
+    ClusterRoles and users are bound via groups, selecting a set of users and a set of ClusterRoles to bind.
+    """
+
+    description: Annotated[
+        Optional[str],
+        Field(description="A description for the role.", title="Description"),
+    ] = None
+    resourceRules: Annotated[
+        Optional[List[ClusterRoleSpecResourceRule]],
+        Field(description="Rules for access to resources.", title="Resource Rules"),
+    ] = None
+    tableRules: Annotated[
+        Optional[List[ClusterRoleSpecTableRule]],
+        Field(
+            description="Rules for access to EDB tables, including via EQL.",
+            title="Table Rules",
+        ),
+    ] = None
+    urlRules: Annotated[
+        Optional[List[ClusterRoleSpecUrlRule]],
+        Field(
+            description="Rules for access to APIServer proxied routes.",
+            title="URL Rules",
         ),
     ] = None
 
 
-HttpProxyDeletedResourceEntry = ClusterRoleDeletedResourceEntry
+class ClusterRoleDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class HttpProxyDeletedResources(RootModel[List[HttpProxyDeletedResourceEntry]]):
-    root: List[HttpProxyDeletedResourceEntry]
+class ClusterRoleDeletedResources(RootModel[List[ClusterRoleDeletedResourceEntry]]):
+    root: List[ClusterRoleDeletedResourceEntry]
 
 
-class HttpProxyList(BaseModel):
+class ClusterRoleMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+
+
+class DeviationSpecAssociatedCr(BaseModel):
+    groupVersion: Annotated[
+        str,
+        Field(
+            description="Group and version of the resource.", title="Group + Version"
+        ),
+    ]
+    kind: Annotated[str, Field(description="Kind of the resource.", title="Kind")]
+    name: Annotated[str, Field(description="Name of the resource.", title="Name")]
+
+
+class DeviationSpec(BaseModel):
     """
-    HttpProxyList is a list of httpproxies
+    Deviations are used to represent differences between the intended and actual state of a target.
+    They indicate the intended state - or the computed configuration EDA expects, and compare this to the actual or running state, or the configuration retrieved from the target.
+    Deviations are most often generated by out-of-band changes to a target by an external system or user, and
+    can be accepted or rejected. Rejecting a Deviation will result in the intended configuration being re-applied, undoing the out-of-band change.
+    Deviations are raised per table, meaning a single change on a target may result in more than one Deviation.
     """
 
-    apiVersion: str
-    items: Optional[List[HttpProxy]] = None
-    kind: str
+    accepted: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates whether this Deviation has been accepted.",
+            title="Accepted",
+        ),
+    ] = None
+    associatedCrs: Annotated[
+        Optional[List[DeviationSpecAssociatedCr]],
+        Field(
+            description="Resources impacted by this Deviation.",
+            title="Associated Resources",
+        ),
+    ] = None
+    intendedValues: Annotated[
+        Optional[str],
+        Field(
+            description="JSON object containing intended values of fields at the specified path.",
+            title="Intended Values",
+        ),
+    ] = None
+    nodeEndpoint: Annotated[
+        str,
+        Field(description="Target on which this Deviation is present.", title="Target"),
+    ]
+    operation: Annotated[
+        Literal["create", "delete"],
+        Field(
+            description="Indicates the operation in this Deviation.", title="Operation"
+        ),
+    ]
+    path: Annotated[
+        str,
+        Field(
+            description='Path on the target this Deviation is present at. This path is relative to the target\'s root, without any EDA prefixes - for example ".system" rather than ".namespace.node.srl.system".',
+            title="Path",
+        ),
+    ]
+    runningValues: Annotated[
+        Optional[str],
+        Field(
+            description="JSON object containing running values of fields at the specified path.",
+            title="Running Values",
+        ),
+    ] = None
 
 
-HttpProxyMetadata = ClusterRoleMetadata
+class DeviationActionSpecAction(BaseModel):
+    action: Annotated[
+        Literal["setAccept", "clearAccept", "reject"],
+        Field(description="Action to perform on matching Deviations.", title="Action"),
+    ]
+    path: Annotated[
+        str,
+        Field(
+            description="Path to match Deviation resources on this target. Only one action is allowed per path.",
+            title="Path",
+        ),
+    ]
+    recurse: Annotated[
+        Optional[bool],
+        Field(
+            description="Recursively accept/reject Deviations from the specified path.",
+            title="Recurse",
+        ),
+    ] = None
+
+
+class DeviationActionSpec(BaseModel):
+    """
+    DeviationAction allows manual and API-driven actions to be performed on Deviation resources.
+    They are the only means to which and end user can accept or reject deviations, as Deviation resources themselves are read only.
+    """
+
+    actions: Annotated[
+        List[DeviationActionSpecAction],
+        Field(
+            description="The set of actions to perform on the target.", title="Actions"
+        ),
+    ]
+    nodeEndpoint: Annotated[
+        str,
+        Field(
+            description="The target on which this action is to be performed.",
+            title="Target",
+        ),
+    ]
+
+
+class DeviationActionStatus(BaseModel):
+    """
+    DeviationActionStatus defines the observed state of DeviationAction
+    """
+
+    result: Annotated[
+        Optional[Literal["OK", "Failed"]],
+        Field(description="The result of the set of actions.", title="Result"),
+    ] = None
+    transactionId: Annotated[
+        Optional[int],
+        Field(
+            description="The transaction id these actions were part of.",
+            title="Transaction Id",
+        ),
+    ] = None
+
+
+class DeviationActionDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class DeviationActionDeletedResources(
+    RootModel[List[DeviationActionDeletedResourceEntry]]
+):
+    root: List[DeviationActionDeletedResourceEntry]
+
+
+class DeviationActionMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+DeviationMetadata = DeviationActionMetadata
+
+
+class EdgeInterfaceSpecGatewayIPV4Address(BaseModel):
+    ipPrefix: Annotated[
+        str, Field(description="Address and mask to use", title="IP Prefix")
+    ]
+    primary: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates which address to use as primary for broadcast",
+            title="Primary",
+        ),
+    ] = None
+
+
+EdgeInterfaceSpecGatewayIPV6Address = EdgeInterfaceSpecGatewayIPV4Address
+
+
+class EdgeInterfaceSpec(BaseModel):
+    """
+    EdgeInterfaceSpec defines the desired state of EdgeInterface
+    """
+
+    bridgeDomain: Annotated[
+        Optional[str],
+        Field(description="Reference to a Bridge Domain", title="bridgeDomain"),
+    ] = None
+    encapType: Annotated[
+        Literal["null", "dot1q"],
+        Field(
+            description="Indicates if the EdgeInterface uses VLAN tagging",
+            title="Encapsulation",
+        ),
+    ]
+    gatewayIPV4Addresses: Annotated[
+        Optional[List[EdgeInterfaceSpecGatewayIPV4Address]],
+        Field(
+            description="List of gateway IPv4 addresses in ip/mask form - e.g. 192.168.0.1/24",
+            title="Gateway IPv4 Addresses",
+        ),
+    ] = None
+    gatewayIPV6Addresses: Annotated[
+        Optional[List[EdgeInterfaceSpecGatewayIPV6Address]],
+        Field(
+            description="List of gateway IPv6 addresses in ip/mask form - e.g. fc00::1/120",
+            title="Gateway IPv6 Addresses",
+        ),
+    ] = None
+    interfaceResource: Annotated[
+        str, Field(description="Reference to an interface", title="Interface Resource")
+    ]
+    router: Annotated[
+        Optional[str], Field(description="Reference to a Router", title="Router")
+    ] = None
+    vlanID: Annotated[
+        Optional[int],
+        Field(
+            description="Single value between 0-4094 supported",
+            ge=0,
+            le=4094,
+            title="VLAN ID",
+        ),
+    ] = None
+
+
+EdgeInterfaceDeletedResourceEntry = DeviationActionDeletedResourceEntry
+
+
+class EdgeInterfaceDeletedResources(RootModel[List[EdgeInterfaceDeletedResourceEntry]]):
+    root: List[EdgeInterfaceDeletedResourceEntry]
+
+
+EdgeInterfaceMetadata = DeviationActionMetadata
 
 
 class HttpProxySpec(BaseModel):
@@ -640,50 +500,44 @@ class HttpProxySpec(BaseModel):
     ]
 
 
-class IPAllocationPool(BaseModel):
-    """
-    IPAllocationPool is the Schema for the ipallocationpools API
-    """
+HttpProxyDeletedResourceEntry = ClusterRoleDeletedResourceEntry
 
-    apiVersion: str
-    kind: str
-    metadata: IPAllocationPoolMetadata
-    spec: Annotated[
-        IPAllocationPoolSpec,
+
+class HttpProxyDeletedResources(RootModel[List[HttpProxyDeletedResourceEntry]]):
+    root: List[HttpProxyDeletedResourceEntry]
+
+
+HttpProxyMetadata = ClusterRoleMetadata
+
+
+class IPAllocationPoolSpecSegmentAllocation(BaseModel):
+    name: Annotated[str, Field(description="Name of this allocation.", title="Name")]
+    value: Annotated[str, Field(description="Allocation to reserve.", title="Value")]
+
+
+class IPAllocationPoolSpecSegmentReservation(BaseModel):
+    end: Annotated[str, Field(description="Value to reserve to.", title="End")]
+    start: Annotated[str, Field(description="Value to start reserving.", title="Start")]
+
+
+class IPAllocationPoolSpecSegment(BaseModel):
+    allocations: Annotated[
+        Optional[List[IPAllocationPoolSpecSegmentAllocation]],
         Field(
-            description="IPAllocationPool is a generic IP allocation pool supporting allocation of IPv4 and/or IPv6 addresses from a set of segments.\nIt is different from IPInSubnetAllocationPool in that it returns a single unzoned IP address, i.e. an IP address without a subnet. For example a 10.1.1.0/24 segment could return 10.1.1.1.\nConsult application documentation to know which pool type to use for a given use case.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="IPAllocationPoolStatus defines the observed state of IPAllocationPool",
-            title="Status",
+            description="List of reservations to exclude from allocations from this segment.",
+            title="Allocations",
         ),
     ] = None
-
-
-IPAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class IPAllocationPoolDeletedResources(
-    RootModel[List[IPAllocationPoolDeletedResourceEntry]]
-):
-    root: List[IPAllocationPoolDeletedResourceEntry]
-
-
-class IPAllocationPoolList(BaseModel):
-    """
-    IPAllocationPoolList is a list of ipallocationpools
-    """
-
-    apiVersion: str
-    items: Optional[List[IPAllocationPool]] = None
-    kind: str
-
-
-IPAllocationPoolMetadata = DeviationActionMetadata
+    reservations: Annotated[
+        Optional[List[IPAllocationPoolSpecSegmentReservation]],
+        Field(
+            description="List of ranges to exclude from allocations from this segment.",
+            title="Reservations",
+        ),
+    ] = None
+    subnet: Annotated[
+        str, Field(description="IPv4 or IPv6 subnet, e.g. 10.1.1.0/24.", title="Subnet")
+    ]
 
 
 class IPAllocationPoolSpec(BaseModel):
@@ -710,16 +564,34 @@ class IPAllocationPoolSpec(BaseModel):
     ]
 
 
-class IPAllocationPoolSpecSegment(BaseModel):
+IPAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
+
+
+class IPAllocationPoolDeletedResources(
+    RootModel[List[IPAllocationPoolDeletedResourceEntry]]
+):
+    root: List[IPAllocationPoolDeletedResourceEntry]
+
+
+IPAllocationPoolMetadata = DeviationActionMetadata
+
+
+IPInSubnetAllocationPoolSpecSegmentAllocation = IPAllocationPoolSpecSegmentAllocation
+
+
+IPInSubnetAllocationPoolSpecSegmentReservation = IPAllocationPoolSpecSegmentReservation
+
+
+class IPInSubnetAllocationPoolSpecSegment(BaseModel):
     allocations: Annotated[
-        Optional[List[IPAllocationPoolSpecSegmentAllocation]],
+        Optional[List[IPInSubnetAllocationPoolSpecSegmentAllocation]],
         Field(
             description="List of reservations to exclude from allocations from this segment.",
             title="Allocations",
         ),
     ] = None
     reservations: Annotated[
-        Optional[List[IPAllocationPoolSpecSegmentReservation]],
+        Optional[List[IPInSubnetAllocationPoolSpecSegmentReservation]],
         Field(
             description="List of ranges to exclude from allocations from this segment.",
             title="Reservations",
@@ -728,62 +600,6 @@ class IPAllocationPoolSpecSegment(BaseModel):
     subnet: Annotated[
         str, Field(description="IPv4 or IPv6 subnet, e.g. 10.1.1.0/24.", title="Subnet")
     ]
-
-
-class IPAllocationPoolSpecSegmentAllocation(BaseModel):
-    name: Annotated[str, Field(description="Name of this allocation.", title="Name")]
-    value: Annotated[str, Field(description="Allocation to reserve.", title="Value")]
-
-
-class IPAllocationPoolSpecSegmentReservation(BaseModel):
-    end: Annotated[str, Field(description="Value to reserve to.", title="End")]
-    start: Annotated[str, Field(description="Value to start reserving.", title="Start")]
-
-
-class IPInSubnetAllocationPool(BaseModel):
-    """
-    IPInSubnetAllocationPool is the Schema for the ipinsubnetallocationpools API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: IPInSubnetAllocationPoolMetadata
-    spec: Annotated[
-        IPInSubnetAllocationPoolSpec,
-        Field(
-            description="IPInSubnetAllocationPool is a generic IP allocation pool supporting allocation of IPv4 and/or IPv6 addresses from a set of segments.\nIt is different from IPAllocationPool in that it returns a single zoned IP address, i.e. an IP address with a subnet. For example a 10.1.1.0/24 segment could return 10.1.1.1/24.\nConsult application documentation to know which pool type to use for a given use case.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="IPInSubnetAllocationPoolStatus defines the observed state of IPInSubnetAllocationPool",
-            title="Status",
-        ),
-    ] = None
-
-
-IPInSubnetAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class IPInSubnetAllocationPoolDeletedResources(
-    RootModel[List[IPInSubnetAllocationPoolDeletedResourceEntry]]
-):
-    root: List[IPInSubnetAllocationPoolDeletedResourceEntry]
-
-
-class IPInSubnetAllocationPoolList(BaseModel):
-    """
-    IPInSubnetAllocationPoolList is a list of ipinsubnetallocationpools
-    """
-
-    apiVersion: str
-    items: Optional[List[IPInSubnetAllocationPool]] = None
-    kind: str
-
-
-IPInSubnetAllocationPoolMetadata = DeviationActionMetadata
 
 
 class IPInSubnetAllocationPoolSpec(BaseModel):
@@ -810,99 +626,26 @@ class IPInSubnetAllocationPoolSpec(BaseModel):
     ]
 
 
-class IPInSubnetAllocationPoolSpecSegment(BaseModel):
-    allocations: Annotated[
-        Optional[List[IPInSubnetAllocationPoolSpecSegmentAllocation]],
-        Field(
-            description="List of reservations to exclude from allocations from this segment.",
-            title="Allocations",
-        ),
-    ] = None
-    reservations: Annotated[
-        Optional[List[IPInSubnetAllocationPoolSpecSegmentReservation]],
-        Field(
-            description="List of ranges to exclude from allocations from this segment.",
-            title="Reservations",
-        ),
-    ] = None
-    subnet: Annotated[
-        str, Field(description="IPv4 or IPv6 subnet, e.g. 10.1.1.0/24.", title="Subnet")
-    ]
+IPInSubnetAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-IPInSubnetAllocationPoolSpecSegmentAllocation = IPAllocationPoolSpecSegmentAllocation
-
-
-IPInSubnetAllocationPoolSpecSegmentReservation = IPAllocationPoolSpecSegmentReservation
-
-
-class IndexAllocationPool(BaseModel):
-    """
-    IndexAllocationPool is the Schema for the indexallocationpools API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: IndexAllocationPoolMetadata
-    spec: Annotated[
-        IndexAllocationPoolSpec,
-        Field(
-            description="IndexAllocationPool is a generic allocation pool supporting allocation of indexes from a set of segments.\nIt supports allocating things like VLANs, subinterface indexes, autonomous system numbers, or any other integer-based index.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="IndexAllocationPoolStatus defines the observed state of IndexAllocationPool",
-            title="Status",
-        ),
-    ] = None
-
-
-IndexAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class IndexAllocationPoolDeletedResources(
-    RootModel[List[IndexAllocationPoolDeletedResourceEntry]]
+class IPInSubnetAllocationPoolDeletedResources(
+    RootModel[List[IPInSubnetAllocationPoolDeletedResourceEntry]]
 ):
-    root: List[IndexAllocationPoolDeletedResourceEntry]
+    root: List[IPInSubnetAllocationPoolDeletedResourceEntry]
 
 
-class IndexAllocationPoolList(BaseModel):
-    """
-    IndexAllocationPoolList is a list of indexallocationpools
-    """
-
-    apiVersion: str
-    items: Optional[List[IndexAllocationPool]] = None
-    kind: str
+IPInSubnetAllocationPoolMetadata = DeviationActionMetadata
 
 
-IndexAllocationPoolMetadata = DeviationActionMetadata
+class IndexAllocationPoolSpecSegmentAllocation(BaseModel):
+    name: Annotated[str, Field(description="Name of this allocation.", title="Name")]
+    value: Annotated[int, Field(description="Index to reserve.", title="Value")]
 
 
-class IndexAllocationPoolSpec(BaseModel):
-    """
-    IndexAllocationPool is a generic allocation pool supporting allocation of indexes from a set of segments.
-    It supports allocating things like VLANs, subinterface indexes, autonomous system numbers, or any other integer-based index.
-    """
-
-    publishAllocations: Annotated[
-        Optional[bool],
-        Field(
-            description="If true, allocations in segments will be published to EDB, available to query via EQL and trigger state applications off of.",
-            title="Publish Allocations",
-        ),
-    ] = None
-    segments: Annotated[
-        List[IndexAllocationPoolSpecSegment],
-        Field(
-            description="List of segments containing indexes to allocate.",
-            min_length=1,
-            title="Segments",
-        ),
-    ]
+class IndexAllocationPoolSpecSegmentReservation(BaseModel):
+    end: Annotated[int, Field(description="Value to reserve to.", title="End")]
+    start: Annotated[int, Field(description="Value to start reserving.", title="Start")]
 
 
 class IndexAllocationPoolSpecSegment(BaseModel):
@@ -928,56 +671,39 @@ class IndexAllocationPoolSpecSegment(BaseModel):
     ]
 
 
-class IndexAllocationPoolSpecSegmentAllocation(BaseModel):
-    name: Annotated[str, Field(description="Name of this allocation.", title="Name")]
-    value: Annotated[int, Field(description="Index to reserve.", title="Value")]
-
-
-class IndexAllocationPoolSpecSegmentReservation(BaseModel):
-    end: Annotated[int, Field(description="Value to reserve to.", title="End")]
-    start: Annotated[int, Field(description="Value to start reserving.", title="Start")]
-
-
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class License(BaseModel):
+class IndexAllocationPoolSpec(BaseModel):
     """
-    License is the Schema for the licenses API
+    IndexAllocationPool is a generic allocation pool supporting allocation of indexes from a set of segments.
+    It supports allocating things like VLANs, subinterface indexes, autonomous system numbers, or any other integer-based index.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: LicenseMetadata
-    spec: Annotated[
-        LicenseSpec,
+    publishAllocations: Annotated[
+        Optional[bool],
         Field(
-            description='A License represents an application license providing functionality within EDA. A license providing the "base" feature must be provided/valid for transactions to be processed.',
-            title="Specification",
+            description="If true, allocations in segments will be published to EDB, available to query via EQL and trigger state applications off of.",
+            title="Publish Allocations",
+        ),
+    ] = None
+    segments: Annotated[
+        List[IndexAllocationPoolSpecSegment],
+        Field(
+            description="List of segments containing indexes to allocate.",
+            min_length=1,
+            title="Segments",
         ),
     ]
-    status: Annotated[
-        Optional[LicenseStatus],
-        Field(description="Status information for this license.", title="Status"),
-    ] = None
 
 
-class LicenseList(BaseModel):
-    """
-    LicenseList is a list of licenses
-    """
-
-    apiVersion: str
-    items: Optional[List[License]] = None
-    kind: str
+IndexAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-LicenseMetadata = ClusterRoleMetadata
+class IndexAllocationPoolDeletedResources(
+    RootModel[List[IndexAllocationPoolDeletedResourceEntry]]
+):
+    root: List[IndexAllocationPoolDeletedResourceEntry]
+
+
+IndexAllocationPoolMetadata = DeviationActionMetadata
 
 
 class LicenseSpec(BaseModel):
@@ -1032,48 +758,7 @@ class LicenseStatus(BaseModel):
     ]
 
 
-class Namespace(BaseModel):
-    """
-    Namespace is the Schema for the namespaces API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: NamespaceMetadata
-    spec: Annotated[
-        NamespaceSpec,
-        Field(
-            description="A Namespace is a logical partition within the cluster that provides a mechanism for isolating resources.\nNamespaces allow for resource segmentation, enabling multiple teams or applications to share the same cluster without conflict.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="NamespaceStatus defines the observed state of Namespace",
-            title="Status",
-        ),
-    ] = None
-
-
-NamespaceDeletedResourceEntry = ClusterRoleDeletedResourceEntry
-
-
-class NamespaceDeletedResources(RootModel[List[NamespaceDeletedResourceEntry]]):
-    root: List[NamespaceDeletedResourceEntry]
-
-
-class NamespaceList(BaseModel):
-    """
-    NamespaceList is a list of namespaces
-    """
-
-    apiVersion: str
-    items: Optional[List[Namespace]] = None
-    kind: str
-
-
-NamespaceMetadata = ClusterRoleMetadata
+LicenseMetadata = ClusterRoleMetadata
 
 
 class NamespaceSpec(BaseModel):
@@ -1091,218 +776,14 @@ class NamespaceSpec(BaseModel):
     ] = None
 
 
-class NodeProfile(BaseModel):
-    """
-    NodeProfile is the Schema for the nodeprofiles API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: NodeProfileMetadata
-    spec: Annotated[
-        NodeProfileSpec,
-        Field(
-            description="NodeProfileSpec defines the desired state of NodeProfile",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[Optional[Dict[str, Any]], Field(title="Status")] = None
+NamespaceDeletedResourceEntry = ClusterRoleDeletedResourceEntry
 
 
-NodeProfileDeletedResourceEntry = DeviationActionDeletedResourceEntry
+class NamespaceDeletedResources(RootModel[List[NamespaceDeletedResourceEntry]]):
+    root: List[NamespaceDeletedResourceEntry]
 
 
-class NodeProfileDeletedResources(RootModel[List[NodeProfileDeletedResourceEntry]]):
-    root: List[NodeProfileDeletedResourceEntry]
-
-
-class NodeProfileList(BaseModel):
-    """
-    NodeProfileList is a list of nodeprofiles
-    """
-
-    apiVersion: str
-    items: Optional[List[NodeProfile]] = None
-    kind: str
-
-
-NodeProfileMetadata = DeviationActionMetadata
-
-
-class NodeProfileSpec(BaseModel):
-    """
-    NodeProfileSpec defines the desired state of NodeProfile
-    """
-
-    annotate: Annotated[
-        Optional[bool],
-        Field(
-            description="Indicates if NPP should annotate sent configuration.",
-            title="Annotations",
-        ),
-    ] = False
-    containerImage: Annotated[
-        Optional[str],
-        Field(
-            description="Container image to use when simulating TopoNodes referencing this NodeProfile, e.g. ghcr.io/nokia/srlinux:24.7.1.",
-            title="Container Image",
-        ),
-    ] = None
-    dhcp: Annotated[
-        Optional[NodeProfileSpecDhcp],
-        Field(
-            description="DHCP options to use when onboarding the TopoNode. Optional if not bootstrapping using EDA.",
-            title="DHCP",
-        ),
-    ] = None
-    imagePullSecret: Annotated[
-        Optional[str],
-        Field(
-            description="Secret used to authenticate to the container registry where the container image is hosted.",
-            title="Image Pull Secret",
-        ),
-    ] = None
-    images: Annotated[
-        Optional[List[NodeProfileSpecImage]],
-        Field(
-            description="URLs hosting software images for bootstrapping TopoNodes referencing this NodeProfile.",
-            title="Images",
-        ),
-    ] = None
-    license: Annotated[
-        Optional[str],
-        Field(
-            description="ConfigMap containing a license for TopoNodes referencing this NodeProfile.",
-            title="License",
-        ),
-    ] = None
-    llmDb: Annotated[
-        Optional[str],
-        Field(
-            description="URL containing LLDB  to use when interacting with LLM-DB and OpenAI for query autocompletion, e.g. http://eda-asvr/llmdb/ce-llm-db-srlinux-24.7.1.tar.gz.",
-            title="LLMDB",
-        ),
-    ] = None
-    nodeUser: Annotated[
-        str,
-        Field(
-            description="Reference to a NodeUser to use for authentication to TopoNodes referencing this NodeProfile.",
-            title="Node User",
-        ),
-    ]
-    onboardingPassword: Annotated[
-        Optional[SecretStr],
-        Field(
-            description="The password to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
-            title="Onboarding Password",
-        ),
-    ] = None
-    onboardingUsername: Annotated[
-        Optional[str],
-        Field(
-            description="The username to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
-            title="Onboarding Username",
-        ),
-    ] = None
-    operatingSystem: Annotated[
-        Literal["srl", "sros", "nxos"],
-        Field(
-            description="Sets the operating system of this NodeProfile, e.g. srl.",
-            title="Operating System",
-        ),
-    ]
-    platformPath: Annotated[
-        Optional[str],
-        Field(
-            description="JSPath to use for retrieving the version string from TopoNodes referencing this NodeProfile, e.g. .platform.chassis.type.",
-            title="Platform Path",
-        ),
-    ] = None
-    port: Annotated[
-        Optional[int],
-        Field(
-            description="Port used to establish a connection to the TopoNode, e.g. 57400.",
-            ge=1,
-            le=65535,
-            title="Port",
-        ),
-    ] = 57400
-    serialNumberPath: Annotated[
-        Optional[str],
-        Field(
-            description="JSPath to use for retrieving the serial number string from TopoNodes referencing this NodeProfile, e.g. .platform.chassis.serial-number.",
-            title="Serial Number Path",
-        ),
-    ] = None
-    version: Annotated[
-        str,
-        Field(
-            description="Sets the software version of this NodeProfile, e.g. 24.7.1 (for srl), or 24.7.r1 (for sros).",
-            title="Version",
-        ),
-    ]
-    versionMatch: Annotated[
-        Optional[str],
-        Field(
-            description="Regular expression to match the node-retrieved version string to TopoNode version, e.g. v0\\.0\\.0.*.",
-            title="Version Match",
-        ),
-    ] = None
-    versionPath: Annotated[
-        Optional[str],
-        Field(
-            description="JSPath to use for retrieving the version string from TopoNodes referencing this NodeProfile, e.g. .system.information.version.",
-            title="Version Path",
-        ),
-    ] = None
-    yang: Annotated[
-        str,
-        Field(
-            description="URL containing YANG modules and schema profile to use when interacting with TopoNodes referencing this NodeProfile, e.g. http://eda-asvr/schemaprofiles/srlinux-24.7.1.zip.",
-            title="YANG",
-        ),
-    ]
-
-
-class NodeProfileSpecDhcp(BaseModel):
-    """
-    DHCP options to use when onboarding the TopoNode. Optional if not bootstrapping using EDA.
-    """
-
-    dhcp4Options: Annotated[
-        Optional[List[NodeProfileSpecDhcpDhcp4Option]],
-        Field(
-            description="DHCPv4 options to return to TopoNodes referencing this NodeProfile.",
-            title="DHCPv4 Options",
-        ),
-    ] = None
-    dhcp6Options: Annotated[
-        Optional[List[NodeProfileSpecDhcpDhcp6Option]],
-        Field(
-            description="DHCPv6 options to return to TopoNodes referencing this NodeProfile.",
-            title="DHCPv6 Options",
-        ),
-    ] = None
-    managementPoolv4: Annotated[
-        Optional[str],
-        Field(
-            description="IPInSubnetAllocationPool to use for IPv4 allocations of the management address for TopoNodes referencing this NodeProfile.",
-            title="Management Pool - IPv4",
-        ),
-    ] = None
-    managementPoolv6: Annotated[
-        Optional[str],
-        Field(
-            description="IPInSubnetAllocationPool to use for IPv6 allocations of the management address for TopoNodes referencing this NodeProfile.",
-            title="Management Pool - IPv6",
-        ),
-    ] = None
-    preferredAddressFamily: Annotated[
-        Optional[Literal["IPv4", "IPv6"]],
-        Field(
-            description="Preferred IP address family", title="Preferred Address Family"
-        ),
-    ] = None
+NamespaceMetadata = ClusterRoleMetadata
 
 
 class NodeProfileSpecDhcpDhcp4Option(BaseModel):
@@ -1515,6 +996,47 @@ class NodeProfileSpecDhcpDhcp6Option(BaseModel):
     ]
 
 
+class NodeProfileSpecDhcp(BaseModel):
+    """
+    DHCP options to use when onboarding the TopoNode. Optional if not bootstrapping using EDA.
+    """
+
+    dhcp4Options: Annotated[
+        Optional[List[NodeProfileSpecDhcpDhcp4Option]],
+        Field(
+            description="DHCPv4 options to return to TopoNodes referencing this NodeProfile.",
+            title="DHCPv4 Options",
+        ),
+    ] = None
+    dhcp6Options: Annotated[
+        Optional[List[NodeProfileSpecDhcpDhcp6Option]],
+        Field(
+            description="DHCPv6 options to return to TopoNodes referencing this NodeProfile.",
+            title="DHCPv6 Options",
+        ),
+    ] = None
+    managementPoolv4: Annotated[
+        Optional[str],
+        Field(
+            description="IPInSubnetAllocationPool to use for IPv4 allocations of the management address for TopoNodes referencing this NodeProfile.",
+            title="Management Pool - IPv4",
+        ),
+    ] = None
+    managementPoolv6: Annotated[
+        Optional[str],
+        Field(
+            description="IPInSubnetAllocationPool to use for IPv6 allocations of the management address for TopoNodes referencing this NodeProfile.",
+            title="Management Pool - IPv6",
+        ),
+    ] = None
+    preferredAddressFamily: Annotated[
+        Optional[Literal["IPv4", "IPv6"]],
+        Field(
+            description="Preferred IP address family", title="Preferred Address Family"
+        ),
+    ] = None
+
+
 class NodeProfileSpecImage(BaseModel):
     image: Annotated[
         str,
@@ -1532,45 +1054,166 @@ class NodeProfileSpecImage(BaseModel):
     ] = None
 
 
-class NodeUser(BaseModel):
+class NodeProfileSpec(BaseModel):
     """
-    NodeUser is the Schema for the nodeusers API
+    NodeProfileSpec defines the desired state of NodeProfile
     """
 
-    apiVersion: str
-    kind: str
-    metadata: NodeUserMetadata
-    spec: Annotated[
-        NodeUserSpec,
+    annotate: Annotated[
+        Optional[bool],
         Field(
-            description="The NodeUser resource represents a user that can be deployed to a set of TopoNodes. It supports managing the user's password, SSH keys, and group bindings.\nAdditionally a NodeUser is referenced by a NodeProfile to indicate how NPP should connect to TopoNodes.",
-            title="Specification",
+            description="Indicates if NPP should annotate sent configuration.",
+            title="Annotations",
+        ),
+    ] = False
+    containerImage: Annotated[
+        Optional[str],
+        Field(
+            description="Container image to use when simulating TopoNodes referencing this NodeProfile, e.g. ghcr.io/nokia/srlinux:24.7.1.",
+            title="Container Image",
+        ),
+    ] = None
+    dhcp: Annotated[
+        Optional[NodeProfileSpecDhcp],
+        Field(
+            description="DHCP options to use when onboarding the TopoNode. Optional if not bootstrapping using EDA.",
+            title="DHCP",
+        ),
+    ] = None
+    imagePullSecret: Annotated[
+        Optional[str],
+        Field(
+            description="Secret used to authenticate to the container registry where the container image is hosted.",
+            title="Image Pull Secret",
+        ),
+    ] = None
+    images: Annotated[
+        Optional[List[NodeProfileSpecImage]],
+        Field(
+            description="URLs hosting software images for bootstrapping TopoNodes referencing this NodeProfile.",
+            title="Images",
+        ),
+    ] = None
+    license: Annotated[
+        Optional[str],
+        Field(
+            description="ConfigMap containing a license for TopoNodes referencing this NodeProfile.",
+            title="License",
+        ),
+    ] = None
+    llmDb: Annotated[
+        Optional[str],
+        Field(
+            description="URL containing LLDB  to use when interacting with LLM-DB and OpenAI for query autocompletion, e.g. http://eda-asvr/llmdb/ce-llm-db-srlinux-24.7.1.tar.gz.",
+            title="LLMDB",
+        ),
+    ] = None
+    nodeUser: Annotated[
+        str,
+        Field(
+            description="Reference to a NodeUser to use for authentication to TopoNodes referencing this NodeProfile.",
+            title="Node User",
         ),
     ]
-    status: Annotated[
-        Optional[NodeUserStatus],
-        Field(description="Deployment status of this NodeUser.", title="Status"),
+    onboardingPassword: Annotated[
+        Optional[SecretStr],
+        Field(
+            description="The password to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
+            title="Onboarding Password",
+        ),
     ] = None
+    onboardingUsername: Annotated[
+        Optional[str],
+        Field(
+            description="The username to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
+            title="Onboarding Username",
+        ),
+    ] = None
+    operatingSystem: Annotated[
+        Literal["srl", "sros", "nxos"],
+        Field(
+            description="Sets the operating system of this NodeProfile, e.g. srl.",
+            title="Operating System",
+        ),
+    ]
+    platformPath: Annotated[
+        Optional[str],
+        Field(
+            description="JSPath to use for retrieving the version string from TopoNodes referencing this NodeProfile, e.g. .platform.chassis.type.",
+            title="Platform Path",
+        ),
+    ] = None
+    port: Annotated[
+        Optional[int],
+        Field(
+            description="Port used to establish a connection to the TopoNode, e.g. 57400.",
+            ge=1,
+            le=65535,
+            title="Port",
+        ),
+    ] = 57400
+    serialNumberPath: Annotated[
+        Optional[str],
+        Field(
+            description="JSPath to use for retrieving the serial number string from TopoNodes referencing this NodeProfile, e.g. .platform.chassis.serial-number.",
+            title="Serial Number Path",
+        ),
+    ] = None
+    version: Annotated[
+        str,
+        Field(
+            description="Sets the software version of this NodeProfile, e.g. 24.7.1 (for srl), or 24.7.r1 (for sros).",
+            title="Version",
+        ),
+    ]
+    versionMatch: Annotated[
+        Optional[str],
+        Field(
+            description="Regular expression to match the node-retrieved version string to TopoNode version, e.g. v0\\.0\\.0.*.",
+            title="Version Match",
+        ),
+    ] = None
+    versionPath: Annotated[
+        Optional[str],
+        Field(
+            description="JSPath to use for retrieving the version string from TopoNodes referencing this NodeProfile, e.g. .system.information.version.",
+            title="Version Path",
+        ),
+    ] = None
+    yang: Annotated[
+        str,
+        Field(
+            description="URL containing YANG modules and schema profile to use when interacting with TopoNodes referencing this NodeProfile, e.g. http://eda-asvr/schemaprofiles/srlinux-24.7.1.zip.",
+            title="YANG",
+        ),
+    ]
 
 
-NodeUserDeletedResourceEntry = DeviationActionDeletedResourceEntry
+NodeProfileDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-class NodeUserDeletedResources(RootModel[List[NodeUserDeletedResourceEntry]]):
-    root: List[NodeUserDeletedResourceEntry]
+class NodeProfileDeletedResources(RootModel[List[NodeProfileDeletedResourceEntry]]):
+    root: List[NodeProfileDeletedResourceEntry]
 
 
-class NodeUserList(BaseModel):
-    """
-    NodeUserList is a list of nodeusers
-    """
-
-    apiVersion: str
-    items: Optional[List[NodeUser]] = None
-    kind: str
+NodeProfileMetadata = DeviationActionMetadata
 
 
-NodeUserMetadata = DeviationActionMetadata
+class NodeUserSpecGroupBinding(BaseModel):
+    groups: Annotated[
+        List[str], Field(description="Assigned groups for this user.", title="Groups")
+    ]
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selector to use when selecting TopoNodes to deploy this user to.",
+            title="Node Selector",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(description=" TopoNodes to deploy this user to.", title="Nodes"),
+    ] = None
 
 
 class NodeUserSpec(BaseModel):
@@ -1606,20 +1249,15 @@ class NodeUserSpec(BaseModel):
     ] = None
 
 
-class NodeUserSpecGroupBinding(BaseModel):
+class NodeUserStatusGroupBinding(BaseModel):
     groups: Annotated[
-        List[str], Field(description="Assigned groups for this user.", title="Groups")
-    ]
-    nodeSelector: Annotated[
         Optional[List[str]],
         Field(
-            description="Selector to use when selecting TopoNodes to deploy this user to.",
-            title="Node Selector",
+            description="Groups this user is a member of on this node.", title="Groups"
         ),
     ] = None
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(description=" TopoNodes to deploy this user to.", title="Nodes"),
+    node: Annotated[
+        Optional[str], Field(description="Node this user is deployed to.", title="Node")
     ] = None
 
 
@@ -1637,92 +1275,58 @@ class NodeUserStatus(BaseModel):
     ] = None
 
 
-class NodeUserStatusGroupBinding(BaseModel):
-    groups: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Groups this user is a member of on this node.", title="Groups"
-        ),
-    ] = None
-    node: Annotated[
-        Optional[str], Field(description="Node this user is deployed to.", title="Node")
-    ] = None
+NodeUserDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class NodeUserDeletedResources(RootModel[List[NodeUserDeletedResourceEntry]]):
+    root: List[NodeUserDeletedResourceEntry]
 
 
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+NodeUserMetadata = DeviationActionMetadata
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
+class RoleSpecResourceRuleApiGroup(ClusterRoleSpecResourceRuleApiGroup):
+    pass
 
 
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
+class RoleSpecResourceRuleResource(ClusterRoleSpecResourceRuleApiGroup):
+    pass
 
 
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Role(BaseModel):
+class RoleSpecResourceRule(BaseModel):
     """
-    Role is the Schema for the roles API
+    A role rule controlling access to a kubernetes resource.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: RoleMetadata
-    spec: Annotated[
-        RoleSpec,
+    apiGroups: Annotated[
+        List[RoleSpecResourceRuleApiGroup],
         Field(
-            description="RoleSpec defines the desired state of Role",
-            title="Specification",
+            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.',
+            min_length=1,
+            title="API Groups",
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    permissions: Annotated[
+        Literal["none", "read", "readWrite"],
         Field(
-            description="RoleStatus defines the observed state of Role", title="Status"
+            description="Permissions for resources specified by the rule.",
+            title="Permissions",
         ),
-    ] = None
+    ]
+    resources: Annotated[
+        List[RoleSpecResourceRuleResource],
+        Field(
+            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.',
+            min_length=1,
+            title="Resources",
+        ),
+    ]
 
 
-RoleDeletedResourceEntry = DeviationActionDeletedResourceEntry
+RoleSpecTableRule = ClusterRoleSpecTableRule
 
 
-class RoleDeletedResources(RootModel[List[RoleDeletedResourceEntry]]):
-    root: List[RoleDeletedResourceEntry]
-
-
-class RoleList(BaseModel):
-    """
-    RoleList is a list of roles
-    """
-
-    apiVersion: str
-    items: Optional[List[Role]] = None
-    kind: str
-
-
-RoleMetadata = DeviationActionMetadata
+RoleSpecUrlRule = ClusterRoleSpecUrlRule
 
 
 class RoleSpec(BaseModel):
@@ -1757,132 +1361,20 @@ class RoleSpec(BaseModel):
     ] = None
 
 
-class RoleSpecResourceRule(BaseModel):
-    """
-    A role rule controlling access to a kubernetes resource.
-    """
-
-    apiGroups: Annotated[
-        List[RoleSpecResourceRuleApiGroup],
-        Field(
-            description='The API groups for the resources controlled by the rule.\nAn API group consists of an apiGroup and a version, e.g. "apigroup/version".\nThe API group can be a wildcard ("*"), in which case it will match any API group.',
-            min_length=1,
-            title="API Groups",
-        ),
-    ]
-    permissions: Annotated[
-        Literal["none", "read", "readWrite"],
-        Field(
-            description="Permissions for resources specified by the rule.",
-            title="Permissions",
-        ),
-    ]
-    resources: Annotated[
-        List[RoleSpecResourceRuleResource],
-        Field(
-            description='Names for the resources controlled by the rule.\nIt can be a wildcard ("*"), in which case it will match any resource\nin the matching API groups.',
-            min_length=1,
-            title="Resources",
-        ),
-    ]
+RoleDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-class RoleSpecResourceRuleApiGroup(ClusterRoleSpecResourceRuleApiGroup):
-    pass
+class RoleDeletedResources(RootModel[List[RoleDeletedResourceEntry]]):
+    root: List[RoleDeletedResourceEntry]
 
 
-class RoleSpecResourceRuleResource(ClusterRoleSpecResourceRuleApiGroup):
-    pass
+RoleMetadata = DeviationActionMetadata
 
 
-RoleSpecTableRule = ClusterRoleSpecTableRule
+SubnetAllocationPoolSpecSegmentAllocation = IPAllocationPoolSpecSegmentAllocation
 
 
-RoleSpecUrlRule = ClusterRoleSpecUrlRule
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class SubnetAllocationPool(BaseModel):
-    """
-    SubnetAllocationPool is the Schema for the subnetallocationpools API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: SubnetAllocationPoolMetadata
-    spec: Annotated[
-        SubnetAllocationPoolSpec,
-        Field(
-            description="SubnetAllocationPool is a generic subnet allocation pool supporting allocation of IPv4 and/or IPv6 child subnets from a list of parent subnet segments.\nIt allocates a subnet of the configured length from the provided parent subnet.\nFor example a pool could return 10.1.0.8/29 when a segment is defined as subnet 10.1.0.0/16 with subnet length 29.\nConsult application documentation to know which pool type to use for a given use case.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="SubnetAllocationPoolStatus defines the observed state of SubnetAllocationPool",
-            title="Status",
-        ),
-    ] = None
-
-
-SubnetAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class SubnetAllocationPoolDeletedResources(
-    RootModel[List[SubnetAllocationPoolDeletedResourceEntry]]
-):
-    root: List[SubnetAllocationPoolDeletedResourceEntry]
-
-
-class SubnetAllocationPoolList(BaseModel):
-    """
-    SubnetAllocationPoolList is a list of subnetallocationpools
-    """
-
-    apiVersion: str
-    items: Optional[List[SubnetAllocationPool]] = None
-    kind: str
-
-
-SubnetAllocationPoolMetadata = DeviationActionMetadata
-
-
-class SubnetAllocationPoolSpec(BaseModel):
-    """
-    SubnetAllocationPool is a generic subnet allocation pool supporting allocation of IPv4 and/or IPv6 child subnets from a list of parent subnet segments.
-    It allocates a subnet of the configured length from the provided parent subnet.
-    For example a pool could return 10.1.0.8/29 when a segment is defined as subnet 10.1.0.0/16 with subnet length 29.
-    Consult application documentation to know which pool type to use for a given use case.
-    """
-
-    publishAllocations: Annotated[
-        Optional[bool],
-        Field(
-            description="If true, allocations in segments will be published to EDB, available to query via EQL and trigger state applications off of.",
-            title="Publish Allocations",
-        ),
-    ] = None
-    segments: Annotated[
-        List[SubnetAllocationPoolSpecSegment],
-        Field(
-            description="List of segments containing subnets to allocate.",
-            min_length=1,
-            title="Segments",
-        ),
-    ]
+SubnetAllocationPoolSpecSegmentReservation = IPAllocationPoolSpecSegmentReservation
 
 
 class SubnetAllocationPoolSpecSegment(BaseModel):
@@ -1916,54 +1408,41 @@ class SubnetAllocationPoolSpecSegment(BaseModel):
     ]
 
 
-SubnetAllocationPoolSpecSegmentAllocation = IPAllocationPoolSpecSegmentAllocation
-
-
-SubnetAllocationPoolSpecSegmentReservation = IPAllocationPoolSpecSegmentReservation
-
-
-class TopoBreakout(BaseModel):
+class SubnetAllocationPoolSpec(BaseModel):
     """
-    TopoBreakout is the Schema for the topobreakouts API
+    SubnetAllocationPool is a generic subnet allocation pool supporting allocation of IPv4 and/or IPv6 child subnets from a list of parent subnet segments.
+    It allocates a subnet of the configured length from the provided parent subnet.
+    For example a pool could return 10.1.0.8/29 when a segment is defined as subnet 10.1.0.0/16 with subnet length 29.
+    Consult application documentation to know which pool type to use for a given use case.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: TopoBreakoutMetadata
-    spec: Annotated[
-        TopoBreakoutSpec,
+    publishAllocations: Annotated[
+        Optional[bool],
         Field(
-            description="TopoBreakoutSpec defines the desired state of TopoBreakout",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="TopoBreakoutStatus defines the observed state of TopoBreakout",
-            title="Status",
+            description="If true, allocations in segments will be published to EDB, available to query via EQL and trigger state applications off of.",
+            title="Publish Allocations",
         ),
     ] = None
+    segments: Annotated[
+        List[SubnetAllocationPoolSpecSegment],
+        Field(
+            description="List of segments containing subnets to allocate.",
+            min_length=1,
+            title="Segments",
+        ),
+    ]
 
 
-TopoBreakoutDeletedResourceEntry = DeviationActionDeletedResourceEntry
+SubnetAllocationPoolDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-class TopoBreakoutDeletedResources(RootModel[List[TopoBreakoutDeletedResourceEntry]]):
-    root: List[TopoBreakoutDeletedResourceEntry]
+class SubnetAllocationPoolDeletedResources(
+    RootModel[List[SubnetAllocationPoolDeletedResourceEntry]]
+):
+    root: List[SubnetAllocationPoolDeletedResourceEntry]
 
 
-class TopoBreakoutList(BaseModel):
-    """
-    TopoBreakoutList is a list of topobreakouts
-    """
-
-    apiVersion: str
-    items: Optional[List[TopoBreakout]] = None
-    kind: str
-
-
-TopoBreakoutMetadata = DeviationActionMetadata
+SubnetAllocationPoolMetadata = DeviationActionMetadata
 
 
 class TopoBreakoutSpec(BaseModel):
@@ -2000,103 +1479,14 @@ class TopoBreakoutSpec(BaseModel):
     ]
 
 
-class TopoLink(BaseModel):
-    """
-    TopoLink is the Schema for the topolinks API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: TopoLinkMetadata
-    spec: Annotated[
-        TopoLinkSpec,
-        Field(
-            description="TopoLink represents a logical link between two TopoNodes. It may include more than one physical link, being used to represent a LAG or multihomed link.\nTo create a point to point link with a single interface on both sides use a single link property.\nTo create a point to point link with a LAG configured on both side, use two links with matching nodes.\nA multihomed LAG is created by using two or more links where the A side and/or B side can be different.\nCreating a link with only A specified will create an edge interface.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[TopoLinkStatus],
-        Field(
-            description="TopoLinkStatus defines the observed state of TopoLink",
-            title="Status",
-        ),
-    ] = None
+TopoBreakoutDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-TopoLinkDeletedResourceEntry = DeviationActionDeletedResourceEntry
+class TopoBreakoutDeletedResources(RootModel[List[TopoBreakoutDeletedResourceEntry]]):
+    root: List[TopoBreakoutDeletedResourceEntry]
 
 
-class TopoLinkDeletedResources(RootModel[List[TopoLinkDeletedResourceEntry]]):
-    root: List[TopoLinkDeletedResourceEntry]
-
-
-class TopoLinkList(BaseModel):
-    """
-    TopoLinkList is a list of topolinks
-    """
-
-    apiVersion: str
-    items: Optional[List[TopoLink]] = None
-    kind: str
-
-
-TopoLinkMetadata = DeviationActionMetadata
-
-
-class TopoLinkSpec(BaseModel):
-    """
-    TopoLink represents a logical link between two TopoNodes. It may include more than one physical link, being used to represent a LAG or multihomed link.
-    To create a point to point link with a single interface on both sides use a single link property.
-    To create a point to point link with a LAG configured on both side, use two links with matching nodes.
-    A multihomed LAG is created by using two or more links where the A side and/or B side can be different.
-    Creating a link with only A specified will create an edge interface.
-    """
-
-    links: Annotated[
-        List[TopoLinkSpecLink],
-        Field(
-            description="Define the set of physical links making up this TopoLink.",
-            min_length=1,
-            title="Links",
-        ),
-    ]
-
-
-class TopoLinkSpecLink(BaseModel):
-    local: Annotated[
-        TopoLinkSpecLinkLocal,
-        Field(description='Local, or "A" endpoint of the link.', title="A"),
-    ]
-    remote: Annotated[
-        Optional[TopoLinkSpecLinkRemote],
-        Field(description='Remote, or "B" endpoint of the link.', title="B"),
-    ] = None
-    speed: Annotated[
-        Optional[
-            Literal[
-                "800G",
-                "400G",
-                "200G",
-                "100G",
-                "50G",
-                "40G",
-                "25G",
-                "10G",
-                "2.5G",
-                "1G",
-                "100M",
-            ]
-        ],
-        Field(description="Speed of the link.", title="Speed"),
-    ] = None
-    type: Annotated[
-        Literal["edge", "interSwitch", "loopback"],
-        Field(
-            description="Specify the type of link.\nIf type is set to edge, topology information for the remote device can be set; when doing so the Remote Node can be set as the hostname of the remote device and Remote Interface as the remote interface name in the device specific format, e.g. eth0.",
-            title="Type",
-        ),
-    ]
+TopoBreakoutMetadata = DeviationActionMetadata
 
 
 class TopoLinkSpecLinkLocal(BaseModel):
@@ -2135,20 +1525,57 @@ class TopoLinkSpecLinkRemote(BaseModel):
     node: Annotated[str, Field(description="Reference to a TopoNode.", title="Node")]
 
 
-class TopoLinkStatus(BaseModel):
+class TopoLinkSpecLink(BaseModel):
+    local: Annotated[
+        TopoLinkSpecLinkLocal,
+        Field(description='Local, or "A" endpoint of the link.', title="A"),
+    ]
+    remote: Annotated[
+        Optional[TopoLinkSpecLinkRemote],
+        Field(description='Remote, or "B" endpoint of the link.', title="B"),
+    ] = None
+    speed: Annotated[
+        Optional[
+            Literal[
+                "800G",
+                "400G",
+                "200G",
+                "100G",
+                "50G",
+                "40G",
+                "25G",
+                "10G",
+                "2.5G",
+                "1G",
+                "100M",
+            ]
+        ],
+        Field(description="Speed of the link.", title="Speed"),
+    ] = None
+    type: Annotated[
+        Literal["edge", "interSwitch", "loopback"],
+        Field(
+            description="Specify the type of link.\nIf type is set to edge, topology information for the remote device can be set; when doing so the Remote Node can be set as the hostname of the remote device and Remote Interface as the remote interface name in the device specific format, e.g. eth0.",
+            title="Type",
+        ),
+    ]
+
+
+class TopoLinkSpec(BaseModel):
     """
-    TopoLinkStatus defines the observed state of TopoLink
+    TopoLink represents a logical link between two TopoNodes. It may include more than one physical link, being used to represent a LAG or multihomed link.
+    To create a point to point link with a single interface on both sides use a single link property.
+    To create a point to point link with a LAG configured on both side, use two links with matching nodes.
+    A multihomed LAG is created by using two or more links where the A side and/or B side can be different.
+    Creating a link with only A specified will create an edge interface.
     """
 
-    members: Annotated[
-        Optional[List[TopoLinkStatusMember]],
-        Field(description="List of members present on the TopoLink.", title="Members"),
-    ] = None
-    operationalState: Annotated[
-        str,
+    links: Annotated[
+        List[TopoLinkSpecLink],
         Field(
-            description="Indicates the aggregate operational state of the TopoLink.",
-            title="Operational State",
+            description="Define the set of physical links making up this TopoLink.",
+            min_length=1,
+            title="Links",
         ),
     ]
 
@@ -2171,48 +1598,90 @@ class TopoLinkStatusMember(BaseModel):
     ]
 
 
-class TopoNode(BaseModel):
+class TopoLinkStatus(BaseModel):
     """
-    TopoNode is the Schema for the toponodes API
+    TopoLinkStatus defines the observed state of TopoLink
     """
 
-    apiVersion: str
-    kind: str
-    metadata: TopoNodeMetadata
-    spec: Annotated[
-        TopoNodeSpec,
+    members: Annotated[
+        Optional[List[TopoLinkStatusMember]],
+        Field(description="List of members present on the TopoLink.", title="Members"),
+    ] = None
+    operationalState: Annotated[
+        str,
         Field(
-            description="A managed network element is represented via a TopoNode resource, describing characteristics of a specific element in the topology.",
-            title="Specification",
+            description="Indicates the aggregate operational state of the TopoLink.",
+            title="Operational State",
         ),
     ]
-    status: Annotated[
-        Optional[TopoNodeStatus],
+
+
+TopoLinkDeletedResourceEntry = DeviationActionDeletedResourceEntry
+
+
+class TopoLinkDeletedResources(RootModel[List[TopoLinkDeletedResourceEntry]]):
+    root: List[TopoLinkDeletedResourceEntry]
+
+
+TopoLinkMetadata = DeviationActionMetadata
+
+
+class TopoNodeSpecComponentItem(BaseModel):
+    kind: Annotated[
+        Literal[
+            "lineCard",
+            "fabric",
+            "mda",
+            "connector",
+            "xiom",
+            "powerShelf",
+            "powerModule",
+        ],
+        Field(description="The kind of Component, e.g. lineCard.", title="Kind"),
+    ]
+    slot: Annotated[
+        Optional[str],
         Field(
-            description="TopoNodeStatus defines the observed state of TopoNode",
-            title="Status",
+            description="The slot this Component resides in, unset for Components that do not have a slot or ID.\ne.g. 1 would denote the linecard slot 1, 1/1 would denote linecard slot 1 mda slot 1.",
+            title="Slot",
         ),
     ] = None
+    type: Annotated[
+        str,
+        Field(
+            description="Denotes the type of hardware being provisioned, e.g. xcm-x20.",
+            title="Type",
+        ),
+    ]
 
 
-TopoNodeDeletedResourceEntry = DeviationActionDeletedResourceEntry
-
-
-class TopoNodeDeletedResources(RootModel[List[TopoNodeDeletedResourceEntry]]):
-    root: List[TopoNodeDeletedResourceEntry]
-
-
-class TopoNodeList(BaseModel):
+class TopoNodeSpecNpp(BaseModel):
     """
-    TopoNodeList is a list of toponodes
+    Options relating to NPP interactions with the node.
     """
 
-    apiVersion: str
-    items: Optional[List[TopoNode]] = None
-    kind: str
+    mode: Annotated[
+        Optional[Literal["normal", "maintenance", "null", "emulate"]],
+        Field(
+            description='The mode in which this TopoNode is functioning.\n"normal" (the default)\n   indicates that NPP is expecting an endpoint to exist, and will accept and confirm changes only if the endpoint\n   accepts them.\n"maintenance"\n   indicates that no changes will be accepted for the TopoNode, irrespective if the endpoint is up and reachable.\n   The exception is if an upgrade is occuring, in which case changes will be accepted.\n"null"\n\t  indicates that changes will be accepted from CRs and no NPP will be spun up. NPP validation will not occur.\n   This may be useful in playground mode to avoid spinning up of 1000s of NPPs.\n"emulate"\n   indicates that changes will be accepted at the NPP level, without pushing them to a endpoint. NPP validation\n   still occurs.  If no IP address is present, we also run in emulate mode.',
+            title="Mode",
+        ),
+    ] = "normal"
 
 
-TopoNodeMetadata = DeviationActionMetadata
+class TopoNodeSpecProductionAddress(BaseModel):
+    """
+    Production address of this TopoNode - this is the address the real, production instance of this TopoNode uses.
+    If left blank, an address will be allocated from the management IP pool specified in the referenced NodeProfile.
+    If this TopoNode is not bootstrapped by EDA this field must be provided.
+    """
+
+    ipv4: Annotated[
+        Optional[str], Field(description="The IPv4 production address", title="IPv4")
+    ] = None
+    ipv6: Annotated[
+        Optional[str], Field(description="The IPv6 production address", title="IPv6")
+    ] = None
 
 
 class TopoNodeSpec(BaseModel):
@@ -2306,64 +1775,6 @@ class TopoNodeSpec(BaseModel):
     ]
 
 
-class TopoNodeSpecComponentItem(BaseModel):
-    kind: Annotated[
-        Literal[
-            "lineCard",
-            "fabric",
-            "mda",
-            "connector",
-            "xiom",
-            "powerShelf",
-            "powerModule",
-        ],
-        Field(description="The kind of Component, e.g. lineCard.", title="Kind"),
-    ]
-    slot: Annotated[
-        Optional[str],
-        Field(
-            description="The slot this Component resides in, unset for Components that do not have a slot or ID.\ne.g. 1 would denote the linecard slot 1, 1/1 would denote linecard slot 1 mda slot 1.",
-            title="Slot",
-        ),
-    ] = None
-    type: Annotated[
-        str,
-        Field(
-            description="Denotes the type of hardware being provisioned, e.g. xcm-x20.",
-            title="Type",
-        ),
-    ]
-
-
-class TopoNodeSpecNpp(BaseModel):
-    """
-    Options relating to NPP interactions with the node.
-    """
-
-    mode: Annotated[
-        Optional[Literal["normal", "maintenance", "null", "emulate"]],
-        Field(
-            description='The mode in which this TopoNode is functioning.\n"normal" (the default)\n   indicates that NPP is expecting an endpoint to exist, and will accept and confirm changes only if the endpoint\n   accepts them.\n"maintenance"\n   indicates that no changes will be accepted for the TopoNode, irrespective if the endpoint is up and reachable.\n   The exception is if an upgrade is occuring, in which case changes will be accepted.\n"null"\n\t  indicates that changes will be accepted from CRs and no NPP will be spun up. NPP validation will not occur.\n   This may be useful in playground mode to avoid spinning up of 1000s of NPPs.\n"emulate"\n   indicates that changes will be accepted at the NPP level, without pushing them to a endpoint. NPP validation\n   still occurs.  If no IP address is present, we also run in emulate mode.',
-            title="Mode",
-        ),
-    ] = "normal"
-
-
-class TopoNodeSpecProductionAddress(BaseModel):
-    """
-    Production address of this TopoNode - this is the address the real, production instance of this TopoNode uses.
-    If left blank, an address will be allocated from the management IP pool specified in the referenced NodeProfile.
-    If this TopoNode is not bootstrapped by EDA this field must be provided.
-    """
-
-    ipv4: Annotated[
-        Optional[str], Field(description="The IPv4 production address", title="IPv4")
-    ] = None
-    ipv6: Annotated[
-        Optional[str], Field(description="The IPv6 production address", title="IPv6")
-    ] = None
-
-
 class TopoNodeStatus(BaseModel):
     """
     TopoNodeStatus defines the observed state of TopoNode
@@ -2435,52 +1846,14 @@ class TopoNodeStatus(BaseModel):
     ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+TopoNodeDeletedResourceEntry = DeviationActionDeletedResourceEntry
 
 
-class UdpProxy(BaseModel):
-    """
-    UdpProxy is the Schema for the udpproxies API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: UdpProxyMetadata
-    spec: Annotated[
-        UdpProxySpec,
-        Field(
-            description="UdpProxySpec defines the desired state of UdpProxy",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="UdpProxyStatus defines the observed state of UdpProxy",
-            title="Status",
-        ),
-    ] = None
+class TopoNodeDeletedResources(RootModel[List[TopoNodeDeletedResourceEntry]]):
+    root: List[TopoNodeDeletedResourceEntry]
 
 
-UdpProxyDeletedResourceEntry = ClusterRoleDeletedResourceEntry
-
-
-class UdpProxyDeletedResources(RootModel[List[UdpProxyDeletedResourceEntry]]):
-    root: List[UdpProxyDeletedResourceEntry]
-
-
-class UdpProxyList(BaseModel):
-    """
-    UdpProxyList is a list of udpproxies
-    """
-
-    apiVersion: str
-    items: Optional[List[UdpProxy]] = None
-    kind: str
-
-
-UdpProxyMetadata = ClusterRoleMetadata
+TopoNodeMetadata = DeviationActionMetadata
 
 
 class UdpProxySpec(BaseModel):
@@ -2532,50 +1905,45 @@ class UdpProxySpec(BaseModel):
     ]
 
 
-class WorkflowDefinition(BaseModel):
+UdpProxyDeletedResourceEntry = ClusterRoleDeletedResourceEntry
+
+
+class UdpProxyDeletedResources(RootModel[List[UdpProxyDeletedResourceEntry]]):
+    root: List[UdpProxyDeletedResourceEntry]
+
+
+UdpProxyMetadata = ClusterRoleMetadata
+
+
+class WorkflowDefinitionSpecFlowDefinitionResource(BaseModel):
     """
-    WorkflowDefinition is the Schema for the workflowdefinitions API
+    the resource type to be used for this flow, can only be set if Schema is not set
     """
 
-    apiVersion: str
-    kind: str
-    metadata: WorkflowDefinitionMetadata
-    spec: Annotated[
-        WorkflowDefinitionSpec,
+    group: Annotated[Optional[str], Field(title="Group")] = None
+    kind: Annotated[str, Field(title="Kind")]
+    version: Annotated[str, Field(title="Version")]
+
+
+class WorkflowDefinitionSpecFlowDefinitionSchema(BaseModel):
+    """
+    the schema for the flow, can only be set if Resource is not set
+    """
+
+    jsonSchemaSpec: Annotated[
+        Optional[str],
         Field(
-            description="WorkflowDefinitionSpec defines the desired state of FlowDefinition",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="WorkflowDefinitionStatus defines the observed state of FlowDefinition",
-            title="Status",
+            description="A string containing the JSON schema the workflow accepts as input.",
+            title="JSON Schema (Spec)",
         ),
     ] = None
-
-
-WorkflowDefinitionDeletedResourceEntry = ClusterRoleDeletedResourceEntry
-
-
-class WorkflowDefinitionDeletedResources(
-    RootModel[List[WorkflowDefinitionDeletedResourceEntry]]
-):
-    root: List[WorkflowDefinitionDeletedResourceEntry]
-
-
-class WorkflowDefinitionList(BaseModel):
-    """
-    WorkflowDefinitionList is a list of workflowdefinitions
-    """
-
-    apiVersion: str
-    items: Optional[List[WorkflowDefinition]] = None
-    kind: str
-
-
-WorkflowDefinitionMetadata = ClusterRoleMetadata
+    jsonSchemaStatus: Annotated[
+        Optional[str],
+        Field(
+            description="A string containing the JSON schema the workflow will populate as output.",
+            title="JSON Schema (Status)",
+        ),
+    ] = None
 
 
 class WorkflowDefinitionSpec(BaseModel):
@@ -2611,32 +1979,664 @@ class WorkflowDefinitionSpec(BaseModel):
     ] = None
 
 
-class WorkflowDefinitionSpecFlowDefinitionResource(BaseModel):
-    """
-    the resource type to be used for this flow, can only be set if Schema is not set
-    """
-
-    group: Annotated[Optional[str], Field(title="Group")] = None
-    kind: Annotated[str, Field(title="Kind")]
-    version: Annotated[str, Field(title="Version")]
+WorkflowDefinitionDeletedResourceEntry = ClusterRoleDeletedResourceEntry
 
 
-class WorkflowDefinitionSpecFlowDefinitionSchema(BaseModel):
+class WorkflowDefinitionDeletedResources(
+    RootModel[List[WorkflowDefinitionDeletedResourceEntry]]
+):
+    root: List[WorkflowDefinitionDeletedResourceEntry]
+
+
+WorkflowDefinitionMetadata = ClusterRoleMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class ClusterRole(BaseModel):
     """
-    the schema for the flow, can only be set if Resource is not set
+    ClusterRole is the Schema for the clusterroles API
     """
 
-    jsonSchemaSpec: Annotated[
-        Optional[str],
+    apiVersion: str
+    kind: str
+    metadata: ClusterRoleMetadata
+    spec: Annotated[
+        ClusterRoleSpec,
         Field(
-            description="A string containing the JSON schema the workflow accepts as input.",
-            title="JSON Schema (Spec)",
+            description="ClusterRole defines a set of permissions to access EDA resources.\nClusterRoles and users are bound via groups, selecting a set of users and a set of ClusterRoles to bind.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="RoleStatus defines the observed state of Role", title="Status"
         ),
     ] = None
-    jsonSchemaStatus: Annotated[
-        Optional[str],
+
+
+class ClusterRoleList(BaseModel):
+    """
+    ClusterRoleList is a list of clusterroles
+    """
+
+    apiVersion: str
+    items: Optional[List[ClusterRole]] = None
+    kind: str
+
+
+class Deviation(BaseModel):
+    """
+    Deviation is the Schema for the deviations API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DeviationMetadata
+    spec: Annotated[
+        DeviationSpec,
         Field(
-            description="A string containing the JSON schema the workflow will populate as output.",
-            title="JSON Schema (Status)",
+            description="Deviations are used to represent differences between the intended and actual state of a target.\nThey indicate the intended state - or the computed configuration EDA expects, and compare this to the actual or running state, or the configuration retrieved from the target.\nDeviations are most often generated by out-of-band changes to a target by an external system or user, and\ncan be accepted or rejected. Rejecting a Deviation will result in the intended configuration being re-applied, undoing the out-of-band change.\nDeviations are raised per table, meaning a single change on a target may result in more than one Deviation.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="DeviationStatus defines the observed state of Deviation",
+            title="Status",
         ),
     ] = None
+
+
+class DeviationAction(BaseModel):
+    """
+    DeviationAction is the Schema for the deviationactions API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DeviationActionMetadata
+    spec: Annotated[
+        DeviationActionSpec,
+        Field(
+            description="DeviationAction allows manual and API-driven actions to be performed on Deviation resources.\nThey are the only means to which and end user can accept or reject deviations, as Deviation resources themselves are read only.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DeviationActionStatus],
+        Field(
+            description="DeviationActionStatus defines the observed state of DeviationAction",
+            title="Status",
+        ),
+    ] = None
+
+
+class DeviationActionList(BaseModel):
+    """
+    DeviationActionList is a list of deviationactions
+    """
+
+    apiVersion: str
+    items: Optional[List[DeviationAction]] = None
+    kind: str
+
+
+class DeviationList(BaseModel):
+    """
+    DeviationList is a list of deviations
+    """
+
+    apiVersion: str
+    items: Optional[List[Deviation]] = None
+    kind: str
+
+
+class EdgeInterface(BaseModel):
+    """
+    EdgeInterface is the Schema for the edgeinterfaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: EdgeInterfaceMetadata
+    spec: Annotated[
+        EdgeInterfaceSpec,
+        Field(
+            description="EdgeInterfaceSpec defines the desired state of EdgeInterface",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="EdgeInterfaceStatus defines the observed state of EdgeInterface",
+            title="Status",
+        ),
+    ] = None
+
+
+class EdgeInterfaceList(BaseModel):
+    """
+    EdgeInterfaceList is a list of edgeinterfaces
+    """
+
+    apiVersion: str
+    items: Optional[List[EdgeInterface]] = None
+    kind: str
+
+
+class HttpProxy(BaseModel):
+    """
+    HttpProxy is the Schema for the httpproxies API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: HttpProxyMetadata
+    spec: Annotated[
+        HttpProxySpec,
+        Field(
+            description="HttpProxySpec defines the desired state of HttpProxy",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="HttpProxyStatus defines the observed state of HttpProxy",
+            title="Status",
+        ),
+    ] = None
+
+
+class HttpProxyList(BaseModel):
+    """
+    HttpProxyList is a list of httpproxies
+    """
+
+    apiVersion: str
+    items: Optional[List[HttpProxy]] = None
+    kind: str
+
+
+class IPAllocationPool(BaseModel):
+    """
+    IPAllocationPool is the Schema for the ipallocationpools API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IPAllocationPoolMetadata
+    spec: Annotated[
+        IPAllocationPoolSpec,
+        Field(
+            description="IPAllocationPool is a generic IP allocation pool supporting allocation of IPv4 and/or IPv6 addresses from a set of segments.\nIt is different from IPInSubnetAllocationPool in that it returns a single unzoned IP address, i.e. an IP address without a subnet. For example a 10.1.1.0/24 segment could return 10.1.1.1.\nConsult application documentation to know which pool type to use for a given use case.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="IPAllocationPoolStatus defines the observed state of IPAllocationPool",
+            title="Status",
+        ),
+    ] = None
+
+
+class IPAllocationPoolList(BaseModel):
+    """
+    IPAllocationPoolList is a list of ipallocationpools
+    """
+
+    apiVersion: str
+    items: Optional[List[IPAllocationPool]] = None
+    kind: str
+
+
+class IPInSubnetAllocationPool(BaseModel):
+    """
+    IPInSubnetAllocationPool is the Schema for the ipinsubnetallocationpools API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IPInSubnetAllocationPoolMetadata
+    spec: Annotated[
+        IPInSubnetAllocationPoolSpec,
+        Field(
+            description="IPInSubnetAllocationPool is a generic IP allocation pool supporting allocation of IPv4 and/or IPv6 addresses from a set of segments.\nIt is different from IPAllocationPool in that it returns a single zoned IP address, i.e. an IP address with a subnet. For example a 10.1.1.0/24 segment could return 10.1.1.1/24.\nConsult application documentation to know which pool type to use for a given use case.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="IPInSubnetAllocationPoolStatus defines the observed state of IPInSubnetAllocationPool",
+            title="Status",
+        ),
+    ] = None
+
+
+class IPInSubnetAllocationPoolList(BaseModel):
+    """
+    IPInSubnetAllocationPoolList is a list of ipinsubnetallocationpools
+    """
+
+    apiVersion: str
+    items: Optional[List[IPInSubnetAllocationPool]] = None
+    kind: str
+
+
+class IndexAllocationPool(BaseModel):
+    """
+    IndexAllocationPool is the Schema for the indexallocationpools API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IndexAllocationPoolMetadata
+    spec: Annotated[
+        IndexAllocationPoolSpec,
+        Field(
+            description="IndexAllocationPool is a generic allocation pool supporting allocation of indexes from a set of segments.\nIt supports allocating things like VLANs, subinterface indexes, autonomous system numbers, or any other integer-based index.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="IndexAllocationPoolStatus defines the observed state of IndexAllocationPool",
+            title="Status",
+        ),
+    ] = None
+
+
+class IndexAllocationPoolList(BaseModel):
+    """
+    IndexAllocationPoolList is a list of indexallocationpools
+    """
+
+    apiVersion: str
+    items: Optional[List[IndexAllocationPool]] = None
+    kind: str
+
+
+class License(BaseModel):
+    """
+    License is the Schema for the licenses API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: LicenseMetadata
+    spec: Annotated[
+        LicenseSpec,
+        Field(
+            description='A License represents an application license providing functionality within EDA. A license providing the "base" feature must be provided/valid for transactions to be processed.',
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[LicenseStatus],
+        Field(description="Status information for this license.", title="Status"),
+    ] = None
+
+
+class LicenseList(BaseModel):
+    """
+    LicenseList is a list of licenses
+    """
+
+    apiVersion: str
+    items: Optional[List[License]] = None
+    kind: str
+
+
+class Namespace(BaseModel):
+    """
+    Namespace is the Schema for the namespaces API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: NamespaceMetadata
+    spec: Annotated[
+        NamespaceSpec,
+        Field(
+            description="A Namespace is a logical partition within the cluster that provides a mechanism for isolating resources.\nNamespaces allow for resource segmentation, enabling multiple teams or applications to share the same cluster without conflict.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="NamespaceStatus defines the observed state of Namespace",
+            title="Status",
+        ),
+    ] = None
+
+
+class NamespaceList(BaseModel):
+    """
+    NamespaceList is a list of namespaces
+    """
+
+    apiVersion: str
+    items: Optional[List[Namespace]] = None
+    kind: str
+
+
+class NodeProfile(BaseModel):
+    """
+    NodeProfile is the Schema for the nodeprofiles API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: NodeProfileMetadata
+    spec: Annotated[
+        NodeProfileSpec,
+        Field(
+            description="NodeProfileSpec defines the desired state of NodeProfile",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[Optional[Dict[str, Any]], Field(title="Status")] = None
+
+
+class NodeProfileList(BaseModel):
+    """
+    NodeProfileList is a list of nodeprofiles
+    """
+
+    apiVersion: str
+    items: Optional[List[NodeProfile]] = None
+    kind: str
+
+
+class NodeUser(BaseModel):
+    """
+    NodeUser is the Schema for the nodeusers API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: NodeUserMetadata
+    spec: Annotated[
+        NodeUserSpec,
+        Field(
+            description="The NodeUser resource represents a user that can be deployed to a set of TopoNodes. It supports managing the user's password, SSH keys, and group bindings.\nAdditionally a NodeUser is referenced by a NodeProfile to indicate how NPP should connect to TopoNodes.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[NodeUserStatus],
+        Field(description="Deployment status of this NodeUser.", title="Status"),
+    ] = None
+
+
+class NodeUserList(BaseModel):
+    """
+    NodeUserList is a list of nodeusers
+    """
+
+    apiVersion: str
+    items: Optional[List[NodeUser]] = None
+    kind: str
+
+
+class Role(BaseModel):
+    """
+    Role is the Schema for the roles API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: RoleMetadata
+    spec: Annotated[
+        RoleSpec,
+        Field(
+            description="RoleSpec defines the desired state of Role",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="RoleStatus defines the observed state of Role", title="Status"
+        ),
+    ] = None
+
+
+class RoleList(BaseModel):
+    """
+    RoleList is a list of roles
+    """
+
+    apiVersion: str
+    items: Optional[List[Role]] = None
+    kind: str
+
+
+class SubnetAllocationPool(BaseModel):
+    """
+    SubnetAllocationPool is the Schema for the subnetallocationpools API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: SubnetAllocationPoolMetadata
+    spec: Annotated[
+        SubnetAllocationPoolSpec,
+        Field(
+            description="SubnetAllocationPool is a generic subnet allocation pool supporting allocation of IPv4 and/or IPv6 child subnets from a list of parent subnet segments.\nIt allocates a subnet of the configured length from the provided parent subnet.\nFor example a pool could return 10.1.0.8/29 when a segment is defined as subnet 10.1.0.0/16 with subnet length 29.\nConsult application documentation to know which pool type to use for a given use case.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="SubnetAllocationPoolStatus defines the observed state of SubnetAllocationPool",
+            title="Status",
+        ),
+    ] = None
+
+
+class SubnetAllocationPoolList(BaseModel):
+    """
+    SubnetAllocationPoolList is a list of subnetallocationpools
+    """
+
+    apiVersion: str
+    items: Optional[List[SubnetAllocationPool]] = None
+    kind: str
+
+
+class TopoBreakout(BaseModel):
+    """
+    TopoBreakout is the Schema for the topobreakouts API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TopoBreakoutMetadata
+    spec: Annotated[
+        TopoBreakoutSpec,
+        Field(
+            description="TopoBreakoutSpec defines the desired state of TopoBreakout",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="TopoBreakoutStatus defines the observed state of TopoBreakout",
+            title="Status",
+        ),
+    ] = None
+
+
+class TopoBreakoutList(BaseModel):
+    """
+    TopoBreakoutList is a list of topobreakouts
+    """
+
+    apiVersion: str
+    items: Optional[List[TopoBreakout]] = None
+    kind: str
+
+
+class TopoLink(BaseModel):
+    """
+    TopoLink is the Schema for the topolinks API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TopoLinkMetadata
+    spec: Annotated[
+        TopoLinkSpec,
+        Field(
+            description="TopoLink represents a logical link between two TopoNodes. It may include more than one physical link, being used to represent a LAG or multihomed link.\nTo create a point to point link with a single interface on both sides use a single link property.\nTo create a point to point link with a LAG configured on both side, use two links with matching nodes.\nA multihomed LAG is created by using two or more links where the A side and/or B side can be different.\nCreating a link with only A specified will create an edge interface.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[TopoLinkStatus],
+        Field(
+            description="TopoLinkStatus defines the observed state of TopoLink",
+            title="Status",
+        ),
+    ] = None
+
+
+class TopoLinkList(BaseModel):
+    """
+    TopoLinkList is a list of topolinks
+    """
+
+    apiVersion: str
+    items: Optional[List[TopoLink]] = None
+    kind: str
+
+
+class TopoNode(BaseModel):
+    """
+    TopoNode is the Schema for the toponodes API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TopoNodeMetadata
+    spec: Annotated[
+        TopoNodeSpec,
+        Field(
+            description="A managed network element is represented via a TopoNode resource, describing characteristics of a specific element in the topology.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[TopoNodeStatus],
+        Field(
+            description="TopoNodeStatus defines the observed state of TopoNode",
+            title="Status",
+        ),
+    ] = None
+
+
+class TopoNodeList(BaseModel):
+    """
+    TopoNodeList is a list of toponodes
+    """
+
+    apiVersion: str
+    items: Optional[List[TopoNode]] = None
+    kind: str
+
+
+class UdpProxy(BaseModel):
+    """
+    UdpProxy is the Schema for the udpproxies API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: UdpProxyMetadata
+    spec: Annotated[
+        UdpProxySpec,
+        Field(
+            description="UdpProxySpec defines the desired state of UdpProxy",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="UdpProxyStatus defines the observed state of UdpProxy",
+            title="Status",
+        ),
+    ] = None
+
+
+class UdpProxyList(BaseModel):
+    """
+    UdpProxyList is a list of udpproxies
+    """
+
+    apiVersion: str
+    items: Optional[List[UdpProxy]] = None
+    kind: str
+
+
+class WorkflowDefinition(BaseModel):
+    """
+    WorkflowDefinition is the Schema for the workflowdefinitions API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: WorkflowDefinitionMetadata
+    spec: Annotated[
+        WorkflowDefinitionSpec,
+        Field(
+            description="WorkflowDefinitionSpec defines the desired state of FlowDefinition",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="WorkflowDefinitionStatus defines the observed state of FlowDefinition",
+            title="Status",
+        ),
+    ] = None
+
+
+class WorkflowDefinitionList(BaseModel):
+    """
+    WorkflowDefinitionList is a list of workflowdefinitions
+    """
+
+    apiVersion: str
+    items: Optional[List[WorkflowDefinition]] = None
+    kind: str

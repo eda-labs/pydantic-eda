@@ -6,14 +6,6 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -75,89 +67,59 @@ class ErrorResponse(BaseModel):
     ] = None
 
 
-class Init(BaseModel):
-    """
-    Init is the Schema for the inits API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: InitMetadata
-    spec: Annotated[
-        InitSpec,
-        Field(
-            description="InitSpec defines the desired state of Init",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="InitStatus defines the observed state of Init", title="Status"
-        ),
-    ] = None
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class InitDeletedResourceEntry(BaseModel):
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class InitDeletedResources(RootModel[List[InitDeletedResourceEntry]]):
-    root: List[InitDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class InitList(BaseModel):
-    """
-    InitList is a list of inits
-    """
-
-    apiVersion: str
-    items: Optional[List[Init]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class InitMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
+class UIResult(RootModel[str]):
+    root: str
 
 
-class InitSpec(BaseModel):
-    """
-    InitSpec defines the desired state of Init
-    """
-
-    commitSave: Annotated[
-        Optional[bool],
-        Field(
-            description="Save a startup configuration after each commit.",
-            title="Commit Save",
-        ),
+class InitSpecMgmtStaticRoute(BaseModel):
+    nextHop: Annotated[
+        Optional[str], Field(description="Static route next hop.", title="Next Hop")
     ] = None
-    mgmt: Annotated[
-        Optional[InitSpecMgmt],
-        Field(
-            description="Optional management interface settings.\nAllows setting DHCP clients or static IPs as well as\nthe IP MTU.",
-            title="Mgmt",
-        ),
-    ] = None
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Optional node selectors to perform initial configuration for.\nIf not provided initialization is performed for all nodes.",
-            title="Node Selector",
-        ),
+    prefix: Annotated[
+        Optional[str], Field(description="Static route prefix.", title="Prefix")
     ] = None
 
 
@@ -189,21 +151,142 @@ class InitSpecMgmt(BaseModel):
     ] = None
 
 
-class InitSpecMgmtStaticRoute(BaseModel):
-    nextHop: Annotated[
-        Optional[str], Field(description="Static route next hop.", title="Next Hop")
+class InitSpec(BaseModel):
+    """
+    InitSpec defines the desired state of Init
+    """
+
+    commitSave: Annotated[
+        Optional[bool],
+        Field(
+            description="Save a startup configuration after each commit.",
+            title="Commit Save",
+        ),
     ] = None
-    prefix: Annotated[
-        Optional[str], Field(description="Static route prefix.", title="Prefix")
+    mgmt: Annotated[
+        Optional[InitSpecMgmt],
+        Field(
+            description="Optional management interface settings.\nAllows setting DHCP clients or static IPs as well as\nthe IP MTU.",
+            title="Mgmt",
+        ),
+    ] = None
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Optional node selectors to perform initial configuration for.\nIf not provided initialization is performed for all nodes.",
+            title="Node Selector",
+        ),
     ] = None
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+class InitDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class InitDeletedResources(RootModel[List[InitDeletedResourceEntry]]):
+    root: List[InitDeletedResourceEntry]
+
+
+class InitMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class ManagementRouterSpec(BaseModel):
+    """
+    ManagementRouterSpec defines the desired state of ManagementRouter
+    """
+
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects TopoNodes on which to configure the management VRF. When left empty, all TopoNodes are selected.",
+            title="Node Selector",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of TopoNodes on which to configure the management VRF. When left empty, all TopoNodes are selected.",
+            title="Nodes",
+        ),
+    ] = None
+
+
+ManagementRouterDeletedResourceEntry = InitDeletedResourceEntry
+
+
+class ManagementRouterDeletedResources(
+    RootModel[List[ManagementRouterDeletedResourceEntry]]
+):
+    root: List[ManagementRouterDeletedResourceEntry]
+
+
+ManagementRouterMetadata = InitMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class Init(BaseModel):
+    """
+    Init is the Schema for the inits API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: InitMetadata
+    spec: Annotated[
+        InitSpec,
+        Field(
+            description="InitSpec defines the desired state of Init",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="InitStatus defines the observed state of Init", title="Status"
+        ),
+    ] = None
+
+
+class InitList(BaseModel):
+    """
+    InitList is a list of inits
+    """
+
+    apiVersion: str
+    items: Optional[List[Init]] = None
+    kind: str
 
 
 class ManagementRouter(BaseModel):
@@ -230,15 +313,6 @@ class ManagementRouter(BaseModel):
     ] = None
 
 
-ManagementRouterDeletedResourceEntry = InitDeletedResourceEntry
-
-
-class ManagementRouterDeletedResources(
-    RootModel[List[ManagementRouterDeletedResourceEntry]]
-):
-    root: List[ManagementRouterDeletedResourceEntry]
-
-
 class ManagementRouterList(BaseModel):
     """
     ManagementRouterList is a list of managementrouters
@@ -247,77 +321,3 @@ class ManagementRouterList(BaseModel):
     apiVersion: str
     items: Optional[List[ManagementRouter]] = None
     kind: str
-
-
-ManagementRouterMetadata = InitMetadata
-
-
-class ManagementRouterSpec(BaseModel):
-    """
-    ManagementRouterSpec defines the desired state of ManagementRouter
-    """
-
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selects TopoNodes on which to configure the management VRF. When left empty, all TopoNodes are selected.",
-            title="Node Selector",
-        ),
-    ] = None
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of TopoNodes on which to configure the management VRF. When left empty, all TopoNodes are selected.",
-            title="Nodes",
-        ),
-    ] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class UIResult(RootModel[str]):
-    root: str
