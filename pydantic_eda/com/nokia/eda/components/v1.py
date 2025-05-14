@@ -2,11 +2,9 @@
 #   filename:  https://raw.githubusercontent.com/eda-labs/openapi/v25.4.1/apps/components.eda.nokia.com/v1/components.json
 
 from __future__ import annotations
-
-from datetime import date
 from typing import Annotated, Any, Dict, List, Literal, Optional
-
 from pydantic import BaseModel, Field, RootModel
+from datetime import date
 
 
 class Chassis(BaseModel):
@@ -16,15 +14,15 @@ class Chassis(BaseModel):
     spec: Annotated[
         Dict[str, Any],
         Field(
-            description='ChassisSpec defines the desired state of Chassis',
-            title='Specification',
+            description="ChassisSpec defines the desired state of Chassis",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status],
         Field(
-            description='ChassisStatus defines the observed state of Chassis',
-            title='Status',
+            description="ChassisStatus defines the observed state of Chassis",
+            title="Status",
         ),
     ] = None
 
@@ -42,7 +40,7 @@ class ChassisMetadata(BaseModel):
         str,
         Field(
             max_length=253,
-            pattern='^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$',
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
     namespace: str
@@ -50,24 +48,24 @@ class ChassisMetadata(BaseModel):
 
 class Child(BaseModel):
     name: Annotated[
-        Optional[str], Field(description='Reference to a child component', title='Name')
+        Optional[str], Field(description="Reference to a child component", title="Name")
     ] = None
     type: Annotated[
         Optional[
             Literal[
-                'Fan',
-                'FanTray',
-                'PowerSupply',
-                'PowerModule',
-                'PowerShelf',
-                'InterfaceModule',
-                'ControlModule',
-                'FabricModule',
-                'Chassis',
-                'Transceiver',
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
             ]
         ],
-        Field(description='Type of the child component', title='Type'),
+        Field(description="Type of the child component", title="Type"),
     ] = None
 
 
@@ -78,15 +76,15 @@ class Component(BaseModel):
     spec: Annotated[
         Spec,
         Field(
-            description='ComponentSpec defines the desired state of Component',
-            title='Specification',
+            description="ComponentSpec defines the desired state of Component",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model],
         Field(
-            description='ComponentStatus defines the observed state of Component',
-            title='Status',
+            description="ComponentStatus defines the observed state of Component",
+            title="Status",
         ),
     ] = None
 
@@ -107,15 +105,15 @@ class ControlModule(BaseModel):
     spec: Annotated[
         Dict[str, Any],
         Field(
-            description='ControlModuleSpec defines the desired state of ControlModule',
-            title='Specification',
+            description="ControlModuleSpec defines the desired state of ControlModule",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model1],
         Field(
-            description='ControlModuleStatus defines the observed state of ControlModule',
-            title='Status',
+            description="ControlModuleStatus defines the observed state of ControlModule",
+            title="Status",
         ),
     ] = None
 
@@ -131,13 +129,13 @@ ControlModuleMetadata = ChassisMetadata
 
 class Cpu(BaseModel):
     enabled: Annotated[
-        bool, Field(description='Enable or disable CPU monitoring.', title='Enabled')
+        bool, Field(description="Enable or disable CPU monitoring.", title="Enabled")
     ]
     utilization: Annotated[
         Optional[Utilization],
         Field(
-            description='Parameters relating to CPU utilization monitoring.',
-            title='Thresholds',
+            description="Parameters relating to CPU utilization monitoring.",
+            title="Thresholds",
         ),
     ] = None
 
@@ -149,15 +147,15 @@ class FabricModule(BaseModel):
     spec: Annotated[
         Dict[str, Any],
         Field(
-            description='FabricModuleSpec defines the desired state of FabricModule',
-            title='Specification',
+            description="FabricModuleSpec defines the desired state of FabricModule",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model2],
         Field(
-            description='FabricModuleStatus defines the observed state of FabricModule',
-            title='Status',
+            description="FabricModuleStatus defines the observed state of FabricModule",
+            title="Status",
         ),
     ] = None
 
@@ -178,14 +176,14 @@ class Fan(BaseModel):
     spec: Annotated[
         Dict[str, Any],
         Field(
-            description='FanSpec defines the desired state of Fan',
-            title='Specification',
+            description="FanSpec defines the desired state of Fan",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model3],
         Field(
-            description='FanStatus defines the observed state of Fan', title='Status'
+            description="FanStatus defines the observed state of Fan", title="Status"
         ),
     ] = None
 
@@ -206,15 +204,15 @@ class InterfaceModule(BaseModel):
     spec: Annotated[
         Dict[str, Any],
         Field(
-            description='InterfaceModuleSpec defines the desired state of InterfaceModule',
-            title='Specification',
+            description="InterfaceModuleSpec defines the desired state of InterfaceModule",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model4],
         Field(
-            description='InterfaceModuleStatus defines the observed state of InterfaceModule',
-            title='Status',
+            description="InterfaceModuleStatus defines the observed state of InterfaceModule",
+            title="Status",
         ),
     ] = None
 
@@ -230,13 +228,13 @@ InterfaceModuleMetadata = ChassisMetadata
 
 class Memory(BaseModel):
     enabled: Annotated[
-        bool, Field(description='Enable or disable memory monitoring.', title='Enabled')
+        bool, Field(description="Enable or disable memory monitoring.", title="Enabled")
     ]
     utilization: Annotated[
         Optional[Utilization],
         Field(
-            description='Parameters relating to memory utilization monitoring.',
-            title='Thresholds',
+            description="Parameters relating to memory utilization monitoring.",
+            title="Thresholds",
         ),
     ] = None
 
@@ -248,15 +246,15 @@ class Monitor(BaseModel):
     spec: Annotated[
         SpecModel,
         Field(
-            description='MonitorSpec defines the desired state of Monitor',
-            title='Specification',
+            description="MonitorSpec defines the desired state of Monitor",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model5],
         Field(
-            description='MonitorStatus defines the observed state of Monitor',
-            title='Status',
+            description="MonitorStatus defines the observed state of Monitor",
+            title="Status",
         ),
     ] = None
 
@@ -289,15 +287,15 @@ class PowerSupply(BaseModel):
     spec: Annotated[
         SpecModel1,
         Field(
-            description='PowerSupplySpec defines the desired state of PowerSupply',
-            title='Specification',
+            description="PowerSupplySpec defines the desired state of PowerSupply",
+            title="Specification",
         ),
     ]
     status: Annotated[
         Optional[Status1Model6],
         Field(
-            description='PowerSupplyStatus defines the observed state of PowerSupply',
-            title='Status',
+            description="PowerSupplyStatus defines the observed state of PowerSupply",
+            title="Status",
         ),
     ] = None
 
@@ -315,31 +313,31 @@ class Spec(BaseModel):
     node: Annotated[
         str,
         Field(
-            description='TopologyNode this Component resides on.\nIndicates the operation in which to apply the configuration',
-            title='Node',
+            description="TopologyNode this Component resides on.\nIndicates the operation in which to apply the configuration",
+            title="Node",
         ),
     ]
     slot: Annotated[
         Optional[str],
         Field(
-            description='Slot this Component resides in, unset for Components that do not have a slot or ID.',
-            title='Slot',
+            description="Slot this Component resides in, unset for Components that do not have a slot or ID.",
+            title="Slot",
         ),
     ] = None
     type: Annotated[
         Literal[
-            'Fan',
-            'FanTray',
-            'PowerSupply',
-            'PowerModule',
-            'PowerShelf',
-            'InterfaceModule',
-            'ControlModule',
-            'FabricModule',
-            'Chassis',
-            'Transceiver',
+            "Fan",
+            "FanTray",
+            "PowerSupply",
+            "PowerModule",
+            "PowerShelf",
+            "InterfaceModule",
+            "ControlModule",
+            "FabricModule",
+            "Chassis",
+            "Transceiver",
         ],
-        Field(description='Type of Component.', title='Type'),
+        Field(description="Type of Component.", title="Type"),
     ]
 
 
@@ -347,32 +345,32 @@ class SpecModel(BaseModel):
     cpu: Annotated[
         Optional[Cpu],
         Field(
-            description='CPU monitoring for targets matching this Monitor.', title='CPU'
+            description="CPU monitoring for targets matching this Monitor.", title="CPU"
         ),
     ] = None
     memory: Annotated[
         Optional[Memory],
         Field(
-            description='Memory monitoring for targets matching this Monitor.',
-            title='Memory',
+            description="Memory monitoring for targets matching this Monitor.",
+            title="Memory",
         ),
     ] = None
     targetSelector: Annotated[
         Optional[List[str]],
         Field(
-            description='Selector to use when including targets to monitor.',
-            title='Target Selector',
+            description="Selector to use when including targets to monitor.",
+            title="Target Selector",
         ),
     ] = None
     targets: Annotated[
         Optional[List[str]],
-        Field(description='References to targets to monitor.', title='Targets'),
+        Field(description="References to targets to monitor.", title="Targets"),
     ] = None
     volume: Annotated[
         Optional[Volume],
         Field(
-            description='Volume monitoring for targets matching this Monitor.',
-            title='Volume',
+            description="Volume monitoring for targets matching this Monitor.",
+            title="Volume",
         ),
     ] = None
 
@@ -389,71 +387,71 @@ class SpecModel1(BaseModel):
 class Status(BaseModel):
     chassisMacAddress: Annotated[
         Optional[str],
-        Field(description='MAC Address of the Chassis', title='Chassis MAC Address'),
+        Field(description="MAC Address of the Chassis", title="Chassis MAC Address"),
     ] = None
     children: Annotated[
         Optional[List[Child]],
-        Field(description='References to children components', title='Children'),
+        Field(description="References to children components", title="Children"),
     ] = None
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
-        Field(description='The CLEI code of this component', title='CLEI Code'),
+        Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last booted',
-            title='Last Booted',
+            description="The date and time this component last booted",
+            title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last changed operational state',
-            title='Last Change',
+            description="The date and time this component last changed operational state",
+            title="Last Change",
         ),
     ] = None
     manufacturedDate: Annotated[
         Optional[date],
         Field(
-            description='The date this component was manufactured',
-            title='Manufactured Date',
+            description="The date this component was manufactured",
+            title="Manufactured Date",
         ),
     ] = None
     operationalState: Annotated[
-        Optional[Literal['Up', 'Down', 'Rebooting', 'Unknown', 'Starting', 'Empty']],
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
         Field(
-            description='Indicates the current operational state of this component.',
-            title='Operational State',
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
         ),
     ] = None
     partNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered part number of this component',
-            title='Part Number',
+            description="The discovered part number of this component",
+            title="Part Number",
         ),
     ] = None
     removable: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if this component is removable', title='Removable'
+            description="Indicates if this component is removable", title="Removable"
         ),
     ] = None
     serialNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered serial number of this component',
-            title='Serial Number',
+            description="The discovered serial number of this component",
+            title="Serial Number",
         ),
     ] = None
     target: Annotated[
         Optional[str],
-        Field(description='Target this component resides on.', title='Target'),
+        Field(description="Target this component resides on.", title="Target"),
     ] = None
     type: Annotated[
         Optional[str],
-        Field(description='Component type, as provided by the target', title='Type'),
+        Field(description="Component type, as provided by the target", title="Type"),
     ] = None
 
 
@@ -461,373 +459,373 @@ class Status1Model(BaseModel):
     enabled: Annotated[
         Optional[bool],
         Field(
-            description='The administrative status of this Component.', title='Enabled'
+            description="The administrative status of this Component.", title="Enabled"
         ),
     ] = None
     lastChange: Annotated[
         Optional[date],
         Field(
-            description='The date and time this Component last changed operational state',
-            title='Last Change',
+            description="The date and time this Component last changed operational state",
+            title="Last Change",
         ),
     ] = None
     manufacturedDate: Annotated[
         Optional[date],
         Field(
-            description='The date this Component was manufactured',
-            title='Manufactured Date',
+            description="The date this Component was manufactured",
+            title="Manufactured Date",
         ),
     ] = None
     operationalState: Annotated[
-        Optional[Literal['Up', 'Down', 'Rebooting', 'Unknown', 'Starting', 'Empty']],
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
         Field(
-            description='Indicates the current operational state of this Component.',
-            title='Operational State',
+            description="Indicates the current operational state of this Component.",
+            title="Operational State",
         ),
     ] = None
     partNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered part number of this Component',
-            title='Part Number',
+            description="The discovered part number of this Component",
+            title="Part Number",
         ),
     ] = None
     serialNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered serial number of this Component',
-            title='Serial Number',
+            description="The discovered serial number of this Component",
+            title="Serial Number",
         ),
     ] = None
     type: Annotated[
         Optional[str],
-        Field(description='Component type, as provided by the node.', title='Type'),
+        Field(description="Component type, as provided by the node.", title="Type"),
     ] = None
 
 
 class Status1Model1(BaseModel):
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
-        Field(description='The CLEI code of this component', title='CLEI Code'),
+        Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last booted',
-            title='Last Booted',
+            description="The date and time this component last booted",
+            title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last changed operational state',
-            title='Last Change',
+            description="The date and time this component last changed operational state",
+            title="Last Change",
         ),
     ] = None
     locatorEnabled: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if the locator LED for the component is active',
-            title='Locator Enabled',
+            description="Indicates if the locator LED for the component is active",
+            title="Locator Enabled",
         ),
     ] = None
     manufacturedDate: Annotated[
         Optional[date],
         Field(
-            description='The date this component was manufactured',
-            title='Manufactured Date',
+            description="The date this component was manufactured",
+            title="Manufactured Date",
         ),
     ] = None
     operationalState: Annotated[
-        Optional[Literal['Up', 'Down', 'Rebooting', 'Unknown', 'Starting', 'Empty']],
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
         Field(
-            description='Indicates the current operational state of this component.',
-            title='Operational State',
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
         ),
     ] = None
     parent: Annotated[
         Optional[str],
-        Field(description='Reference to a parent component', title='Parent'),
+        Field(description="Reference to a parent component", title="Parent"),
     ] = None
     parentType: Annotated[
         Optional[
             Literal[
-                'Fan',
-                'FanTray',
-                'PowerSupply',
-                'PowerModule',
-                'PowerShelf',
-                'InterfaceModule',
-                'ControlModule',
-                'FabricModule',
-                'Chassis',
-                'Transceiver',
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
             ]
         ],
-        Field(description='Type of the parent component', title='Parent Type'),
+        Field(description="Type of the parent component", title="Parent Type"),
     ] = None
     partNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered part number of this component',
-            title='Part Number',
+            description="The discovered part number of this component",
+            title="Part Number",
         ),
     ] = None
     removable: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if this component is removable', title='Removable'
+            description="Indicates if this component is removable", title="Removable"
         ),
     ] = None
     role: Annotated[
-        Optional[Literal['Active', 'Standby']],
-        Field(description='Role of the control module', title='Role'),
+        Optional[Literal["Active", "Standby"]],
+        Field(description="Role of the control module", title="Role"),
     ] = None
     serialNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered serial number of this component',
-            title='Serial Number',
+            description="The discovered serial number of this component",
+            title="Serial Number",
         ),
     ] = None
     slot: Annotated[
         Optional[str],
         Field(
-            description='Slot this component resides in, unset for components that do not have a slot or ID',
-            title='Slot',
+            description="Slot this component resides in, unset for components that do not have a slot or ID",
+            title="Slot",
         ),
     ] = None
     softwareVersion: Annotated[
         Optional[str],
         Field(
-            description='Version string of the software running on this component',
-            title='Software Version',
+            description="Version string of the software running on this component",
+            title="Software Version",
         ),
     ] = None
     target: Annotated[
         Optional[str],
-        Field(description='Target this component resides on.', title='Target'),
+        Field(description="Target this component resides on.", title="Target"),
     ] = None
     temperature: Annotated[
         Optional[Temperature],
         Field(
-            description='Temperature information for this component',
-            title='Temperature',
+            description="Temperature information for this component",
+            title="Temperature",
         ),
     ] = None
     type: Annotated[
         Optional[str],
-        Field(description='Component type, as provided by the target', title='Type'),
+        Field(description="Component type, as provided by the target", title="Type"),
     ] = None
 
 
 class Status1Model2(BaseModel):
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
-        Field(description='The CLEI code of this component', title='CLEI Code'),
+        Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last booted',
-            title='Last Booted',
+            description="The date and time this component last booted",
+            title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last changed operational state',
-            title='Last Change',
+            description="The date and time this component last changed operational state",
+            title="Last Change",
         ),
     ] = None
     locatorEnabled: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if the locator LED for the component is active',
-            title='Locator Enabled',
+            description="Indicates if the locator LED for the component is active",
+            title="Locator Enabled",
         ),
     ] = None
     manufacturedDate: Annotated[
         Optional[date],
         Field(
-            description='The date this component was manufactured',
-            title='Manufactured Date',
+            description="The date this component was manufactured",
+            title="Manufactured Date",
         ),
     ] = None
     operationalState: Annotated[
-        Optional[Literal['Up', 'Down', 'Rebooting', 'Unknown', 'Starting', 'Empty']],
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
         Field(
-            description='Indicates the current operational state of this component.',
-            title='Operational State',
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
         ),
     ] = None
     parent: Annotated[
         Optional[str],
-        Field(description='Reference to a parent component', title='Parent'),
+        Field(description="Reference to a parent component", title="Parent"),
     ] = None
     parentType: Annotated[
         Optional[
             Literal[
-                'Fan',
-                'FanTray',
-                'PowerSupply',
-                'PowerModule',
-                'PowerShelf',
-                'InterfaceModule',
-                'ControlModule',
-                'FabricModule',
-                'Chassis',
-                'Transceiver',
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
             ]
         ],
-        Field(description='Type of the parent component', title='Parent Type'),
+        Field(description="Type of the parent component", title="Parent Type"),
     ] = None
     partNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered part number of this component',
-            title='Part Number',
+            description="The discovered part number of this component",
+            title="Part Number",
         ),
     ] = None
     removable: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if this component is removable', title='Removable'
+            description="Indicates if this component is removable", title="Removable"
         ),
     ] = None
     serialNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered serial number of this component',
-            title='Serial Number',
+            description="The discovered serial number of this component",
+            title="Serial Number",
         ),
     ] = None
     slot: Annotated[
         Optional[str],
         Field(
-            description='Slot this component resides in, unset for components that do not have a slot or ID',
-            title='Slot',
+            description="Slot this component resides in, unset for components that do not have a slot or ID",
+            title="Slot",
         ),
     ] = None
     softwareVersion: Annotated[
         Optional[str],
         Field(
-            description='Version string of the software running on this component',
-            title='Software Version',
+            description="Version string of the software running on this component",
+            title="Software Version",
         ),
     ] = None
     target: Annotated[
         Optional[str],
-        Field(description='Target this component resides on.', title='Target'),
+        Field(description="Target this component resides on.", title="Target"),
     ] = None
     temperature: Annotated[
         Optional[Temperature],
         Field(
-            description='Temperature information for this component',
-            title='Temperature',
+            description="Temperature information for this component",
+            title="Temperature",
         ),
     ] = None
     type: Annotated[
         Optional[str],
-        Field(description='Component type, as provided by the target', title='Type'),
+        Field(description="Component type, as provided by the target", title="Type"),
     ] = None
 
 
 class Status1Model3(BaseModel):
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
-        Field(description='The CLEI code of this component', title='CLEI Code'),
+        Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last booted',
-            title='Last Booted',
+            description="The date and time this component last booted",
+            title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
         Optional[date],
         Field(
-            description='The date and time this component last changed operational state',
-            title='Last Change',
+            description="The date and time this component last changed operational state",
+            title="Last Change",
         ),
     ] = None
     locatorEnabled: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if the locator LED for the component is active',
-            title='Locator Enabled',
+            description="Indicates if the locator LED for the component is active",
+            title="Locator Enabled",
         ),
     ] = None
     manufacturedDate: Annotated[
         Optional[date],
         Field(
-            description='The date this component was manufactured',
-            title='Manufactured Date',
+            description="The date this component was manufactured",
+            title="Manufactured Date",
         ),
     ] = None
     operationalState: Annotated[
-        Optional[Literal['Up', 'Down', 'Rebooting', 'Unknown', 'Starting', 'Empty']],
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
         Field(
-            description='Indicates the current operational state of this component.',
-            title='Operational State',
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
         ),
     ] = None
     parent: Annotated[
         Optional[str],
-        Field(description='Reference to a parent component', title='Parent'),
+        Field(description="Reference to a parent component", title="Parent"),
     ] = None
     parentType: Annotated[
         Optional[
             Literal[
-                'Fan',
-                'FanTray',
-                'PowerSupply',
-                'PowerModule',
-                'PowerShelf',
-                'InterfaceModule',
-                'ControlModule',
-                'FabricModule',
-                'Chassis',
-                'Transceiver',
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
             ]
         ],
-        Field(description='Type of the parent component', title='Parent Type'),
+        Field(description="Type of the parent component", title="Parent Type"),
     ] = None
     partNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered part number of this component',
-            title='Part Number',
+            description="The discovered part number of this component",
+            title="Part Number",
         ),
     ] = None
     removable: Annotated[
         Optional[bool],
         Field(
-            description='Indicates if this component is removable', title='Removable'
+            description="Indicates if this component is removable", title="Removable"
         ),
     ] = None
     serialNumber: Annotated[
         Optional[str],
         Field(
-            description='The discovered serial number of this component',
-            title='Serial Number',
+            description="The discovered serial number of this component",
+            title="Serial Number",
         ),
     ] = None
     slot: Annotated[
         Optional[str],
         Field(
-            description='Slot this component resides in, unset for components that do not have a slot or ID',
-            title='Slot',
+            description="Slot this component resides in, unset for components that do not have a slot or ID",
+            title="Slot",
         ),
     ] = None
     target: Annotated[
         Optional[str],
-        Field(description='Target this component resides on.', title='Target'),
+        Field(description="Target this component resides on.", title="Target"),
     ] = None
     type: Annotated[
         Optional[str],
-        Field(description='Component type, as provided by the target', title='Type'),
+        Field(description="Component type, as provided by the target", title="Type"),
     ] = None
 
 
@@ -837,7 +835,7 @@ Status1Model4 = Status1Model2
 class Status1Model5(BaseModel):
     targets: Annotated[
         Optional[List[str]],
-        Field(description='Targets being monitored.', title='Targets'),
+        Field(description="Targets being monitored.", title="Targets"),
     ] = None
 
 
@@ -848,26 +846,26 @@ class Temperature(BaseModel):
     alarmState: Annotated[
         Optional[bool],
         Field(
-            description='The temperature alarm state, as reported by the component',
-            title='Alarm State',
+            description="The temperature alarm state, as reported by the component",
+            title="Alarm State",
         ),
     ] = None
     instant: Annotated[
         Optional[int],
-        Field(description='The current temperature of this component', title='Instant'),
+        Field(description="The current temperature of this component", title="Instant"),
     ] = None
     margin: Annotated[
         Optional[int],
-        Field(description='The margin temperature of this component', title='Margin'),
+        Field(description="The margin temperature of this component", title="Margin"),
     ] = None
     maximum: Annotated[
         Optional[int],
-        Field(description='The maximum temperature of this component', title='Maximum'),
+        Field(description="The maximum temperature of this component", title="Maximum"),
     ] = None
     threshold: Annotated[
         Optional[int],
         Field(
-            description='The threshold temperature of this component', title='Threshold'
+            description="The threshold temperature of this component", title="Threshold"
         ),
     ] = None
 
@@ -876,49 +874,49 @@ class Utilization(BaseModel):
     criticalThreshold: Annotated[
         Optional[int],
         Field(
-            description='The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.',
+            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
             ge=1,
             le=100,
-            title='Critical Threshold',
+            title="Critical Threshold",
         ),
     ] = 95
     fallingDelta: Annotated[
         Optional[int],
         Field(
-            description='The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.',
+            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
             ge=1,
             le=25,
-            title='Falling Delta',
+            title="Falling Delta",
         ),
     ] = 5
     majorThreshold: Annotated[
         Optional[int],
         Field(
-            description='The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.',
+            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
             ge=1,
             le=100,
-            title='Major Threshold',
+            title="Major Threshold",
         ),
     ] = 90
     minorThreshold: Annotated[
         Optional[int],
         Field(
-            description='The minimum average utilization over the last 1 minute to trigger a minor alarm.',
+            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
             ge=1,
             le=100,
-            title='Minor Threshold',
+            title="Minor Threshold",
         ),
     ] = 80
 
 
 class Volume(BaseModel):
     enabled: Annotated[
-        bool, Field(description='Enable or disable volume monitoring.', title='Enabled')
+        bool, Field(description="Enable or disable volume monitoring.", title="Enabled")
     ]
     utilization: Annotated[
         Optional[Utilization],
         Field(
-            description='Parameters relating to volume utilization monitoring.',
-            title='Thresholds',
+            description="Parameters relating to volume utilization monitoring.",
+            title="Thresholds",
         ),
     ] = None

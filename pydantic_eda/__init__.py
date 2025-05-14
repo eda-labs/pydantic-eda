@@ -2,9 +2,7 @@
 #   filename:  https://raw.githubusercontent.com/eda-labs/openapi/v25.4.1/apps/components.eda.nokia.com/v1/components.json
 
 from __future__ import annotations
-
 from typing import Annotated, Any, Dict, List, Optional
-
 from pydantic import BaseModel, Field, RootModel
 
 
@@ -32,10 +30,10 @@ class ErrorItem(BaseModel):
 
 class ErrorResponse(BaseModel):
     code: Annotated[
-        int, Field(description='the numeric HTTP error code for the response.')
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
     details: Annotated[
-        Optional[str], Field(description='The optional details of the error response.')
+        Optional[str], Field(description="The optional details of the error response.")
     ] = None
     dictionary: Annotated[
         Optional[Dict[str, Any]],
@@ -46,7 +44,7 @@ class ErrorResponse(BaseModel):
     errors: Annotated[
         Optional[List[ErrorItem]],
         Field(
-            description='Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats'
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
         ),
     ] = None
     index: Optional[ErrorIndex] = None
@@ -57,28 +55,28 @@ class ErrorResponse(BaseModel):
         ),
     ] = None
     message: Annotated[
-        str, Field(description='The basic text error message for the error response.')
+        str, Field(description="The basic text error message for the error response.")
     ]
     ref: Annotated[
         Optional[str],
         Field(
-            description='Reference to the error source. Should typically be the URI of the request'
+            description="Reference to the error source. Should typically be the URI of the request"
         ),
     ] = None
     type: Annotated[
         Optional[str],
         Field(
-            description='URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code'
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
 class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias='from')] = None
+    from_: Annotated[Optional[str], Field(alias="from")] = None
     op: str
     path: str
     value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias='x-permissive')] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
 class Patch(RootModel[List[K8SPatchOp]]):
