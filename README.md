@@ -23,5 +23,7 @@ uv add --dev 'datamodel-code-generator[http]' rich ruff httpx
 Generate models for a specific version of openapi repo:
 
 ```
-python gen_models.py --version v24.12.1
+python gen_models.py --version v25.4.1 --no-cache
 ```
+
+Running with `--no-cache` will download the cache file so that subsequent model generation runs could omit the `--no-cache` flag and leverage the local cache.

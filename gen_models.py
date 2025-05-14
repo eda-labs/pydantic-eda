@@ -6,7 +6,6 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from venv import logger
 
 import httpx
 from httpx import HTTPStatusError, RequestError
@@ -180,6 +179,7 @@ class OpenAPIDiscovery:
                 "--output-model-type",
                 "pydantic_v2.BaseModel",
                 "--use-annotated",
+                # "--parent-scoped-naming",
                 "--enum-field-as-literal",
                 "all",
                 "--output",
