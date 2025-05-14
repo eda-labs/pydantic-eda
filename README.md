@@ -23,3 +23,11 @@ The generation script clones the eda-labs/openapi repo at the provided ref and g
 ## Modifications
 
 The generation script transforms all schema objects in the source openapi files by removing `com.nokia.eda.<name>.<version>`, as DMCG project has issues with treating schema nodes with dots in their names as module-based schemas. Therefore, the original schema nodes undergo that mutation by the script.
+
+## Versions
+
+The following table matches the project version with the version of the EDA delivery from which the models were generated.
+
+| pydantic_eda | EDA release |
+| ------------ | ----------- |
+| 0.3.0        | 25.4.1      |
