@@ -89,7 +89,7 @@ wheels = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.26.5"
+version = "0.30.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
@@ -99,39 +99,17 @@ dependencies = [
     { name = "isort" },
     { name = "jinja2" },
     { name = "packaging" },
-    { name = "pydantic", extra = ["email"] },
+    { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/e4/53153452235a387112df40f67aaf24072d4b5e33aa7bb385004f4c4baf38/datamodel_code_generator-0.26.5.tar.gz", hash = "sha256:c4a94a7dbf7972129882732d9bcee44c9ae090f57c82edd58d237b9d48c40dd0", size = 92586 }
+sdist = { url = "https://files.pythonhosted.org/packages/ef/bc/627a77eafcf7101c9f5710130b2def98593709a8d29676e4a58f09cd2a23/datamodel_code_generator-0.30.1.tar.gz", hash = "sha256:d125012face4cd1eca6c9300297a1f5775a9d5ff8fc3f68d34d0944a7beea105", size = 446630 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/d8/ead3e857d4048947fe92a731d6b1f257dcb267cc8b8918d3b72598c9b728/datamodel_code_generator-0.26.5-py3-none-any.whl", hash = "sha256:e32f986b9914a2b45093947043aa0192d704650be93151f78acf5c95676601ce", size = 114982 },
+    { url = "https://files.pythonhosted.org/packages/e1/b3/01aab190372914399bbc77f89ac3b24b439c3d97a52a6198f1cd1396ef3a/datamodel_code_generator-0.30.1-py3-none-any.whl", hash = "sha256:9601dfa3da8aa8d8d54e182059f78836b1768a807d5c26df798db12d4054c8f3", size = 118045 },
 ]
 
 [package.optional-dependencies]
 http = [
     { name = "httpx" },
-]
-
-[[package]]
-name = "dnspython"
-version = "2.7.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b5/4a/263763cb2ba3816dd94b08ad3a33d5fdae34ecb856678773cc40a3605829/dnspython-2.7.0.tar.gz", hash = "sha256:ce9c432eda0dc91cf618a5cedf1a4e142651196bbcd2c80e89ed5a907e5cfaf1", size = 345197 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/1b/e0a87d256e40e8c888847551b20a017a6b98139178505dc7ffb96f04e954/dnspython-2.7.0-py3-none-any.whl", hash = "sha256:b4c34b7d10b51bcc3a5071e7b8dee77939f1e878477eeecc965e9835f63c6c86", size = 313632 },
-]
-
-[[package]]
-name = "email-validator"
-version = "2.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "dnspython" },
-    { name = "idna" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/48/ce/13508a1ec3f8bb981ae4ca79ea40384becc868bfae97fd1c942bb3a001b1/email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7", size = 48967 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/ee/bf0adb559ad3c786f12bcbc9296b3f5675f529199bef03e2df281fa1fadb/email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631", size = 33521 },
 ]
 
 [[package]]
@@ -328,11 +306,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/3c/8cc1cc84deffa6e25d2d0c688ebb80635dfdbf1dbea3e30c541c8cf4d860/pydantic-2.10.6-py3-none-any.whl", hash = "sha256:427d664bf0b8a2b34ff5dd0f5a18df00591adcee7198fbd71981054cef37b584", size = 431696 },
 ]
 
-[package.optional-dependencies]
-email = [
-    { name = "email-validator" },
-]
-
 [[package]]
 name = "pydantic-core"
 version = "2.27.2"
@@ -375,7 +348,7 @@ wheels = [
 [[package]]
 name = "pydantic-eda"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
 ]
@@ -393,7 +366,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.10.6" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.26.5" },
+    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.30.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "rich", specifier = ">=13.9.4" },
     { name = "ruff", specifier = ">=0.9.3" },

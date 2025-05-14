@@ -1,18 +1,13 @@
 [project]
 name = "pydantic-eda"
-version = "0.1.0"
+version = "0.3.0"
 description = "Pydantic models for EDA OpenAPI specification"
 readme = "README.md"
 requires-python = "~=3.12"
 dependencies = ["pydantic>=2.10.6"]
 
 [dependency-groups]
-dev = [
-    "datamodel-code-generator[http]>=0.26.5",
-    "httpx>=0.28.1",
-    "rich>=13.9.4",
-    "ruff>=0.9.3",
-]
+dev = ["datamodel-code-generator[http]>=0.30.1", "rich>=13.9.4", "ruff>=0.9.3"]
 
 [build-system]
 requires = ["hatchling"]
