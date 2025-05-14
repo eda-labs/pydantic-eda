@@ -28,11 +28,9 @@ logger = logging.getLogger(__name__)
 class Generator:
     def __init__(
         self,
-        input_dir: str,
         output_dir: str,
         version: str,
         verbose: bool,
-        use_cache: bool,
     ):
         # openapi repo
         self.repo_url = "https://github.com/eda-labs/openapi"
@@ -66,15 +64,18 @@ class Generator:
         """
         Process the specs under the build dir
         """
+
         # Process apps directory
         apps_dir = self.build_dir.joinpath("apps")
         if not apps_dir.exists():
-            logger.info("apps dir not found in the clond specs repo")
+            logger.info("apps dir not found in the cloned specs repo")
             sys.exit(1)
 
         for spec_file in apps_dir.glob("**/*.json"):
-            if spec_file.name != "services.json":
-                continue
+            # uncomment and change to a desired name if you want to generate
+            # just one model
+            # if spec_file.name != "services.json":
+            #     continue
 
             logger.info(f"Processing {spec_file}")
             api_name, api_version = extract_name_version(spec_file)
@@ -82,6 +83,21 @@ class Generator:
 
             self.sanitize_schema_objects(spec_file, api_name, api_version)
 
+            self.generate_classes_for_spec(spec_file, api_name, api_version)
+
+        # process the core spec that is a single file in its own dir
+        core_dir = self.build_dir.joinpath("core")
+        if not core_dir.exists():
+            logger.info("core dir not found in the cloned specs repo")
+            sys.exit(1)
+
+        for spec_file in core_dir.glob("**/*.json"):
+            api_name = "core"
+            # core api has a v0.0.1 in the spec but that will change
+            # for now use v1alpha1
+            api_version = "v1alpha1"
+            logger.debug(f"API name: {api_name}, API version: {api_version}")
+            self.sanitize_schema_objects(spec_file, api_name, api_version)
             self.generate_classes_for_spec(spec_file, api_name, api_version)
 
     def generate_classes_for_spec(
@@ -94,8 +110,16 @@ class Generator:
         :param api_version: Version of the API
         """
 
+        app_parent_dir = "apps"
+
+        # when generating models for the core api we put it right
+        # under the pydantic_eda output dir, while all the apps
+        # go under pydantic_eda/apps/
+        if spec_file.parts[1] == "core":
+            app_parent_dir = ""
+
         dest_file = self.output_dir.joinpath(
-            api_name, api_version, spec_file.stem + ".py"
+            app_parent_dir, api_name, api_version, spec_file.stem + ".py"
         )
 
         # Create all parent directories of the dest file
@@ -239,7 +263,6 @@ class Generator:
                     and f"#/components/schemas/com.nokia.eda.{api_name}.{api_version}"
                     in value
                 ):
-                    print(value)
                     # replace the unnecessary parts from the ref value
                     new_value = value.replace(
                         f"com.nokia.eda.{api_name}.{api_version}.", ""
@@ -275,12 +298,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Discover OpenAPI specifications and generate Pydantic models."
     )
-    parser.add_argument(
-        "--input",
-        type=str,
-        default="./openapi_specs",
-        help="Path to the OpenAPI specifications directory. Default: ./openapi_specs",
-    )
+
     parser.add_argument(
         "--output",
         type=str,
@@ -298,19 +316,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Enable verbose logging. Default: False",
     )
-    parser.add_argument(
-        "--no-cache",
-        action="store_true",
-        help="Force fresh discovery by ignoring the cache. Default: False",
-    )
 
     args = parser.parse_args()
 
     generator = Generator(
-        input_dir=args.input,
         output_dir=args.output,
         version=args.version,
         verbose=args.verbose,
-        use_cache=not args.no_cache,
     )
     generator.generate_models()
