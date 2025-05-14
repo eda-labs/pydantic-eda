@@ -119,7 +119,7 @@ class Generator:
             app_parent_dir = ""
 
         dest_file = self.output_dir.joinpath(
-            app_parent_dir, api_name, api_version, spec_file.stem + ".py"
+            app_parent_dir, api_name, api_version, "models.py"
         )
 
         # Create all parent directories of the dest file
