@@ -1,29 +1,25 @@
 # Pydantic EDA
 
-**WIP!**
-
 Pydantic models for EDA OpenAPI spec. Models are generated for the EDA Core API as well as for the apps shipped with EDA Playground at the time of the generation.
 
 ## Usage
 
 ## Generation
 
-Store Github auth token in a `GH_AUTH_TOKEN` environment variable. For example, with `gh` cli:
-
-```
-export GH_AUTH_TOKEN=$(gh auth token)
-```
-
 Install dev dependencies:
 
 ```
-uv add --dev 'datamodel-code-generator[http]' rich ruff httpx
+uv sync --all-groups
 ```
 
-Generate models for a specific version of openapi repo:
+Generate models for a specific version of the openapi repo (git ref):
 
 ```
-python gen_models.py --version v25.4.1 --no-cache
+python gen_models.py --version v25.4.1
 ```
 
-Running with `--no-cache` will download the cache file so that subsequent model generation runs could omit the `--no-cache` flag and leverage the local cache.
+The generation script clones the eda-labs/openapi repo at the provided ref and generated models from there.
+
+## Modifications
+
+The generation script transforms all schema objects in the source openapi files by removing `com.nokia.eda.<name>.<version>`, as DMCG project has issues with treating schema nodes with dots in their names as module-based schemas. Therefore, the original schema nodes undergo that mutation by the script.
