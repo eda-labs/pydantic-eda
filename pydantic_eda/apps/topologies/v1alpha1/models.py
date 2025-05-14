@@ -6,344 +6,9 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class CPUUtilOverlay(BaseModel):
-    """
-    CPUUtilOverlay is the Schema for the cpuutiloverlays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: CPUUtilOverlayMetadata
-    spec: Annotated[
-        CPUUtilOverlaySpec,
-        Field(
-            description="CPUUtilOverlaySpec defines the desired state of CPUUtilOverlay",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="CPUUtilOverlayStatus defines the observed state of CPUUtilOverlay",
-            title="Status",
-        ),
-    ] = None
-
-
-class CPUUtilOverlayDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class CPUUtilOverlayDeletedResources(
-    RootModel[List[CPUUtilOverlayDeletedResourceEntry]]
-):
-    root: List[CPUUtilOverlayDeletedResourceEntry]
-
-
-class CPUUtilOverlayList(BaseModel):
-    """
-    CPUUtilOverlayList is a list of cpuutiloverlays
-    """
-
-    apiVersion: str
-    items: Optional[List[CPUUtilOverlay]] = None
-    kind: str
-
-
-class CPUUtilOverlayMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-
-
-class CPUUtilOverlaySpec(BaseModel):
-    """
-    CPUUtilOverlaySpec defines the desired state of CPUUtilOverlay
-    """
-
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable the generation of the status of this overlay",
-            title="Enabled",
-        ),
-    ]
-    topology: Annotated[
-        CPUUtilOverlaySpecTopology,
-        Field(
-            description="Reference to the topology that this overlay is extending.",
-            title="Topology",
-        ),
-    ]
-    uiDescription: Annotated[
-        Optional[str],
-        Field(
-            description="A description of the overlay to expose in the UI",
-            title="UI Description",
-        ),
-    ] = None
-    uiDescriptionKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the description of the overlay to expose in the UI",
-            title="UI Description Key",
-        ),
-    ] = None
-    uiName: Annotated[
-        Optional[str],
-        Field(
-            description="The name of the overlay to expose in the UI", title="UI Name"
-        ),
-    ] = None
-    uiNameKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the name of the overlay to expose in the UI",
-            title="UI Name Key",
-        ),
-    ] = None
-
-
-class CPUUtilOverlaySpecTopology(BaseModel):
-    """
-    Reference to the topology that this overlay is extending.
-    """
-
-    group: Annotated[
-        str,
-        Field(
-            description="The group of the application which published the topology this overlay is extending.",
-            title="Group",
-        ),
-    ]
-    name: Annotated[
-        str,
-        Field(
-            description="The name of the resource which published the topology this overlay is extending.",
-            title="Name",
-        ),
-    ]
-    version: Annotated[
-        str,
-        Field(
-            description="The version of the application which published the topology this overlay is extending.",
-            title="Version",
-        ),
-    ]
-
-
-class DeviationOverlay(BaseModel):
-    """
-    DeviationOverlay is the Schema for the deviationoverlays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DeviationOverlayMetadata
-    spec: Annotated[
-        DeviationOverlaySpec,
-        Field(
-            description="DeviationOverlaySpec defines the desired state of DeviationOverlay",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="DeviationOverlayStatus defines the observed state of DeviationOverlay",
-            title="Status",
-        ),
-    ] = None
-
-
-DeviationOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
-
-
-class DeviationOverlayDeletedResources(
-    RootModel[List[DeviationOverlayDeletedResourceEntry]]
-):
-    root: List[DeviationOverlayDeletedResourceEntry]
-
-
-class DeviationOverlayList(BaseModel):
-    """
-    DeviationOverlayList is a list of deviationoverlays
-    """
-
-    apiVersion: str
-    items: Optional[List[DeviationOverlay]] = None
-    kind: str
-
-
-DeviationOverlayMetadata = CPUUtilOverlayMetadata
-
-
-class DeviationOverlaySpec(BaseModel):
-    """
-    DeviationOverlaySpec defines the desired state of DeviationOverlay
-    """
-
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable the generation of the status of this overlay",
-            title="Enabled",
-        ),
-    ]
-    topology: Annotated[
-        DeviationOverlaySpecTopology,
-        Field(
-            description="Reference to the topology that this overlay is extending.",
-            title="Topology",
-        ),
-    ]
-    uiDescription: Annotated[
-        Optional[str],
-        Field(
-            description="A description of the overlay to expose in the UI",
-            title="UI Description",
-        ),
-    ] = None
-    uiDescriptionKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the description of the overlay to expose in the UI",
-            title="UI Description Key",
-        ),
-    ] = None
-    uiName: Annotated[
-        Optional[str],
-        Field(
-            description="The name of the overlay to expose in the UI", title="UI Name"
-        ),
-    ] = None
-    uiNameKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the name of the overlay to expose in the UI",
-            title="UI Name Key",
-        ),
-    ] = None
-
-
-DeviationOverlaySpecTopology = CPUUtilOverlaySpecTopology
-
-
-class DiskOverlay(BaseModel):
-    """
-    DiskOverlay is the Schema for the diskoverlays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DiskOverlayMetadata
-    spec: Annotated[
-        DiskOverlaySpec,
-        Field(
-            description="DiskOverlaySpec defines the desired state of DiskOverlay",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="DiskOverlayStatus defines the observed state of DiskOverlay",
-            title="Status",
-        ),
-    ] = None
-
-
-DiskOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
-
-
-class DiskOverlayDeletedResources(RootModel[List[DiskOverlayDeletedResourceEntry]]):
-    root: List[DiskOverlayDeletedResourceEntry]
-
-
-class DiskOverlayList(BaseModel):
-    """
-    DiskOverlayList is a list of diskoverlays
-    """
-
-    apiVersion: str
-    items: Optional[List[DiskOverlay]] = None
-    kind: str
-
-
-DiskOverlayMetadata = CPUUtilOverlayMetadata
-
-
-class DiskOverlaySpec(BaseModel):
-    """
-    DiskOverlaySpec defines the desired state of DiskOverlay
-    """
-
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable the generation of the status of this overlay",
-            title="Enabled",
-        ),
-    ]
-    topology: Annotated[
-        DiskOverlaySpecTopology,
-        Field(
-            description="Reference to the topology that this overlay is extending.",
-            title="Topology",
-        ),
-    ]
-    uiDescription: Annotated[
-        Optional[str],
-        Field(
-            description="A description of the overlay to expose in the UI",
-            title="UI Description",
-        ),
-    ] = None
-    uiDescriptionKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the description of the overlay to expose in the UI",
-            title="UI Description Key",
-        ),
-    ] = None
-    uiName: Annotated[
-        Optional[str],
-        Field(
-            description="The name of the overlay to expose in the UI", title="UI Name"
-        ),
-    ] = None
-    uiNameKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the name of the overlay to expose in the UI",
-            title="UI Name Key",
-        ),
-    ] = None
-
-
-DiskOverlaySpecTopology = CPUUtilOverlaySpecTopology
 
 
 class ErrorIndex(BaseModel):
@@ -410,48 +75,271 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class LldpOverlay(BaseModel):
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class CPUUtilOverlaySpecTopology(BaseModel):
     """
-    LldpOverlay is the Schema for the lldpoverlays API
+    Reference to the topology that this overlay is extending.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: LldpOverlayMetadata
-    spec: Annotated[
-        LldpOverlaySpec,
+    group: Annotated[
+        str,
         Field(
-            description="LldpOverlaySpec defines the desired state of lldp",
-            title="Specification",
+            description="The group of the application which published the topology this overlay is extending.",
+            title="Group",
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+    name: Annotated[
+        str,
         Field(
-            description="LldpOverlayStatus defines the observed state of LldpOverlay",
-            title="Status",
+            description="The name of the resource which published the topology this overlay is extending.",
+            title="Name",
+        ),
+    ]
+    version: Annotated[
+        str,
+        Field(
+            description="The version of the application which published the topology this overlay is extending.",
+            title="Version",
+        ),
+    ]
+
+
+class CPUUtilOverlaySpec(BaseModel):
+    """
+    CPUUtilOverlaySpec defines the desired state of CPUUtilOverlay
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description="Enable or disable the generation of the status of this overlay",
+            title="Enabled",
+        ),
+    ]
+    topology: Annotated[
+        CPUUtilOverlaySpecTopology,
+        Field(
+            description="Reference to the topology that this overlay is extending.",
+            title="Topology",
+        ),
+    ]
+    uiDescription: Annotated[
+        Optional[str],
+        Field(
+            description="A description of the overlay to expose in the UI",
+            title="UI Description",
+        ),
+    ] = None
+    uiDescriptionKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the description of the overlay to expose in the UI",
+            title="UI Description Key",
+        ),
+    ] = None
+    uiName: Annotated[
+        Optional[str],
+        Field(
+            description="The name of the overlay to expose in the UI", title="UI Name"
+        ),
+    ] = None
+    uiNameKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the name of the overlay to expose in the UI",
+            title="UI Name Key",
         ),
     ] = None
 
 
-LldpOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+class CPUUtilOverlayDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class LldpOverlayDeletedResources(RootModel[List[LldpOverlayDeletedResourceEntry]]):
-    root: List[LldpOverlayDeletedResourceEntry]
+class CPUUtilOverlayDeletedResources(
+    RootModel[List[CPUUtilOverlayDeletedResourceEntry]]
+):
+    root: List[CPUUtilOverlayDeletedResourceEntry]
 
 
-class LldpOverlayList(BaseModel):
+class CPUUtilOverlayMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+
+
+DeviationOverlaySpecTopology = CPUUtilOverlaySpecTopology
+
+
+class DeviationOverlaySpec(BaseModel):
     """
-    LldpOverlayList is a list of lldpoverlays
+    DeviationOverlaySpec defines the desired state of DeviationOverlay
     """
 
-    apiVersion: str
-    items: Optional[List[LldpOverlay]] = None
-    kind: str
+    enabled: Annotated[
+        bool,
+        Field(
+            description="Enable or disable the generation of the status of this overlay",
+            title="Enabled",
+        ),
+    ]
+    topology: Annotated[
+        DeviationOverlaySpecTopology,
+        Field(
+            description="Reference to the topology that this overlay is extending.",
+            title="Topology",
+        ),
+    ]
+    uiDescription: Annotated[
+        Optional[str],
+        Field(
+            description="A description of the overlay to expose in the UI",
+            title="UI Description",
+        ),
+    ] = None
+    uiDescriptionKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the description of the overlay to expose in the UI",
+            title="UI Description Key",
+        ),
+    ] = None
+    uiName: Annotated[
+        Optional[str],
+        Field(
+            description="The name of the overlay to expose in the UI", title="UI Name"
+        ),
+    ] = None
+    uiNameKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the name of the overlay to expose in the UI",
+            title="UI Name Key",
+        ),
+    ] = None
 
 
-LldpOverlayMetadata = CPUUtilOverlayMetadata
+DeviationOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+
+
+class DeviationOverlayDeletedResources(
+    RootModel[List[DeviationOverlayDeletedResourceEntry]]
+):
+    root: List[DeviationOverlayDeletedResourceEntry]
+
+
+DeviationOverlayMetadata = CPUUtilOverlayMetadata
+
+
+DiskOverlaySpecTopology = CPUUtilOverlaySpecTopology
+
+
+class DiskOverlaySpec(BaseModel):
+    """
+    DiskOverlaySpec defines the desired state of DiskOverlay
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description="Enable or disable the generation of the status of this overlay",
+            title="Enabled",
+        ),
+    ]
+    topology: Annotated[
+        DiskOverlaySpecTopology,
+        Field(
+            description="Reference to the topology that this overlay is extending.",
+            title="Topology",
+        ),
+    ]
+    uiDescription: Annotated[
+        Optional[str],
+        Field(
+            description="A description of the overlay to expose in the UI",
+            title="UI Description",
+        ),
+    ] = None
+    uiDescriptionKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the description of the overlay to expose in the UI",
+            title="UI Description Key",
+        ),
+    ] = None
+    uiName: Annotated[
+        Optional[str],
+        Field(
+            description="The name of the overlay to expose in the UI", title="UI Name"
+        ),
+    ] = None
+    uiNameKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the name of the overlay to expose in the UI",
+            title="UI Name Key",
+        ),
+    ] = None
+
+
+DiskOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+
+
+class DiskOverlayDeletedResources(RootModel[List[DiskOverlayDeletedResourceEntry]]):
+    root: List[DiskOverlayDeletedResourceEntry]
+
+
+DiskOverlayMetadata = CPUUtilOverlayMetadata
+
+
+LldpOverlaySpecTopology = CPUUtilOverlaySpecTopology
 
 
 class LldpOverlaySpec(BaseModel):
@@ -502,51 +390,17 @@ class LldpOverlaySpec(BaseModel):
     ] = None
 
 
-LldpOverlaySpecTopology = CPUUtilOverlaySpecTopology
+LldpOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
 
 
-class MemoryOverlay(BaseModel):
-    """
-    MemoryOverlay is the Schema for the memoryoverlays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: MemoryOverlayMetadata
-    spec: Annotated[
-        MemoryOverlaySpec,
-        Field(
-            description="MemoryOverlaySpec defines the desired state of MemoryOverlay",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="MemoryOverlayStatus defines the observed state of MemoryOverlay",
-            title="Status",
-        ),
-    ] = None
+class LldpOverlayDeletedResources(RootModel[List[LldpOverlayDeletedResourceEntry]]):
+    root: List[LldpOverlayDeletedResourceEntry]
 
 
-MemoryOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+LldpOverlayMetadata = CPUUtilOverlayMetadata
 
 
-class MemoryOverlayDeletedResources(RootModel[List[MemoryOverlayDeletedResourceEntry]]):
-    root: List[MemoryOverlayDeletedResourceEntry]
-
-
-class MemoryOverlayList(BaseModel):
-    """
-    MemoryOverlayList is a list of memoryoverlays
-    """
-
-    apiVersion: str
-    items: Optional[List[MemoryOverlay]] = None
-    kind: str
-
-
-MemoryOverlayMetadata = CPUUtilOverlayMetadata
+MemoryOverlaySpecTopology = CPUUtilOverlaySpecTopology
 
 
 class MemoryOverlaySpec(BaseModel):
@@ -597,226 +451,31 @@ class MemoryOverlaySpec(BaseModel):
     ] = None
 
 
-MemoryOverlaySpecTopology = CPUUtilOverlaySpecTopology
+MemoryOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class MemoryOverlayDeletedResources(RootModel[List[MemoryOverlayDeletedResourceEntry]]):
+    root: List[MemoryOverlayDeletedResourceEntry]
 
 
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+MemoryOverlayMetadata = CPUUtilOverlayMetadata
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class Topology(BaseModel):
-    """
-    Topology is the Schema for the topologies API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: TopologyMetadata
-    spec: Annotated[
-        TopologySpec,
+class TopologySpecOverlay(BaseModel):
+    enabled: Annotated[
+        bool,
         Field(
-            description="TopologySpec defines the desired state of Topology",
-            title="Specification",
+            description="Enable or disable the generation of the status of this overlay",
+            title="Enabled",
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="TopologyStatus defines the observed state of Topology",
-            title="Status",
-        ),
-    ] = None
-
-
-TopologyDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
-
-
-class TopologyDeletedResources(RootModel[List[TopologyDeletedResourceEntry]]):
-    root: List[TopologyDeletedResourceEntry]
-
-
-class TopologyGrouping(BaseModel):
-    """
-    TopologyGrouping is the Schema for the topologygroupings API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: TopologyGroupingMetadata
-    spec: Annotated[
-        TopologyGroupingSpec,
-        Field(
-            description="TopologyGroupingSpec defines the desired state of TopologyGrouping",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="TopologyGroupingStatus defines the observed state of TopologyGrouping",
-            title="Status",
-        ),
-    ] = None
-
-
-TopologyGroupingDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
-
-
-class TopologyGroupingDeletedResources(
-    RootModel[List[TopologyGroupingDeletedResourceEntry]]
-):
-    root: List[TopologyGroupingDeletedResourceEntry]
-
-
-class TopologyGroupingList(BaseModel):
-    """
-    TopologyGroupingList is a list of topologygroupings
-    """
-
-    apiVersion: str
-    items: Optional[List[TopologyGrouping]] = None
-    kind: str
-
-
-TopologyGroupingMetadata = CPUUtilOverlayMetadata
-
-
-class TopologyGroupingSpec(BaseModel):
-    """
-    TopologyGroupingSpec defines the desired state of TopologyGrouping
-    """
-
-    groupSelectors: Annotated[
-        Optional[List[TopologyGroupingSpecGroupSelector]],
-        Field(
-            description="The set of selectors for assigning nodes to groups",
-            title="Group Selectors",
-        ),
-    ] = None
-    tierSelectors: Annotated[
-        Optional[List[TopologyGroupingSpecTierSelector]],
-        Field(
-            description="The set of selectors for assigning nodes to tiers",
-            title="Tier Selectors",
-        ),
-    ] = None
-    uiDescription: Annotated[
-        Optional[str],
-        Field(
-            description="A description of the topology grouping to expose in the UI",
-            title="UI Description",
-        ),
-    ] = None
-    uiDescriptionKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the description of the topology grouping to expose in the UI",
-            title="UI Description Key",
-        ),
-    ] = None
-    uiName: Annotated[
-        Optional[str],
-        Field(
-            description="The name of the topology grouping to expose in the UI",
-            title="UI Name",
-        ),
-    ] = None
-    uiNameKey: Annotated[
-        Optional[str],
-        Field(
-            description="The translation key for the name of the topology grouping to expose in the UI",
-            title="UI Name Key",
-        ),
-    ] = None
-
-
-class TopologyGroupingSpecGroupSelector(BaseModel):
-    group: Annotated[
+    key: Annotated[
         str,
         Field(
-            description="The group to assign to nodes that match the selector.",
-            title="Group",
+            description="A unique key for identifying this overlay within the topology.  This is used internally\nonly.",
+            title="Key",
         ),
     ]
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector to use to match nodes that should be assigned to this group.",
-            title="Node Selector",
-        ),
-    ] = None
-
-
-class TopologyGroupingSpecTierSelector(BaseModel):
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector to use to match nodes that should be assigned to this tier.",
-            title="Node Selector",
-        ),
-    ] = None
-    tier: Annotated[
-        int,
-        Field(
-            description="The tier to assign to nodes that match the selector.",
-            title="Tier",
-        ),
-    ]
-
-
-class TopologyList(BaseModel):
-    """
-    TopologyList is a list of topologies
-    """
-
-    apiVersion: str
-    items: Optional[List[Topology]] = None
-    kind: str
-
-
-TopologyMetadata = CPUUtilOverlayMetadata
 
 
 class TopologySpec(BaseModel):
@@ -888,67 +547,112 @@ class TopologySpec(BaseModel):
     ] = None
 
 
-class TopologySpecOverlay(BaseModel):
-    enabled: Annotated[
-        bool,
-        Field(
-            description="Enable or disable the generation of the status of this overlay",
-            title="Enabled",
-        ),
-    ]
-    key: Annotated[
+class TopologyGroupingSpecGroupSelector(BaseModel):
+    group: Annotated[
         str,
         Field(
-            description="A unique key for identifying this overlay within the topology.  This is used internally\nonly.",
-            title="Key",
+            description="The group to assign to nodes that match the selector.",
+            title="Group",
         ),
     ]
-
-
-class TrafficRateOverlay(BaseModel):
-    """
-    TrafficRateOverlay is the Schema for the trafficrateoverlays API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: TrafficRateOverlayMetadata
-    spec: Annotated[
-        TrafficRateOverlaySpec,
+    nodeSelector: Annotated[
+        Optional[List[str]],
         Field(
-            description="TrafficRateOverlaySpec defines the desired state of TrafficRateOverlay",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="TrafficRateOverlayStatus defines the observed state of TrafficRateOverlay",
-            title="Status",
+            description="Label selector to use to match nodes that should be assigned to this group.",
+            title="Node Selector",
         ),
     ] = None
 
 
-TrafficRateOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+class TopologyGroupingSpecTierSelector(BaseModel):
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector to use to match nodes that should be assigned to this tier.",
+            title="Node Selector",
+        ),
+    ] = None
+    tier: Annotated[
+        int,
+        Field(
+            description="The tier to assign to nodes that match the selector.",
+            title="Tier",
+        ),
+    ]
 
 
-class TrafficRateOverlayDeletedResources(
-    RootModel[List[TrafficRateOverlayDeletedResourceEntry]]
+class TopologyGroupingSpec(BaseModel):
+    """
+    TopologyGroupingSpec defines the desired state of TopologyGrouping
+    """
+
+    groupSelectors: Annotated[
+        Optional[List[TopologyGroupingSpecGroupSelector]],
+        Field(
+            description="The set of selectors for assigning nodes to groups",
+            title="Group Selectors",
+        ),
+    ] = None
+    tierSelectors: Annotated[
+        Optional[List[TopologyGroupingSpecTierSelector]],
+        Field(
+            description="The set of selectors for assigning nodes to tiers",
+            title="Tier Selectors",
+        ),
+    ] = None
+    uiDescription: Annotated[
+        Optional[str],
+        Field(
+            description="A description of the topology grouping to expose in the UI",
+            title="UI Description",
+        ),
+    ] = None
+    uiDescriptionKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the description of the topology grouping to expose in the UI",
+            title="UI Description Key",
+        ),
+    ] = None
+    uiName: Annotated[
+        Optional[str],
+        Field(
+            description="The name of the topology grouping to expose in the UI",
+            title="UI Name",
+        ),
+    ] = None
+    uiNameKey: Annotated[
+        Optional[str],
+        Field(
+            description="The translation key for the name of the topology grouping to expose in the UI",
+            title="UI Name Key",
+        ),
+    ] = None
+
+
+TopologyGroupingDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+
+
+class TopologyGroupingDeletedResources(
+    RootModel[List[TopologyGroupingDeletedResourceEntry]]
 ):
-    root: List[TrafficRateOverlayDeletedResourceEntry]
+    root: List[TopologyGroupingDeletedResourceEntry]
 
 
-class TrafficRateOverlayList(BaseModel):
-    """
-    TrafficRateOverlayList is a list of trafficrateoverlays
-    """
-
-    apiVersion: str
-    items: Optional[List[TrafficRateOverlay]] = None
-    kind: str
+TopologyGroupingMetadata = CPUUtilOverlayMetadata
 
 
-TrafficRateOverlayMetadata = CPUUtilOverlayMetadata
+TopologyDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
+
+
+class TopologyDeletedResources(RootModel[List[TopologyDeletedResourceEntry]]):
+    root: List[TopologyDeletedResourceEntry]
+
+
+TopologyMetadata = CPUUtilOverlayMetadata
+
+
+TrafficRateOverlaySpecTopology = CPUUtilOverlaySpecTopology
 
 
 class TrafficRateOverlaySpec(BaseModel):
@@ -999,8 +703,304 @@ class TrafficRateOverlaySpec(BaseModel):
     ] = None
 
 
-TrafficRateOverlaySpecTopology = CPUUtilOverlaySpecTopology
+TrafficRateOverlayDeletedResourceEntry = CPUUtilOverlayDeletedResourceEntry
 
 
-class UIResult(RootModel[str]):
-    root: str
+class TrafficRateOverlayDeletedResources(
+    RootModel[List[TrafficRateOverlayDeletedResourceEntry]]
+):
+    root: List[TrafficRateOverlayDeletedResourceEntry]
+
+
+TrafficRateOverlayMetadata = CPUUtilOverlayMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class CPUUtilOverlay(BaseModel):
+    """
+    CPUUtilOverlay is the Schema for the cpuutiloverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: CPUUtilOverlayMetadata
+    spec: Annotated[
+        CPUUtilOverlaySpec,
+        Field(
+            description="CPUUtilOverlaySpec defines the desired state of CPUUtilOverlay",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="CPUUtilOverlayStatus defines the observed state of CPUUtilOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class CPUUtilOverlayList(BaseModel):
+    """
+    CPUUtilOverlayList is a list of cpuutiloverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[CPUUtilOverlay]] = None
+    kind: str
+
+
+class DeviationOverlay(BaseModel):
+    """
+    DeviationOverlay is the Schema for the deviationoverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DeviationOverlayMetadata
+    spec: Annotated[
+        DeviationOverlaySpec,
+        Field(
+            description="DeviationOverlaySpec defines the desired state of DeviationOverlay",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="DeviationOverlayStatus defines the observed state of DeviationOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class DeviationOverlayList(BaseModel):
+    """
+    DeviationOverlayList is a list of deviationoverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[DeviationOverlay]] = None
+    kind: str
+
+
+class DiskOverlay(BaseModel):
+    """
+    DiskOverlay is the Schema for the diskoverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DiskOverlayMetadata
+    spec: Annotated[
+        DiskOverlaySpec,
+        Field(
+            description="DiskOverlaySpec defines the desired state of DiskOverlay",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="DiskOverlayStatus defines the observed state of DiskOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class DiskOverlayList(BaseModel):
+    """
+    DiskOverlayList is a list of diskoverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[DiskOverlay]] = None
+    kind: str
+
+
+class LldpOverlay(BaseModel):
+    """
+    LldpOverlay is the Schema for the lldpoverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: LldpOverlayMetadata
+    spec: Annotated[
+        LldpOverlaySpec,
+        Field(
+            description="LldpOverlaySpec defines the desired state of lldp",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="LldpOverlayStatus defines the observed state of LldpOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class LldpOverlayList(BaseModel):
+    """
+    LldpOverlayList is a list of lldpoverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[LldpOverlay]] = None
+    kind: str
+
+
+class MemoryOverlay(BaseModel):
+    """
+    MemoryOverlay is the Schema for the memoryoverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MemoryOverlayMetadata
+    spec: Annotated[
+        MemoryOverlaySpec,
+        Field(
+            description="MemoryOverlaySpec defines the desired state of MemoryOverlay",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="MemoryOverlayStatus defines the observed state of MemoryOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class MemoryOverlayList(BaseModel):
+    """
+    MemoryOverlayList is a list of memoryoverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[MemoryOverlay]] = None
+    kind: str
+
+
+class Topology(BaseModel):
+    """
+    Topology is the Schema for the topologies API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TopologyMetadata
+    spec: Annotated[
+        TopologySpec,
+        Field(
+            description="TopologySpec defines the desired state of Topology",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="TopologyStatus defines the observed state of Topology",
+            title="Status",
+        ),
+    ] = None
+
+
+class TopologyGrouping(BaseModel):
+    """
+    TopologyGrouping is the Schema for the topologygroupings API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TopologyGroupingMetadata
+    spec: Annotated[
+        TopologyGroupingSpec,
+        Field(
+            description="TopologyGroupingSpec defines the desired state of TopologyGrouping",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="TopologyGroupingStatus defines the observed state of TopologyGrouping",
+            title="Status",
+        ),
+    ] = None
+
+
+class TopologyGroupingList(BaseModel):
+    """
+    TopologyGroupingList is a list of topologygroupings
+    """
+
+    apiVersion: str
+    items: Optional[List[TopologyGrouping]] = None
+    kind: str
+
+
+class TopologyList(BaseModel):
+    """
+    TopologyList is a list of topologies
+    """
+
+    apiVersion: str
+    items: Optional[List[Topology]] = None
+    kind: str
+
+
+class TrafficRateOverlay(BaseModel):
+    """
+    TrafficRateOverlay is the Schema for the trafficrateoverlays API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TrafficRateOverlayMetadata
+    spec: Annotated[
+        TrafficRateOverlaySpec,
+        Field(
+            description="TrafficRateOverlaySpec defines the desired state of TrafficRateOverlay",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="TrafficRateOverlayStatus defines the observed state of TrafficRateOverlay",
+            title="Status",
+        ),
+    ] = None
+
+
+class TrafficRateOverlayList(BaseModel):
+    """
+    TrafficRateOverlayList is a list of trafficrateoverlays
+    """
+
+    apiVersion: str
+    items: Optional[List[TrafficRateOverlay]] = None
+    kind: str

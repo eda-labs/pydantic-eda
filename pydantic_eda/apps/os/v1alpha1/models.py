@@ -7,153 +7,9 @@ from pydantic import BaseModel, Field, RootModel
 from enum import Enum
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class DeployImage(BaseModel):
-    """
-    DeployImage is the Schema for the deployimages API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: DeployImageMetadata
-    spec: Annotated[
-        DeployImageSpec,
-        Field(
-            description="DeployImageSpec defines the desired state of DeployImage",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[DeployImageStatus],
-        Field(
-            description="DeployImageStatus defines the observed state of DeployImage",
-            title="Status",
-        ),
-    ] = None
-
-
-class DeployImageDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class DeployImageDeletedResources(RootModel[List[DeployImageDeletedResourceEntry]]):
-    root: List[DeployImageDeletedResourceEntry]
-
-
-class DeployImageList(BaseModel):
-    """
-    DeployImageList is a list of deployimages
-    """
-
-    apiVersion: str
-    items: Optional[List[DeployImage]] = None
-    kind: str
-
-
-class DeployImageMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class DeployImageSpec(BaseModel):
-    """
-    DeployImageSpec defines the desired state of DeployImage
-    """
-
-    canaries: Annotated[Optional[List[str]], Field(title="canaries")] = None
-    checks: Annotated[Optional[DeployImageSpecChecks], Field(title="checks")] = None
-    drains: Annotated[Optional[DeployImageSpecDrains], Field(title="drains")] = None
-    nodeProfile: Annotated[Optional[str], Field(title="nodeProfile")] = None
-    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
-    nodes: Annotated[Optional[List[str]], Field(title="nodes")] = None
-    prompt: Annotated[
-        Optional[Union[List[str], DeployImageSpecPrompt]], Field(title="prompt")
-    ] = None
-    tranches: Annotated[
-        Optional[List[DeployImageSpecTranch]], Field(title="tranches")
-    ] = None
-    type: Annotated[Literal["node", "nodeselector", "tranche"], Field(title="type")]
-    version: Annotated[Optional[str], Field(title="version")] = None
-
-
-class DeployImageSpecChecks(BaseModel):
-    checks: Annotated[
-        Union[List[str], DeployImageSpecChecksChecks],
-        Field(
-            description="Checks to run before (pre) and after (post) any image changes",
-            title="checks",
-        ),
-    ]
-    force: Annotated[
-        bool, Field(description="Do not prompt for user input, even if checks fail")
-    ]
-    skip: Annotated[bool, Field(description="Do not run any checks")]
-
-
-class DeployImageSpecChecksChecks(Enum):
-    """
-    Checks to run before (pre) and after (post) any image changes
-    """
-
-    Interface = "Interface"
-    DefaultBGP = "DefaultBGP"
-    PingISL = "PingISL"
-    PingSystem = "PingSystem"
-
-
-class DeployImageSpecDrains(BaseModel):
-    interfaceDisableSelectors: Annotated[
-        Optional[List[str]], Field(title="InterfaceDisableSelectors")
-    ] = None
-    minimumWaitTime: Annotated[Optional[int], Field(title="minimumWaitTime")] = None
-    skip: Annotated[
-        Optional[bool], Field(description="Do not run any drains", title="skip")
-    ] = None
-
-
-class DeployImageSpecPrompt(Enum):
-    AfterPreChecks = "AfterPreChecks"
-    AfterPostChecks = "AfterPostChecks"
-
-
-class DeployImageSpecTranch(BaseModel):
-    name: Annotated[Optional[str], Field(title="name")] = None
-    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
-
-
-class DeployImageStatus(BaseModel):
-    """
-    DeployImageStatus defines the observed state of DeployImage
-    """
-
-    id: Annotated[Optional[int], Field(description="Id", title="ID")] = None
-    result: Annotated[
-        Optional[str], Field(description="Aggregate result of the Flow", title="Result")
-    ] = None
 
 
 class ErrorIndex(BaseModel):
@@ -233,10 +89,6 @@ class Resource(BaseModel):
     uiCategory: Optional[str] = None
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
@@ -253,13 +105,6 @@ class ResourceList(BaseModel):
     resources: Optional[List[Resource]] = None
 
 
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
 class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
@@ -268,3 +113,158 @@ class StatusDetails(BaseModel):
 
 class UIResult(RootModel[str]):
     root: str
+
+
+class DeployImageSpecChecksChecks(Enum):
+    """
+    Checks to run before (pre) and after (post) any image changes
+    """
+
+    Interface = "Interface"
+    DefaultBGP = "DefaultBGP"
+    PingISL = "PingISL"
+    PingSystem = "PingSystem"
+
+
+class DeployImageSpecChecks(BaseModel):
+    checks: Annotated[
+        Union[List[str], DeployImageSpecChecksChecks],
+        Field(
+            description="Checks to run before (pre) and after (post) any image changes",
+            title="checks",
+        ),
+    ]
+    force: Annotated[
+        bool, Field(description="Do not prompt for user input, even if checks fail")
+    ]
+    skip: Annotated[bool, Field(description="Do not run any checks")]
+
+
+class DeployImageSpecDrains(BaseModel):
+    interfaceDisableSelectors: Annotated[
+        Optional[List[str]], Field(title="InterfaceDisableSelectors")
+    ] = None
+    minimumWaitTime: Annotated[Optional[int], Field(title="minimumWaitTime")] = None
+    skip: Annotated[
+        Optional[bool], Field(description="Do not run any drains", title="skip")
+    ] = None
+
+
+class DeployImageSpecPrompt(Enum):
+    AfterPreChecks = "AfterPreChecks"
+    AfterPostChecks = "AfterPostChecks"
+
+
+class DeployImageSpecTranch(BaseModel):
+    name: Annotated[Optional[str], Field(title="name")] = None
+    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
+
+
+class DeployImageSpec(BaseModel):
+    """
+    DeployImageSpec defines the desired state of DeployImage
+    """
+
+    canaries: Annotated[Optional[List[str]], Field(title="canaries")] = None
+    checks: Annotated[Optional[DeployImageSpecChecks], Field(title="checks")] = None
+    drains: Annotated[Optional[DeployImageSpecDrains], Field(title="drains")] = None
+    nodeProfile: Annotated[Optional[str], Field(title="nodeProfile")] = None
+    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
+    nodes: Annotated[Optional[List[str]], Field(title="nodes")] = None
+    prompt: Annotated[
+        Optional[Union[List[str], DeployImageSpecPrompt]], Field(title="prompt")
+    ] = None
+    tranches: Annotated[
+        Optional[List[DeployImageSpecTranch]], Field(title="tranches")
+    ] = None
+    type: Annotated[Literal["node", "nodeselector", "tranche"], Field(title="type")]
+    version: Annotated[Optional[str], Field(title="version")] = None
+
+
+class DeployImageStatus(BaseModel):
+    """
+    DeployImageStatus defines the observed state of DeployImage
+    """
+
+    id: Annotated[Optional[int], Field(description="Id", title="ID")] = None
+    result: Annotated[
+        Optional[str], Field(description="Aggregate result of the Flow", title="Result")
+    ] = None
+
+
+class DeployImageDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class DeployImageDeletedResources(RootModel[List[DeployImageDeletedResourceEntry]]):
+    root: List[DeployImageDeletedResourceEntry]
+
+
+class DeployImageMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class DeployImage(BaseModel):
+    """
+    DeployImage is the Schema for the deployimages API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: DeployImageMetadata
+    spec: Annotated[
+        DeployImageSpec,
+        Field(
+            description="DeployImageSpec defines the desired state of DeployImage",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[DeployImageStatus],
+        Field(
+            description="DeployImageStatus defines the observed state of DeployImage",
+            title="Status",
+        ),
+    ] = None
+
+
+class DeployImageList(BaseModel):
+    """
+    DeployImageList is a list of deployimages
+    """
+
+    apiVersion: str
+    items: Optional[List[DeployImage]] = None
+    kind: str

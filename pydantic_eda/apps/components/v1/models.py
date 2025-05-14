@@ -7,64 +7,135 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class Chassis(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    Chassis is the Schema for the chassis API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: ChassisMetadata
-    spec: Annotated[
-        Dict[str, Any],
-        Field(
-            description="ChassisSpec defines the desired state of Chassis",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
-        Optional[ChassisStatus],
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
+        Optional[Dict[str, Any]],
         Field(
-            description="ChassisStatus defines the observed state of Chassis",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class ChassisList(BaseModel):
-    """
-    ChassisList is a list of chassis
-    """
-
-    apiVersion: str
-    items: Optional[List[Chassis]] = None
-    kind: str
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class ChassisMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class ChassisStatusChildrenItem(BaseModel):
     name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
+        Optional[str], Field(description="Reference to a child component", title="Name")
+    ] = None
+    type: Annotated[
+        Optional[
+            Literal[
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
+            ]
+        ],
+        Field(description="Type of the child component", title="Type"),
+    ] = None
 
 
 class ChassisStatus(BaseModel):
@@ -142,64 +213,17 @@ class ChassisStatus(BaseModel):
     ] = None
 
 
-class ChassisStatusChildrenItem(BaseModel):
+class ChassisMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
     name: Annotated[
-        Optional[str], Field(description="Reference to a child component", title="Name")
-    ] = None
-    type: Annotated[
-        Optional[
-            Literal[
-                "Fan",
-                "FanTray",
-                "PowerSupply",
-                "PowerModule",
-                "PowerShelf",
-                "InterfaceModule",
-                "ControlModule",
-                "FabricModule",
-                "Chassis",
-                "Transceiver",
-            ]
-        ],
-        Field(description="Type of the child component", title="Type"),
-    ] = None
-
-
-class Component(BaseModel):
-    """
-    Component is the Schema for the components API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: ComponentMetadata
-    spec: Annotated[
-        ComponentSpec,
+        str,
         Field(
-            description="ComponentSpec defines the desired state of Component",
-            title="Specification",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[
-        Optional[ComponentStatus],
-        Field(
-            description="ComponentStatus defines the observed state of Component",
-            title="Status",
-        ),
-    ] = None
-
-
-class ComponentList(BaseModel):
-    """
-    ComponentList is a list of components
-    """
-
-    apiVersion: str
-    items: Optional[List[Component]] = None
-    kind: str
-
-
-ComponentMetadata = ChassisMetadata
+    namespace: str
 
 
 class ComponentSpec(BaseModel):
@@ -290,41 +314,39 @@ class ComponentStatus(BaseModel):
     ] = None
 
 
-class ControlModule(BaseModel):
+ComponentMetadata = ChassisMetadata
+
+
+class ControlModuleStatusTemperature(BaseModel):
     """
-    ControlModule is the Schema for the controlmodules API
+    Temperature information for this component
     """
 
-    apiVersion: str
-    kind: str
-    metadata: ControlModuleMetadata
-    spec: Annotated[
-        Dict[str, Any],
+    alarmState: Annotated[
+        Optional[bool],
         Field(
-            description="ControlModuleSpec defines the desired state of ControlModule",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[ControlModuleStatus],
-        Field(
-            description="ControlModuleStatus defines the observed state of ControlModule",
-            title="Status",
+            description="The temperature alarm state, as reported by the component",
+            title="Alarm State",
         ),
     ] = None
-
-
-class ControlModuleList(BaseModel):
-    """
-    ControlModuleList is a list of controlmodules
-    """
-
-    apiVersion: str
-    items: Optional[List[ControlModule]] = None
-    kind: str
-
-
-ControlModuleMetadata = ChassisMetadata
+    instant: Annotated[
+        Optional[int],
+        Field(description="The current temperature of this component", title="Instant"),
+    ] = None
+    margin: Annotated[
+        Optional[int],
+        Field(description="The margin temperature of this component", title="Margin"),
+    ] = None
+    maximum: Annotated[
+        Optional[int],
+        Field(description="The maximum temperature of this component", title="Maximum"),
+    ] = None
+    threshold: Annotated[
+        Optional[int],
+        Field(
+            description="The threshold temperature of this component", title="Threshold"
+        ),
+    ] = None
 
 
 class ControlModuleStatus(BaseModel):
@@ -447,129 +469,10 @@ class ControlModuleStatus(BaseModel):
     ] = None
 
 
-class ControlModuleStatusTemperature(BaseModel):
-    """
-    Temperature information for this component
-    """
-
-    alarmState: Annotated[
-        Optional[bool],
-        Field(
-            description="The temperature alarm state, as reported by the component",
-            title="Alarm State",
-        ),
-    ] = None
-    instant: Annotated[
-        Optional[int],
-        Field(description="The current temperature of this component", title="Instant"),
-    ] = None
-    margin: Annotated[
-        Optional[int],
-        Field(description="The margin temperature of this component", title="Margin"),
-    ] = None
-    maximum: Annotated[
-        Optional[int],
-        Field(description="The maximum temperature of this component", title="Maximum"),
-    ] = None
-    threshold: Annotated[
-        Optional[int],
-        Field(
-            description="The threshold temperature of this component", title="Threshold"
-        ),
-    ] = None
+ControlModuleMetadata = ChassisMetadata
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
-
-
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
-
-
-class FabricModule(BaseModel):
-    """
-    FabricModule is the Schema for the fabricmodules API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: FabricModuleMetadata
-    spec: Annotated[
-        Dict[str, Any],
-        Field(
-            description="FabricModuleSpec defines the desired state of FabricModule",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[FabricModuleStatus],
-        Field(
-            description="FabricModuleStatus defines the observed state of FabricModule",
-            title="Status",
-        ),
-    ] = None
-
-
-class FabricModuleList(BaseModel):
-    """
-    FabricModuleList is a list of fabricmodules
-    """
-
-    apiVersion: str
-    items: Optional[List[FabricModule]] = None
-    kind: str
-
-
-FabricModuleMetadata = ChassisMetadata
+FabricModuleStatusTemperature = ControlModuleStatusTemperature
 
 
 class FabricModuleStatus(BaseModel):
@@ -688,43 +591,7 @@ class FabricModuleStatus(BaseModel):
     ] = None
 
 
-FabricModuleStatusTemperature = ControlModuleStatusTemperature
-
-
-class Fan(BaseModel):
-    """
-    Fan is the Schema for the fans API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: FanMetadata
-    spec: Annotated[
-        Dict[str, Any],
-        Field(
-            description="FanSpec defines the desired state of Fan",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[FanStatus],
-        Field(
-            description="FanStatus defines the observed state of Fan", title="Status"
-        ),
-    ] = None
-
-
-class FanList(BaseModel):
-    """
-    FanList is a list of fans
-    """
-
-    apiVersion: str
-    items: Optional[List[Fan]] = None
-    kind: str
-
-
-FanMetadata = ChassisMetadata
+FabricModuleMetadata = ChassisMetadata
 
 
 class FanStatus(BaseModel):
@@ -829,41 +696,10 @@ class FanStatus(BaseModel):
     ] = None
 
 
-class InterfaceModule(BaseModel):
-    """
-    InterfaceModule is the Schema for the interfacemodules API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: InterfaceModuleMetadata
-    spec: Annotated[
-        Dict[str, Any],
-        Field(
-            description="InterfaceModuleSpec defines the desired state of InterfaceModule",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[InterfaceModuleStatus],
-        Field(
-            description="InterfaceModuleStatus defines the observed state of InterfaceModule",
-            title="Status",
-        ),
-    ] = None
+FanMetadata = ChassisMetadata
 
 
-class InterfaceModuleList(BaseModel):
-    """
-    InterfaceModuleList is a list of interfacemodules
-    """
-
-    apiVersion: str
-    items: Optional[List[InterfaceModule]] = None
-    kind: str
-
-
-InterfaceModuleMetadata = ChassisMetadata
+InterfaceModuleStatusTemperature = ControlModuleStatusTemperature
 
 
 class InterfaceModuleStatus(BaseModel):
@@ -982,102 +818,50 @@ class InterfaceModuleStatus(BaseModel):
     ] = None
 
 
-InterfaceModuleStatusTemperature = ControlModuleStatusTemperature
+InterfaceModuleMetadata = ChassisMetadata
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class Monitor(BaseModel):
+class MonitorSpecCpuUtilization(BaseModel):
     """
-    Monitor is the Schema for the monitors API
+    Parameters relating to CPU utilization monitoring.
     """
 
-    apiVersion: str
-    kind: str
-    metadata: MonitorMetadata
-    spec: Annotated[
-        MonitorSpec,
+    criticalThreshold: Annotated[
+        Optional[int],
         Field(
-            description="MonitorSpec defines the desired state of Monitor",
-            title="Specification",
+            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
+            ge=1,
+            le=100,
+            title="Critical Threshold",
         ),
-    ]
-    status: Annotated[
-        Optional[MonitorStatus],
+    ] = 95
+    fallingDelta: Annotated[
+        Optional[int],
         Field(
-            description="MonitorStatus defines the observed state of Monitor",
-            title="Status",
+            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
+            ge=1,
+            le=25,
+            title="Falling Delta",
         ),
-    ] = None
-
-
-class MonitorDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class MonitorDeletedResources(RootModel[List[MonitorDeletedResourceEntry]]):
-    root: List[MonitorDeletedResourceEntry]
-
-
-class MonitorList(BaseModel):
-    """
-    MonitorList is a list of monitors
-    """
-
-    apiVersion: str
-    items: Optional[List[Monitor]] = None
-    kind: str
-
-
-MonitorMetadata = ChassisMetadata
-
-
-class MonitorSpec(BaseModel):
-    """
-    MonitorSpec defines the desired state of Monitor
-    """
-
-    cpu: Annotated[
-        Optional[MonitorSpecCpu],
+    ] = 5
+    majorThreshold: Annotated[
+        Optional[int],
         Field(
-            description="CPU monitoring for targets matching this Monitor.", title="CPU"
+            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
+            ge=1,
+            le=100,
+            title="Major Threshold",
         ),
-    ] = None
-    memory: Annotated[
-        Optional[MonitorSpecMemory],
+    ] = 90
+    minorThreshold: Annotated[
+        Optional[int],
         Field(
-            description="Memory monitoring for targets matching this Monitor.",
-            title="Memory",
+            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
+            ge=1,
+            le=100,
+            title="Minor Threshold",
         ),
-    ] = None
-    targetSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Selector to use when including targets to monitor.",
-            title="Target Selector",
-        ),
-    ] = None
-    targets: Annotated[
-        Optional[List[str]],
-        Field(description="References to targets to monitor.", title="Targets"),
-    ] = None
-    volume: Annotated[
-        Optional[MonitorSpecVolume],
-        Field(
-            description="Volume monitoring for targets matching this Monitor.",
-            title="Volume",
-        ),
-    ] = None
+    ] = 80
 
 
 class MonitorSpecCpu(BaseModel):
@@ -1097,9 +881,9 @@ class MonitorSpecCpu(BaseModel):
     ] = None
 
 
-class MonitorSpecCpuUtilization(BaseModel):
+class MonitorSpecMemoryUtilization(BaseModel):
     """
-    Parameters relating to CPU utilization monitoring.
+    Parameters relating to memory utilization monitoring.
     """
 
     criticalThreshold: Annotated[
@@ -1157,9 +941,9 @@ class MonitorSpecMemory(BaseModel):
     ] = None
 
 
-class MonitorSpecMemoryUtilization(BaseModel):
+class MonitorSpecVolumeUtilization(BaseModel):
     """
-    Parameters relating to memory utilization monitoring.
+    Parameters relating to volume utilization monitoring.
     """
 
     criticalThreshold: Annotated[
@@ -1217,47 +1001,42 @@ class MonitorSpecVolume(BaseModel):
     ] = None
 
 
-class MonitorSpecVolumeUtilization(BaseModel):
+class MonitorSpec(BaseModel):
     """
-    Parameters relating to volume utilization monitoring.
+    MonitorSpec defines the desired state of Monitor
     """
 
-    criticalThreshold: Annotated[
-        Optional[int],
+    cpu: Annotated[
+        Optional[MonitorSpecCpu],
         Field(
-            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
-            ge=1,
-            le=100,
-            title="Critical Threshold",
+            description="CPU monitoring for targets matching this Monitor.", title="CPU"
         ),
-    ] = 95
-    fallingDelta: Annotated[
-        Optional[int],
+    ] = None
+    memory: Annotated[
+        Optional[MonitorSpecMemory],
         Field(
-            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
-            ge=1,
-            le=25,
-            title="Falling Delta",
+            description="Memory monitoring for targets matching this Monitor.",
+            title="Memory",
         ),
-    ] = 5
-    majorThreshold: Annotated[
-        Optional[int],
+    ] = None
+    targetSelector: Annotated[
+        Optional[List[str]],
         Field(
-            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
-            ge=1,
-            le=100,
-            title="Major Threshold",
+            description="Selector to use when including targets to monitor.",
+            title="Target Selector",
         ),
-    ] = 90
-    minorThreshold: Annotated[
-        Optional[int],
+    ] = None
+    targets: Annotated[
+        Optional[List[str]],
+        Field(description="References to targets to monitor.", title="Targets"),
+    ] = None
+    volume: Annotated[
+        Optional[MonitorSpecVolume],
         Field(
-            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
-            ge=1,
-            le=100,
-            title="Minor Threshold",
+            description="Volume monitoring for targets matching this Monitor.",
+            title="Volume",
         ),
-    ] = 80
+    ] = None
 
 
 class MonitorStatus(BaseModel):
@@ -1271,45 +1050,19 @@ class MonitorStatus(BaseModel):
     ] = None
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class MonitorDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-class PowerSupply(BaseModel):
-    """
-    PowerSupply is the Schema for the powersupplies API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: PowerSupplyMetadata
-    spec: Annotated[
-        PowerSupplySpec,
-        Field(
-            description="PowerSupplySpec defines the desired state of PowerSupply",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[PowerSupplyStatus],
-        Field(
-            description="PowerSupplyStatus defines the observed state of PowerSupply",
-            title="Status",
-        ),
-    ] = None
+class MonitorDeletedResources(RootModel[List[MonitorDeletedResourceEntry]]):
+    root: List[MonitorDeletedResourceEntry]
 
 
-class PowerSupplyList(BaseModel):
-    """
-    PowerSupplyList is a list of powersupplies
-    """
-
-    apiVersion: str
-    items: Optional[List[PowerSupply]] = None
-    kind: str
-
-
-PowerSupplyMetadata = ChassisMetadata
+MonitorMetadata = ChassisMetadata
 
 
 class PowerSupplySpec(BaseModel):
@@ -1323,6 +1076,9 @@ class PowerSupplySpec(BaseModel):
             description='INSERT ADDITIONAL SPEC FIELDS - define desired state of cluster\nImportant: Run "edabuilder generate" to regenerate code after modifying this file'
         ),
     ]
+
+
+PowerSupplyStatusTemperature = ControlModuleStatusTemperature
 
 
 class PowerSupplyStatus(BaseModel):
@@ -1441,36 +1197,19 @@ class PowerSupplyStatus(BaseModel):
     ] = None
 
 
-PowerSupplyStatusTemperature = ControlModuleStatusTemperature
+PowerSupplyMetadata = ChassisMetadata
 
 
-class Resource(BaseModel):
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -1480,11 +1219,272 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class Chassis(BaseModel):
+    """
+    Chassis is the Schema for the chassis API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ChassisMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="ChassisSpec defines the desired state of Chassis",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[ChassisStatus],
+        Field(
+            description="ChassisStatus defines the observed state of Chassis",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class ChassisList(BaseModel):
+    """
+    ChassisList is a list of chassis
+    """
+
+    apiVersion: str
+    items: Optional[List[Chassis]] = None
+    kind: str
+
+
+class Component(BaseModel):
+    """
+    Component is the Schema for the components API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ComponentMetadata
+    spec: Annotated[
+        ComponentSpec,
+        Field(
+            description="ComponentSpec defines the desired state of Component",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[ComponentStatus],
+        Field(
+            description="ComponentStatus defines the observed state of Component",
+            title="Status",
+        ),
+    ] = None
+
+
+class ComponentList(BaseModel):
+    """
+    ComponentList is a list of components
+    """
+
+    apiVersion: str
+    items: Optional[List[Component]] = None
+    kind: str
+
+
+class ControlModule(BaseModel):
+    """
+    ControlModule is the Schema for the controlmodules API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ControlModuleMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="ControlModuleSpec defines the desired state of ControlModule",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[ControlModuleStatus],
+        Field(
+            description="ControlModuleStatus defines the observed state of ControlModule",
+            title="Status",
+        ),
+    ] = None
+
+
+class ControlModuleList(BaseModel):
+    """
+    ControlModuleList is a list of controlmodules
+    """
+
+    apiVersion: str
+    items: Optional[List[ControlModule]] = None
+    kind: str
+
+
+class FabricModule(BaseModel):
+    """
+    FabricModule is the Schema for the fabricmodules API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: FabricModuleMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="FabricModuleSpec defines the desired state of FabricModule",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[FabricModuleStatus],
+        Field(
+            description="FabricModuleStatus defines the observed state of FabricModule",
+            title="Status",
+        ),
+    ] = None
+
+
+class FabricModuleList(BaseModel):
+    """
+    FabricModuleList is a list of fabricmodules
+    """
+
+    apiVersion: str
+    items: Optional[List[FabricModule]] = None
+    kind: str
+
+
+class Fan(BaseModel):
+    """
+    Fan is the Schema for the fans API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: FanMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="FanSpec defines the desired state of Fan",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[FanStatus],
+        Field(
+            description="FanStatus defines the observed state of Fan", title="Status"
+        ),
+    ] = None
+
+
+class FanList(BaseModel):
+    """
+    FanList is a list of fans
+    """
+
+    apiVersion: str
+    items: Optional[List[Fan]] = None
+    kind: str
+
+
+class InterfaceModule(BaseModel):
+    """
+    InterfaceModule is the Schema for the interfacemodules API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: InterfaceModuleMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="InterfaceModuleSpec defines the desired state of InterfaceModule",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[InterfaceModuleStatus],
+        Field(
+            description="InterfaceModuleStatus defines the observed state of InterfaceModule",
+            title="Status",
+        ),
+    ] = None
+
+
+class InterfaceModuleList(BaseModel):
+    """
+    InterfaceModuleList is a list of interfacemodules
+    """
+
+    apiVersion: str
+    items: Optional[List[InterfaceModule]] = None
+    kind: str
+
+
+class Monitor(BaseModel):
+    """
+    Monitor is the Schema for the monitors API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: MonitorMetadata
+    spec: Annotated[
+        MonitorSpec,
+        Field(
+            description="MonitorSpec defines the desired state of Monitor",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[MonitorStatus],
+        Field(
+            description="MonitorStatus defines the observed state of Monitor",
+            title="Status",
+        ),
+    ] = None
+
+
+class MonitorList(BaseModel):
+    """
+    MonitorList is a list of monitors
+    """
+
+    apiVersion: str
+    items: Optional[List[Monitor]] = None
+    kind: str
+
+
+class PowerSupply(BaseModel):
+    """
+    PowerSupply is the Schema for the powersupplies API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PowerSupplyMetadata
+    spec: Annotated[
+        PowerSupplySpec,
+        Field(
+            description="PowerSupplySpec defines the desired state of PowerSupply",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[PowerSupplyStatus],
+        Field(
+            description="PowerSupplyStatus defines the observed state of PowerSupply",
+            title="Status",
+        ),
+    ] = None
+
+
+class PowerSupplyList(BaseModel):
+    """
+    PowerSupplyList is a list of powersupplies
+    """
+
+    apiVersion: str
+    items: Optional[List[PowerSupply]] = None
+    kind: str

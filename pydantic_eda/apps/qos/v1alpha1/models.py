@@ -6,129 +6,131 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class EgressPolicy(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    EgressPolicy is the Schema for the egresspolicys API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: EgressPolicyMetadata
-    spec: Annotated[
-        EgressPolicySpec,
-        Field(
-            description="EgressPolicySpec defines the desired state of EgressPolicy",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
         Optional[Dict[str, Any]],
         Field(
-            description="EgressPolicyStatus defines the observed state of EgressPolicy",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class EgressPolicyDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class EgressPolicyDeletedResources(RootModel[List[EgressPolicyDeletedResourceEntry]]):
-    root: List[EgressPolicyDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class EgressPolicyList(BaseModel):
-    """
-    EgressPolicyList is a list of egresspolicys
-    """
-
-    apiVersion: str
-    items: Optional[List[EgressPolicy]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class EgressPolicyMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
+class UIResult(RootModel[str]):
+    root: str
+
+
+class EgressPolicySpecDot1pRewritePolicyDot1pMapItemDropProbabilityItem(BaseModel):
+    level: Annotated[
+        Optional[Literal["High", "Medium", "Low"]],
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class EgressPolicySpec(BaseModel):
-    """
-    EgressPolicySpec defines the desired state of EgressPolicy
-    """
-
-    dot1pRewritePolicy: Annotated[
-        Optional[EgressPolicySpecDot1pRewritePolicy],
-        Field(
-            description="Dot1pRewritePolicy enables the configuration of rewrite policies for Dot1p values. It includes mappings of forwarding classes to Dot1p values, with options for drop probability-specific overrides within each forwarding class.",
-            title="Dot1p Rewrite Policy",
+            description="A drop probability level within the forwarding class for which a different remarking is desired",
+            title="Level",
         ),
     ] = None
-    dscpRewritePolicy: Annotated[
-        Optional[EgressPolicySpecDscpRewritePolicy],
+    pcpValue: Annotated[
+        Optional[int],
         Field(
-            description="DSCPRewritePolicy enables the configuration of rewrite policies for Differentiated Services Code Point (DSCP) values. It includes mappings of forwarding classes to DSCP values, with options for drop probability-specific overrides within each forwarding class.  If a DSCPRewritePolicy is not specified, the DSCP value of the packet is unchanged. If a DSCP policy is specific and ECN is enabled on any of the queues, the DSCP policy will be applied to all ECN capable packets.",
-            title="DSCP Rewrite Policy",
+            description="The PCP value to be used for packets associated with the forwarding class and the specific drop probability. This overrides the general PCP value.",
+            ge=0,
+            le=7,
+            title="PCP Value",
         ),
     ] = None
-    forwardingClassToQueueMapping: Annotated[
-        Optional[List[EgressPolicySpecForwardingClassToQueueMappingItem]],
-        Field(
-            description="Forwarding class to queue mapping policy.",
-            title="Forwarding Class to Queue Mapping",
-        ),
-    ] = None
-    pfcDeadlockAvoidance: Annotated[
-        Optional[EgressPolicySpecPfcDeadlockAvoidance],
-        Field(
-            description="Parameters related to avoid a deadlock related to pfc on outgoing interface.",
-            title="Deadlock Avoidance",
-        ),
-    ] = None
-    queueManagement: Annotated[
-        Optional[List[EgressPolicySpecQueueManagementItem]],
-        Field(
-            description="Queue management policy for egress queues.",
-            title="Queue Management",
-        ),
-    ] = None
-
-
-class EgressPolicySpecDot1pRewritePolicy(BaseModel):
-    """
-    Dot1pRewritePolicy enables the configuration of rewrite policies for Dot1p values. It includes mappings of forwarding classes to Dot1p values, with options for drop probability-specific overrides within each forwarding class.
-    """
-
-    dot1pMap: Annotated[
-        List[EgressPolicySpecDot1pRewritePolicyDot1pMapItem],
-        Field(description="Map of forwarding classes to PCP values", title="Map"),
-    ]
 
 
 class EgressPolicySpecDot1pRewritePolicyDot1pMapItem(BaseModel):
@@ -159,34 +161,34 @@ class EgressPolicySpecDot1pRewritePolicyDot1pMapItem(BaseModel):
     ] = None
 
 
-class EgressPolicySpecDot1pRewritePolicyDot1pMapItemDropProbabilityItem(BaseModel):
+class EgressPolicySpecDot1pRewritePolicy(BaseModel):
+    """
+    Dot1pRewritePolicy enables the configuration of rewrite policies for Dot1p values. It includes mappings of forwarding classes to Dot1p values, with options for drop probability-specific overrides within each forwarding class.
+    """
+
+    dot1pMap: Annotated[
+        List[EgressPolicySpecDot1pRewritePolicyDot1pMapItem],
+        Field(description="Map of forwarding classes to PCP values", title="Map"),
+    ]
+
+
+class EgressPolicySpecDscpRewritePolicyDscpMapItemDropProbabilityItem(BaseModel):
+    dscp: Annotated[
+        Optional[int],
+        Field(
+            description="The DSCP value to be used for packets associated with the forwarding class and the specific drop probability. This overrides the general DSCP value.",
+            ge=0,
+            le=63,
+            title="DSCP",
+        ),
+    ] = None
     level: Annotated[
         Optional[Literal["High", "Medium", "Low"]],
         Field(
-            description="A drop probability level within the forwarding class for which a different remarking is desired",
+            description="A drop probability level within the forwarding class for which a different remarking is desired.",
             title="Level",
         ),
     ] = None
-    pcpValue: Annotated[
-        Optional[int],
-        Field(
-            description="The PCP value to be used for packets associated with the forwarding class and the specific drop probability. This overrides the general PCP value.",
-            ge=0,
-            le=7,
-            title="PCP Value",
-        ),
-    ] = None
-
-
-class EgressPolicySpecDscpRewritePolicy(BaseModel):
-    """
-    DSCPRewritePolicy enables the configuration of rewrite policies for Differentiated Services Code Point (DSCP) values. It includes mappings of forwarding classes to DSCP values, with options for drop probability-specific overrides within each forwarding class.  If a DSCPRewritePolicy is not specified, the DSCP value of the packet is unchanged. If a DSCP policy is specific and ECN is enabled on any of the queues, the DSCP policy will be applied to all ECN capable packets.
-    """
-
-    dscpMap: Annotated[
-        List[EgressPolicySpecDscpRewritePolicyDscpMapItem],
-        Field(description="Map of forwarding classes to DSCP values.", title="Map"),
-    ]
 
 
 class EgressPolicySpecDscpRewritePolicyDscpMapItem(BaseModel):
@@ -215,23 +217,15 @@ class EgressPolicySpecDscpRewritePolicyDscpMapItem(BaseModel):
     ]
 
 
-class EgressPolicySpecDscpRewritePolicyDscpMapItemDropProbabilityItem(BaseModel):
-    dscp: Annotated[
-        Optional[int],
-        Field(
-            description="The DSCP value to be used for packets associated with the forwarding class and the specific drop probability. This overrides the general DSCP value.",
-            ge=0,
-            le=63,
-            title="DSCP",
-        ),
-    ] = None
-    level: Annotated[
-        Optional[Literal["High", "Medium", "Low"]],
-        Field(
-            description="A drop probability level within the forwarding class for which a different remarking is desired.",
-            title="Level",
-        ),
-    ] = None
+class EgressPolicySpecDscpRewritePolicy(BaseModel):
+    """
+    DSCPRewritePolicy enables the configuration of rewrite policies for Differentiated Services Code Point (DSCP) values. It includes mappings of forwarding classes to DSCP values, with options for drop probability-specific overrides within each forwarding class.  If a DSCPRewritePolicy is not specified, the DSCP value of the packet is unchanged. If a DSCP policy is specific and ECN is enabled on any of the queues, the DSCP policy will be applied to all ECN capable packets.
+    """
+
+    dscpMap: Annotated[
+        List[EgressPolicySpecDscpRewritePolicyDscpMapItem],
+        Field(description="Map of forwarding classes to DSCP values.", title="Map"),
+    ]
 
 
 class EgressPolicySpecForwardingClassToQueueMappingItem(BaseModel):
@@ -285,29 +279,6 @@ class EgressPolicySpecPfcDeadlockAvoidance(BaseModel):
             title="Deadlock Recovery Timer",
         ),
     ]
-
-
-class EgressPolicySpecQueueManagementItem(BaseModel):
-    queues: Annotated[
-        List[EgressPolicySpecQueueManagementItemQueue],
-        Field(description="List of queues.", title="Queues"),
-    ]
-    slopePolicyWeight: Annotated[
-        Optional[int],
-        Field(
-            description="The average queue size is calculated using both the previous average and the current queue size: average = (previous average)(1 - 2^(-n)) + (current size)(2^(-n)), where n is a user-configurable weight factor. A higher n gives more importance to the previous average, smoothing peaks and lows in the queue. Lower n makes the average closer to the current queue size. If this leaf is absent, the default value is used.",
-            ge=0,
-            le=15,
-            title="Slope Policy Weight",
-        ),
-    ] = 0
-    wredSlopPolicies: Annotated[
-        Optional[List[EgressPolicySpecQueueManagementItemWredSlopPolicy]],
-        Field(
-            description="Slope policy to apply to the set of queues.",
-            title="Slope Policy",
-        ),
-    ] = None
 
 
 class EgressPolicySpecQueueManagementItemQueue(BaseModel):
@@ -425,84 +396,94 @@ class EgressPolicySpecQueueManagementItemWredSlopPolicy(BaseModel):
     ]
 
 
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
-
-
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
+class EgressPolicySpecQueueManagementItem(BaseModel):
+    queues: Annotated[
+        List[EgressPolicySpecQueueManagementItemQueue],
+        Field(description="List of queues.", title="Queues"),
     ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
-    ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
-    ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
+    slopePolicyWeight: Annotated[
         Optional[int],
         Field(
-            description="Internal error code in cases where we don't have an array of errors"
+            description="The average queue size is calculated using both the previous average and the current queue size: average = (previous average)(1 - 2^(-n)) + (current size)(2^(-n)), where n is a user-configurable weight factor. A higher n gives more importance to the previous average, smoothing peaks and lows in the queue. Lower n makes the average closer to the current queue size. If this leaf is absent, the default value is used.",
+            ge=0,
+            le=15,
+            title="Slope Policy Weight",
         ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
+    ] = 0
+    wredSlopPolicies: Annotated[
+        Optional[List[EgressPolicySpecQueueManagementItemWredSlopPolicy]],
         Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
+            description="Slope policy to apply to the set of queues.",
+            title="Slope Policy",
         ),
     ] = None
 
 
-class ForwardingClass(BaseModel):
+class EgressPolicySpec(BaseModel):
     """
-    ForwardingClass is the Schema for the forwardingclasss API
+    EgressPolicySpec defines the desired state of EgressPolicy
     """
 
-    apiVersion: str
-    kind: str
-    metadata: ForwardingClassMetadata
-    spec: Annotated[
-        Dict[str, Any],
+    dot1pRewritePolicy: Annotated[
+        Optional[EgressPolicySpecDot1pRewritePolicy],
         Field(
-            description="The ForwaringClass is used as a placeholder for to allow multiple other resources to reference the same forwarding class.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="ForwardingClassStatus defines the observed state of ForwardingClass",
-            title="Status",
+            description="Dot1pRewritePolicy enables the configuration of rewrite policies for Dot1p values. It includes mappings of forwarding classes to Dot1p values, with options for drop probability-specific overrides within each forwarding class.",
+            title="Dot1p Rewrite Policy",
         ),
     ] = None
+    dscpRewritePolicy: Annotated[
+        Optional[EgressPolicySpecDscpRewritePolicy],
+        Field(
+            description="DSCPRewritePolicy enables the configuration of rewrite policies for Differentiated Services Code Point (DSCP) values. It includes mappings of forwarding classes to DSCP values, with options for drop probability-specific overrides within each forwarding class.  If a DSCPRewritePolicy is not specified, the DSCP value of the packet is unchanged. If a DSCP policy is specific and ECN is enabled on any of the queues, the DSCP policy will be applied to all ECN capable packets.",
+            title="DSCP Rewrite Policy",
+        ),
+    ] = None
+    forwardingClassToQueueMapping: Annotated[
+        Optional[List[EgressPolicySpecForwardingClassToQueueMappingItem]],
+        Field(
+            description="Forwarding class to queue mapping policy.",
+            title="Forwarding Class to Queue Mapping",
+        ),
+    ] = None
+    pfcDeadlockAvoidance: Annotated[
+        Optional[EgressPolicySpecPfcDeadlockAvoidance],
+        Field(
+            description="Parameters related to avoid a deadlock related to pfc on outgoing interface.",
+            title="Deadlock Avoidance",
+        ),
+    ] = None
+    queueManagement: Annotated[
+        Optional[List[EgressPolicySpecQueueManagementItem]],
+        Field(
+            description="Queue management policy for egress queues.",
+            title="Queue Management",
+        ),
+    ] = None
+
+
+class EgressPolicyDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class EgressPolicyDeletedResources(RootModel[List[EgressPolicyDeletedResourceEntry]]):
+    root: List[EgressPolicyDeletedResourceEntry]
+
+
+class EgressPolicyMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
 
 
 ForwardingClassDeletedResourceEntry = EgressPolicyDeletedResourceEntry
@@ -514,138 +495,26 @@ class ForwardingClassDeletedResources(
     root: List[ForwardingClassDeletedResourceEntry]
 
 
-class ForwardingClassList(BaseModel):
-    """
-    ForwardingClassList is a list of forwardingclasss
-    """
-
-    apiVersion: str
-    items: Optional[List[ForwardingClass]] = None
-    kind: str
-
-
 ForwardingClassMetadata = EgressPolicyMetadata
 
 
-class IngressPolicy(BaseModel):
-    """
-    IngressPolicy is the Schema for the ingresspolicys API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: IngressPolicyMetadata
-    spec: Annotated[
-        IngressPolicySpec,
+class IngressPolicySpecClassifierEntryDot1pPolicyEntryPcpValue(BaseModel):
+    rangeEnd: Annotated[
+        Optional[int],
         Field(
-            description="IngressPolicySpec defines the desired state of IngressPolicy",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="IngressPolicyStatus defines the observed state of IngressPolicy",
-            title="Status",
+            description="Optional end of PCP range (inclusive) which would start from the Value to the RangeEnd.",
+            ge=0,
+            le=7,
+            title="PCP Range End",
         ),
     ] = None
-
-
-IngressPolicyDeletedResourceEntry = EgressPolicyDeletedResourceEntry
-
-
-class IngressPolicyDeletedResources(RootModel[List[IngressPolicyDeletedResourceEntry]]):
-    root: List[IngressPolicyDeletedResourceEntry]
-
-
-class IngressPolicyList(BaseModel):
-    """
-    IngressPolicyList is a list of ingresspolicys
-    """
-
-    apiVersion: str
-    items: Optional[List[IngressPolicy]] = None
-    kind: str
-
-
-IngressPolicyMetadata = EgressPolicyMetadata
-
-
-class IngressPolicySpec(BaseModel):
-    """
-    IngressPolicySpec defines the desired state of IngressPolicy
-    """
-
-    classifier: Annotated[
-        Optional[IngressPolicySpecClassifier],
+    value: Annotated[
+        int,
         Field(
-            description="Classifier manages the configuration of traffic classification policies in a network. It includes various entry types like IPv4, IPv6, Dot1p, and DSCP policies. Each entry specifies how traffic should be classified and what actions should be taken on the matched packets.",
-            title="Classifiers",
-        ),
-    ] = None
-    forwardingClassToQueueMapping: Annotated[
-        Optional[List[IngressPolicySpecForwardingClassToQueueMappingItem]],
-        Field(
-            description="Forwarding class to queue mapping policy.",
-            title="Forwarding Class to Queue Mapping",
-        ),
-    ] = None
-    policers: Annotated[
-        Optional[List[IngressPolicySpecPolicer]],
-        Field(
-            description="Ordered list of policers where the first policer is evaluated first before proceeding to the next.",
-            title="Policers",
-        ),
-    ] = None
-    queueManagement: Annotated[
-        Optional[List[IngressPolicySpecQueueManagementItem]],
-        Field(
-            description="Queue management policy for egress queues.",
-            title="Queue Management",
-        ),
-    ] = None
-
-
-class IngressPolicySpecClassifier(BaseModel):
-    """
-    Classifier manages the configuration of traffic classification policies in a network. It includes various entry types like IPv4, IPv6, Dot1p, and DSCP policies. Each entry specifies how traffic should be classified and what actions should be taken on the matched packets.
-    """
-
-    entries: Annotated[
-        List[IngressPolicySpecClassifierEntry],
-        Field(
-            description="Specifies the list of filter entries, in order.\nA classifier containing multiple entry types may result in multiple classifiers being created on the target node.\nIPV4 and IPV6 entries will create multifield classifier policies.",
-            title="Entries",
-        ),
-    ]
-
-
-class IngressPolicySpecClassifierEntry(BaseModel):
-    dot1pPolicyEntry: Annotated[
-        Optional[IngressPolicySpecClassifierEntryDot1pPolicyEntry],
-        Field(
-            description="A Dot1p policy entry - only a single Dot1p entry is allowed per classifier resource.",
-            title="Dot1p Policy Entry",
-        ),
-    ] = None
-    dscpPolicyEntry: Annotated[
-        Optional[IngressPolicySpecClassifierEntryDscpPolicyEntry],
-        Field(
-            description="A DSCP policy entry - only a single DSCP entry is allowed per classifier resource.",
-            title="DSCP Policy Entry",
-        ),
-    ] = None
-    ipEntry: Annotated[
-        Optional[IngressPolicySpecClassifierEntryIpEntry],
-        Field(
-            description="An IPv4 or IPv6 multifield classifier entry.", title="IP Entry"
-        ),
-    ] = None
-    type: Annotated[
-        Literal["IPV4", "IPV6", "DOT1P", "DSCP", "AUTO"],
-        Field(
-            description="Type of the entry which can be IPV4, IPV6, Dot1pPolicy, DSCPPolicy, or Auto.",
-            title="Type",
+            description="Single PCP value or start of range.",
+            ge=0,
+            le=7,
+            title="PCP Value",
         ),
     ]
 
@@ -686,23 +555,23 @@ class IngressPolicySpecClassifierEntryDot1pPolicyEntry(BaseModel):
     ]
 
 
-class IngressPolicySpecClassifierEntryDot1pPolicyEntryPcpValue(BaseModel):
+class IngressPolicySpecClassifierEntryDscpPolicyEntryDscpValue(BaseModel):
     rangeEnd: Annotated[
         Optional[int],
         Field(
-            description="Optional end of PCP range (inclusive) which would start from the Value to the RangeEnd.",
+            description="Optional end of DSCP range (inclusive) which would start from the Value to the RangeEnd.",
             ge=0,
-            le=7,
-            title="PCP Range End",
+            le=63,
+            title="DSCP Range End",
         ),
     ] = None
     value: Annotated[
         int,
         Field(
-            description="Single PCP value or start of range.",
+            description="Single DSCP value or start of range.",
             ge=0,
-            le=7,
-            title="PCP Value",
+            le=63,
+            title="DSCP Value",
         ),
     ]
 
@@ -736,25 +605,34 @@ class IngressPolicySpecClassifierEntryDscpPolicyEntry(BaseModel):
     ] = None
 
 
-class IngressPolicySpecClassifierEntryDscpPolicyEntryDscpValue(BaseModel):
-    rangeEnd: Annotated[
+class IngressPolicySpecClassifierEntryIpEntryAction(BaseModel):
+    """
+    An action to take on the matched packets.
+    """
+
+    dropProbabilityLevel: Annotated[
+        Optional[Literal["High", "Medium", "Low"]],
+        Field(
+            description="Assign matching packets to the specified drop probability level.",
+            title="Drop Probability Level",
+        ),
+    ] = "Low"
+    dscpRewriteValue: Annotated[
         Optional[int],
         Field(
-            description="Optional end of DSCP range (inclusive) which would start from the Value to the RangeEnd.",
+            description="Rewrite actions associated with packets that match the classifier entry.",
             ge=0,
             le=63,
-            title="DSCP Range End",
+            title="DSCP Rewrite Value",
         ),
     ] = None
-    value: Annotated[
-        int,
+    forwardingClass: Annotated[
+        Optional[str],
         Field(
-            description="Single DSCP value or start of range.",
-            ge=0,
-            le=63,
-            title="DSCP Value",
+            description="Reference to a ForwardingClass resource to which the value is mapped.",
+            title="Forwarding Class",
         ),
-    ]
+    ] = None
 
 
 class IngressPolicySpecClassifierEntryIpEntry(BaseModel):
@@ -1286,34 +1164,48 @@ class IngressPolicySpecClassifierEntryIpEntry(BaseModel):
     ] = None
 
 
-class IngressPolicySpecClassifierEntryIpEntryAction(BaseModel):
+class IngressPolicySpecClassifierEntry(BaseModel):
+    dot1pPolicyEntry: Annotated[
+        Optional[IngressPolicySpecClassifierEntryDot1pPolicyEntry],
+        Field(
+            description="A Dot1p policy entry - only a single Dot1p entry is allowed per classifier resource.",
+            title="Dot1p Policy Entry",
+        ),
+    ] = None
+    dscpPolicyEntry: Annotated[
+        Optional[IngressPolicySpecClassifierEntryDscpPolicyEntry],
+        Field(
+            description="A DSCP policy entry - only a single DSCP entry is allowed per classifier resource.",
+            title="DSCP Policy Entry",
+        ),
+    ] = None
+    ipEntry: Annotated[
+        Optional[IngressPolicySpecClassifierEntryIpEntry],
+        Field(
+            description="An IPv4 or IPv6 multifield classifier entry.", title="IP Entry"
+        ),
+    ] = None
+    type: Annotated[
+        Literal["IPV4", "IPV6", "DOT1P", "DSCP", "AUTO"],
+        Field(
+            description="Type of the entry which can be IPV4, IPV6, Dot1pPolicy, DSCPPolicy, or Auto.",
+            title="Type",
+        ),
+    ]
+
+
+class IngressPolicySpecClassifier(BaseModel):
     """
-    An action to take on the matched packets.
+    Classifier manages the configuration of traffic classification policies in a network. It includes various entry types like IPv4, IPv6, Dot1p, and DSCP policies. Each entry specifies how traffic should be classified and what actions should be taken on the matched packets.
     """
 
-    dropProbabilityLevel: Annotated[
-        Optional[Literal["High", "Medium", "Low"]],
+    entries: Annotated[
+        List[IngressPolicySpecClassifierEntry],
         Field(
-            description="Assign matching packets to the specified drop probability level.",
-            title="Drop Probability Level",
+            description="Specifies the list of filter entries, in order.\nA classifier containing multiple entry types may result in multiple classifiers being created on the target node.\nIPV4 and IPV6 entries will create multifield classifier policies.",
+            title="Entries",
         ),
-    ] = "Low"
-    dscpRewriteValue: Annotated[
-        Optional[int],
-        Field(
-            description="Rewrite actions associated with packets that match the classifier entry.",
-            ge=0,
-            le=63,
-            title="DSCP Rewrite Value",
-        ),
-    ] = None
-    forwardingClass: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to a ForwardingClass resource to which the value is mapped.",
-            title="Forwarding Class",
-        ),
-    ] = None
+    ]
 
 
 class IngressPolicySpecForwardingClassToQueueMappingItem(BaseModel):
@@ -1332,6 +1224,51 @@ class IngressPolicySpecForwardingClassToQueueMappingItem(BaseModel):
             title="Queue",
         ),
     ]
+
+
+class IngressPolicySpecPolicerExceedAction(BaseModel):
+    """
+    Applies a drop-probability to packets that the policer has determined are exceeding (yellow).
+    """
+
+    dropProbabilityLevel: Annotated[
+        Optional[Literal["High", "Medium", "Low"]],
+        Field(title="Drop Probability Level"),
+    ] = "Medium"
+
+
+class IngressPolicySpecPolicerForwardingClass(BaseModel):
+    forwardingClasses: Annotated[
+        Optional[List[str]],
+        Field(
+            description="The forwarding class of the packets on which to apply the Policer.  To match all traffic set this to 'ALL'.",
+            title="Forwarding Class",
+        ),
+    ] = None
+    forwardingTypes: Annotated[
+        List[
+            Literal[
+                "Broadcast",
+                "Unicast",
+                "Multicast",
+                "UnknownMulticast",
+                "UnknownUnicast",
+                "All",
+            ]
+        ],
+        Field(title="Forwarding Type"),
+    ]
+
+
+class IngressPolicySpecPolicerViolateAction(BaseModel):
+    """
+    Applies a drop-probability to packets that the policer has determined are exceeding (red).
+    """
+
+    dropProbabilityLevel: Annotated[
+        Optional[Literal["High", "Medium", "Low", "All"]],
+        Field(title="Drop Probability Level"),
+    ] = "High"
 
 
 class IngressPolicySpecPolicer(BaseModel):
@@ -1415,67 +1352,6 @@ class IngressPolicySpecPolicer(BaseModel):
     ] = None
 
 
-class IngressPolicySpecPolicerExceedAction(BaseModel):
-    """
-    Applies a drop-probability to packets that the policer has determined are exceeding (yellow).
-    """
-
-    dropProbabilityLevel: Annotated[
-        Optional[Literal["High", "Medium", "Low"]],
-        Field(title="Drop Probability Level"),
-    ] = "Medium"
-
-
-class IngressPolicySpecPolicerForwardingClass(BaseModel):
-    forwardingClasses: Annotated[
-        Optional[List[str]],
-        Field(
-            description="The forwarding class of the packets on which to apply the Policer.  To match all traffic set this to 'ALL'.",
-            title="Forwarding Class",
-        ),
-    ] = None
-    forwardingTypes: Annotated[
-        List[
-            Literal[
-                "Broadcast",
-                "Unicast",
-                "Multicast",
-                "UnknownMulticast",
-                "UnknownUnicast",
-                "All",
-            ]
-        ],
-        Field(title="Forwarding Type"),
-    ]
-
-
-class IngressPolicySpecPolicerViolateAction(BaseModel):
-    """
-    Applies a drop-probability to packets that the policer has determined are exceeding (red).
-    """
-
-    dropProbabilityLevel: Annotated[
-        Optional[Literal["High", "Medium", "Low", "All"]],
-        Field(title="Drop Probability Level"),
-    ] = "High"
-
-
-class IngressPolicySpecQueueManagementItem(BaseModel):
-    pfcReservedBufferPercent: Annotated[
-        Optional[int],
-        Field(
-            description="Percentage of the linecard buffer reserved for accomodating incoming traffic while upstream node reacts to generated PFC-pause frames. Note: this percentage must be common across all EgressPolicies and QueuesSets used on the same linecard.",
-            ge=0,
-            le=100,
-            title="PFC Reserved Linecard Buffer Percent",
-        ),
-    ] = None
-    queues: Annotated[
-        List[IngressPolicySpecQueueManagementItemQueue],
-        Field(description="List of queues.", title="Queues"),
-    ]
-
-
 class IngressPolicySpecQueueManagementItemQueue(BaseModel):
     committedBurstSize: Annotated[
         Optional[int],
@@ -1521,62 +1397,89 @@ class IngressPolicySpecQueueManagementItemQueue(BaseModel):
     ]
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class PolicyAttachment(BaseModel):
-    """
-    PolicyAttachment is the Schema for the policyattachments API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: PolicyAttachmentMetadata
-    spec: Annotated[
-        PolicyAttachmentSpec,
+class IngressPolicySpecQueueManagementItem(BaseModel):
+    pfcReservedBufferPercent: Annotated[
+        Optional[int],
         Field(
-            description="PolicyAttachmentSpec defines the desired state of PolicyAttachment",
-            title="Specification",
+            description="Percentage of the linecard buffer reserved for accomodating incoming traffic while upstream node reacts to generated PFC-pause frames. Note: this percentage must be common across all EgressPolicies and QueuesSets used on the same linecard.",
+            ge=0,
+            le=100,
+            title="PFC Reserved Linecard Buffer Percent",
         ),
+    ] = None
+    queues: Annotated[
+        List[IngressPolicySpecQueueManagementItemQueue],
+        Field(description="List of queues.", title="Queues"),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+
+
+class IngressPolicySpec(BaseModel):
+    """
+    IngressPolicySpec defines the desired state of IngressPolicy
+    """
+
+    classifier: Annotated[
+        Optional[IngressPolicySpecClassifier],
         Field(
-            description="PolicyAttachmentStatus defines the observed state of PolicyAttachment",
-            title="Status",
+            description="Classifier manages the configuration of traffic classification policies in a network. It includes various entry types like IPv4, IPv6, Dot1p, and DSCP policies. Each entry specifies how traffic should be classified and what actions should be taken on the matched packets.",
+            title="Classifiers",
+        ),
+    ] = None
+    forwardingClassToQueueMapping: Annotated[
+        Optional[List[IngressPolicySpecForwardingClassToQueueMappingItem]],
+        Field(
+            description="Forwarding class to queue mapping policy.",
+            title="Forwarding Class to Queue Mapping",
+        ),
+    ] = None
+    policers: Annotated[
+        Optional[List[IngressPolicySpecPolicer]],
+        Field(
+            description="Ordered list of policers where the first policer is evaluated first before proceeding to the next.",
+            title="Policers",
+        ),
+    ] = None
+    queueManagement: Annotated[
+        Optional[List[IngressPolicySpecQueueManagementItem]],
+        Field(
+            description="Queue management policy for egress queues.",
+            title="Queue Management",
         ),
     ] = None
 
 
-PolicyAttachmentDeletedResourceEntry = EgressPolicyDeletedResourceEntry
+IngressPolicyDeletedResourceEntry = EgressPolicyDeletedResourceEntry
 
 
-class PolicyAttachmentDeletedResources(
-    RootModel[List[PolicyAttachmentDeletedResourceEntry]]
-):
-    root: List[PolicyAttachmentDeletedResourceEntry]
+class IngressPolicyDeletedResources(RootModel[List[IngressPolicyDeletedResourceEntry]]):
+    root: List[IngressPolicyDeletedResourceEntry]
 
 
-class PolicyAttachmentList(BaseModel):
-    """
-    PolicyAttachmentList is a list of policyattachments
-    """
-
-    apiVersion: str
-    items: Optional[List[PolicyAttachment]] = None
-    kind: str
+IngressPolicyMetadata = EgressPolicyMetadata
 
 
-PolicyAttachmentMetadata = EgressPolicyMetadata
+class PolicyAttachmentSpecAttachment(BaseModel):
+    interface: Annotated[
+        Optional[str],
+        Field(
+            description="Specifies the Interface on which to deploy the policies.",
+            title="Interface",
+        ),
+    ] = None
+    interfaceType: Annotated[
+        Optional[Literal["ACCESS", "NETWORK"]],
+        Field(
+            description="Used for platforms that differentiate between access/service interfaces and network interface.  These platforms may require different classifiers depending on whether they are applied on access/service interfaces or network interfaces.  Specifies whether the classifier should be configured as a service Egress classifier or network Egress classifier",
+            title="Interface Type",
+        ),
+    ] = None
+    subInterfaceIndex: Annotated[
+        Optional[int],
+        Field(
+            description="Specifies the SubInterfaceIndex on which to deploy the policies.",
+            title="SubInterface Index",
+        ),
+    ] = None
 
 
 class PolicyAttachmentSpec(BaseModel):
@@ -1607,74 +1510,16 @@ class PolicyAttachmentSpec(BaseModel):
     ] = None
 
 
-class PolicyAttachmentSpecAttachment(BaseModel):
-    interface: Annotated[
-        Optional[str],
-        Field(
-            description="Specifies the Interface on which to deploy the policies.",
-            title="Interface",
-        ),
-    ] = None
-    interfaceType: Annotated[
-        Optional[Literal["ACCESS", "NETWORK"]],
-        Field(
-            description="Used for platforms that differentiate between access/service interfaces and network interface.  These platforms may require different classifiers depending on whether they are applied on access/service interfaces or network interfaces.  Specifies whether the classifier should be configured as a service Egress classifier or network Egress classifier",
-            title="Interface Type",
-        ),
-    ] = None
-    subInterfaceIndex: Annotated[
-        Optional[int],
-        Field(
-            description="Specifies the SubInterfaceIndex on which to deploy the policies.",
-            title="SubInterface Index",
-        ),
-    ] = None
+PolicyAttachmentDeletedResourceEntry = EgressPolicyDeletedResourceEntry
 
 
-class PolicyDeployment(BaseModel):
-    """
-    PolicyDeployment is the Schema for the policydeployments API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: PolicyDeploymentMetadata
-    spec: Annotated[
-        PolicyDeploymentSpec,
-        Field(
-            description="PolicyDeploymentSpec defines the desired state of PolicyDeployment",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="PolicyDeploymentStatus defines the observed state of PolicyDeployment",
-            title="Status",
-        ),
-    ] = None
-
-
-PolicyDeploymentDeletedResourceEntry = EgressPolicyDeletedResourceEntry
-
-
-class PolicyDeploymentDeletedResources(
-    RootModel[List[PolicyDeploymentDeletedResourceEntry]]
+class PolicyAttachmentDeletedResources(
+    RootModel[List[PolicyAttachmentDeletedResourceEntry]]
 ):
-    root: List[PolicyDeploymentDeletedResourceEntry]
+    root: List[PolicyAttachmentDeletedResourceEntry]
 
 
-class PolicyDeploymentList(BaseModel):
-    """
-    PolicyDeploymentList is a list of policydeployments
-    """
-
-    apiVersion: str
-    items: Optional[List[PolicyDeployment]] = None
-    kind: str
-
-
-PolicyDeploymentMetadata = EgressPolicyMetadata
+PolicyAttachmentMetadata = EgressPolicyMetadata
 
 
 class PolicyDeploymentSpec(BaseModel):
@@ -1730,48 +1575,16 @@ class PolicyDeploymentSpec(BaseModel):
     ] = None
 
 
-class Queue(BaseModel):
-    """
-    Queue is the Schema for the queues API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: QueueMetadata
-    spec: Annotated[
-        QueueSpec,
-        Field(
-            description="The Queue resource is used to define the properties of a queue, which can then be referenced by other resources.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="QueueStatus defines the observed state of Queue",
-            title="Status",
-        ),
-    ] = None
+PolicyDeploymentDeletedResourceEntry = EgressPolicyDeletedResourceEntry
 
 
-QueueDeletedResourceEntry = EgressPolicyDeletedResourceEntry
+class PolicyDeploymentDeletedResources(
+    RootModel[List[PolicyDeploymentDeletedResourceEntry]]
+):
+    root: List[PolicyDeploymentDeletedResourceEntry]
 
 
-class QueueDeletedResources(RootModel[List[QueueDeletedResourceEntry]]):
-    root: List[QueueDeletedResourceEntry]
-
-
-class QueueList(BaseModel):
-    """
-    QueueList is a list of queues
-    """
-
-    apiVersion: str
-    items: Optional[List[Queue]] = None
-    kind: str
-
-
-QueueMetadata = EgressPolicyMetadata
+PolicyDeploymentMetadata = EgressPolicyMetadata
 
 
 class QueueSpec(BaseModel):
@@ -1802,33 +1615,26 @@ class QueueSpec(BaseModel):
     ]
 
 
-class Resource(BaseModel):
+QueueDeletedResourceEntry = EgressPolicyDeletedResourceEntry
+
+
+class QueueDeletedResources(RootModel[List[QueueDeletedResourceEntry]]):
+    root: List[QueueDeletedResourceEntry]
+
+
+QueueMetadata = EgressPolicyMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -1838,11 +1644,205 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class EgressPolicy(BaseModel):
+    """
+    EgressPolicy is the Schema for the egresspolicys API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: EgressPolicyMetadata
+    spec: Annotated[
+        EgressPolicySpec,
+        Field(
+            description="EgressPolicySpec defines the desired state of EgressPolicy",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="EgressPolicyStatus defines the observed state of EgressPolicy",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class EgressPolicyList(BaseModel):
+    """
+    EgressPolicyList is a list of egresspolicys
+    """
+
+    apiVersion: str
+    items: Optional[List[EgressPolicy]] = None
+    kind: str
+
+
+class ForwardingClass(BaseModel):
+    """
+    ForwardingClass is the Schema for the forwardingclasss API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ForwardingClassMetadata
+    spec: Annotated[
+        Dict[str, Any],
+        Field(
+            description="The ForwaringClass is used as a placeholder for to allow multiple other resources to reference the same forwarding class.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="ForwardingClassStatus defines the observed state of ForwardingClass",
+            title="Status",
+        ),
+    ] = None
+
+
+class ForwardingClassList(BaseModel):
+    """
+    ForwardingClassList is a list of forwardingclasss
+    """
+
+    apiVersion: str
+    items: Optional[List[ForwardingClass]] = None
+    kind: str
+
+
+class IngressPolicy(BaseModel):
+    """
+    IngressPolicy is the Schema for the ingresspolicys API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IngressPolicyMetadata
+    spec: Annotated[
+        IngressPolicySpec,
+        Field(
+            description="IngressPolicySpec defines the desired state of IngressPolicy",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="IngressPolicyStatus defines the observed state of IngressPolicy",
+            title="Status",
+        ),
+    ] = None
+
+
+class IngressPolicyList(BaseModel):
+    """
+    IngressPolicyList is a list of ingresspolicys
+    """
+
+    apiVersion: str
+    items: Optional[List[IngressPolicy]] = None
+    kind: str
+
+
+class PolicyAttachment(BaseModel):
+    """
+    PolicyAttachment is the Schema for the policyattachments API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PolicyAttachmentMetadata
+    spec: Annotated[
+        PolicyAttachmentSpec,
+        Field(
+            description="PolicyAttachmentSpec defines the desired state of PolicyAttachment",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="PolicyAttachmentStatus defines the observed state of PolicyAttachment",
+            title="Status",
+        ),
+    ] = None
+
+
+class PolicyAttachmentList(BaseModel):
+    """
+    PolicyAttachmentList is a list of policyattachments
+    """
+
+    apiVersion: str
+    items: Optional[List[PolicyAttachment]] = None
+    kind: str
+
+
+class PolicyDeployment(BaseModel):
+    """
+    PolicyDeployment is the Schema for the policydeployments API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PolicyDeploymentMetadata
+    spec: Annotated[
+        PolicyDeploymentSpec,
+        Field(
+            description="PolicyDeploymentSpec defines the desired state of PolicyDeployment",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="PolicyDeploymentStatus defines the observed state of PolicyDeployment",
+            title="Status",
+        ),
+    ] = None
+
+
+class PolicyDeploymentList(BaseModel):
+    """
+    PolicyDeploymentList is a list of policydeployments
+    """
+
+    apiVersion: str
+    items: Optional[List[PolicyDeployment]] = None
+    kind: str
+
+
+class Queue(BaseModel):
+    """
+    Queue is the Schema for the queues API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: QueueMetadata
+    spec: Annotated[
+        QueueSpec,
+        Field(
+            description="The Queue resource is used to define the properties of a queue, which can then be referenced by other resources.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="QueueStatus defines the observed state of Queue",
+            title="Status",
+        ),
+    ] = None
+
+
+class QueueList(BaseModel):
+    """
+    QueueList is a list of queues
+    """
+
+    apiVersion: str
+    items: Optional[List[Queue]] = None
+    kind: str

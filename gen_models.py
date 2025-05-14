@@ -94,8 +94,8 @@ class Generator:
         for spec_file in core_dir.glob("**/*.json"):
             api_name = "core"
             # core api has a v0.0.1 in the spec but that will change
-            # for now use v1alpha1
-            api_version = "v1alpha1"
+            # for now use the version provided by a user from the cmd
+            api_version = self.version
             logger.debug(f"API name: {api_name}, API version: {api_version}")
             self.sanitize_schema_objects(spec_file, api_name, api_version)
             self.generate_classes_for_spec(spec_file, api_name, api_version)
@@ -142,7 +142,9 @@ class Generator:
             "--collapse-root-models",
             "--disable-timestamp",
             "--reuse-model",
-            "--keep-model-order",
+            # can't use model order, since Topologies are defined before Topology
+            # maybe worth fixing the order in the model
+            # "--keep-model-order",
             "--use-schema-description",
             "--enum-field-as-literal",
             "all",
@@ -183,16 +185,6 @@ class Generator:
                 # gating flag to track if any schemas were changed
                 # when flipped to true it means we need to write the in-mem file to disk in the output dir
                 modified = False
-
-                # Check and fix the info.title field if it has a trailing dot
-                # if "info" in spec_data and "title" in spec_data["info"]:
-                #     title = spec_data["info"]["title"]
-                #     if title.endswith("."):
-                #         spec_data["info"]["title"] = title.rstrip(".")
-                #         logger.debug(
-                #             f"Removed trailing dot from title: {title} -> {spec_data['info']['title']}"
-                #         )
-                #         modified = True
 
                 schemas = spec_data["components"]["schemas"]
                 new_schemas = {}

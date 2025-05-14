@@ -6,163 +6,9 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class Configlet(BaseModel):
-    """
-    Configlet is the Schema for the configlets API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: ConfigletMetadata
-    spec: Annotated[
-        ConfigletSpec,
-        Field(
-            description="Configlet is a configuration snippet that can be applied to a set of targets.\nThe path on the target is provided in jspath notation, and the configuration is provided as a JSON string.\nConfiglets can be applied to a set of targets based on a label selector, a list of targets, or a combination of both.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[ConfigletStatus],
-        Field(description="Deployment status of this Configlet.", title="Status"),
-    ] = None
-
-
-class ConfigletDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ConfigletDeletedResources(RootModel[List[ConfigletDeletedResourceEntry]]):
-    root: List[ConfigletDeletedResourceEntry]
-
-
-class ConfigletList(BaseModel):
-    """
-    ConfigletList is a list of configlets
-    """
-
-    apiVersion: str
-    items: Optional[List[Configlet]] = None
-    kind: str
-
-
-class ConfigletMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class ConfigletSpec(BaseModel):
-    """
-    Configlet is a configuration snippet that can be applied to a set of targets.
-    The path on the target is provided in jspath notation, and the configuration is provided as a JSON string.
-    Configlets can be applied to a set of targets based on a label selector, a list of targets, or a combination of both.
-    """
-
-    configs: Annotated[
-        List[ConfigletSpecConfig],
-        Field(
-            description="Configurations to apply, being sets of paths, operations and JSON configurations.",
-            title="Configurations",
-        ),
-    ]
-    endpointSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Label selector to use to match targets to deploy Configlet to.",
-            title="Target Selector",
-        ),
-    ] = None
-    endpoints: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to targets to deploy Configlet to.", title="Targets"
-        ),
-    ] = None
-    operatingSystem: Annotated[
-        Optional[Literal["srl", "sros"]],
-        Field(
-            description="Operating system to match against when selecting targets.",
-            title="Operating System",
-        ),
-    ] = None
-    priority: Annotated[
-        Optional[int],
-        Field(
-            description="Priority of this Configlet, between -100 and 100. Higher priorities overwrite lower priorities in the event of conflicts.",
-            ge=-100,
-            le=100,
-            title="Priority",
-        ),
-    ] = 0
-    version: Annotated[
-        Optional[str],
-        Field(
-            description="Version to match against when selecting targets.",
-            title="Version",
-        ),
-    ] = None
-
-
-class ConfigletSpecConfig(BaseModel):
-    config: Annotated[
-        str,
-        Field(
-            description="JSON-formatted string representing the configuration to apply.",
-            title="Configuration",
-        ),
-    ]
-    operation: Annotated[
-        Literal["Create", "Update", "Delete"],
-        Field(
-            description="Indicates the operation in which to apply the configuration.",
-            title="Operation",
-        ),
-    ]
-    path: Annotated[
-        str,
-        Field(
-            description="Path to apply the configuration in jspath notation, including any keys if relevant, e.g. .system.information.",
-            title="Path",
-        ),
-    ]
-
-
-class ConfigletStatus(BaseModel):
-    """
-    Deployment status of this Configlet.
-    """
-
-    endpoints: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of targets this configlet has been applied to.",
-            title="Targets",
-        ),
-    ] = None
 
 
 class ErrorIndex(BaseModel):
@@ -242,10 +88,6 @@ class Resource(BaseModel):
     uiCategory: Optional[str] = None
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
@@ -262,13 +104,6 @@ class ResourceList(BaseModel):
     resources: Optional[List[Resource]] = None
 
 
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
 class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
@@ -277,3 +112,168 @@ class StatusDetails(BaseModel):
 
 class UIResult(RootModel[str]):
     root: str
+
+
+class ConfigletSpecConfig(BaseModel):
+    config: Annotated[
+        str,
+        Field(
+            description="JSON-formatted string representing the configuration to apply.",
+            title="Configuration",
+        ),
+    ]
+    operation: Annotated[
+        Literal["Create", "Update", "Delete"],
+        Field(
+            description="Indicates the operation in which to apply the configuration.",
+            title="Operation",
+        ),
+    ]
+    path: Annotated[
+        str,
+        Field(
+            description="Path to apply the configuration in jspath notation, including any keys if relevant, e.g. .system.information.",
+            title="Path",
+        ),
+    ]
+
+
+class ConfigletSpec(BaseModel):
+    """
+    Configlet is a configuration snippet that can be applied to a set of targets.
+    The path on the target is provided in jspath notation, and the configuration is provided as a JSON string.
+    Configlets can be applied to a set of targets based on a label selector, a list of targets, or a combination of both.
+    """
+
+    configs: Annotated[
+        List[ConfigletSpecConfig],
+        Field(
+            description="Configurations to apply, being sets of paths, operations and JSON configurations.",
+            title="Configurations",
+        ),
+    ]
+    endpointSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector to use to match targets to deploy Configlet to.",
+            title="Target Selector",
+        ),
+    ] = None
+    endpoints: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to targets to deploy Configlet to.", title="Targets"
+        ),
+    ] = None
+    operatingSystem: Annotated[
+        Optional[Literal["srl", "sros"]],
+        Field(
+            description="Operating system to match against when selecting targets.",
+            title="Operating System",
+        ),
+    ] = None
+    priority: Annotated[
+        Optional[int],
+        Field(
+            description="Priority of this Configlet, between -100 and 100. Higher priorities overwrite lower priorities in the event of conflicts.",
+            ge=-100,
+            le=100,
+            title="Priority",
+        ),
+    ] = 0
+    version: Annotated[
+        Optional[str],
+        Field(
+            description="Version to match against when selecting targets.",
+            title="Version",
+        ),
+    ] = None
+
+
+class ConfigletStatus(BaseModel):
+    """
+    Deployment status of this Configlet.
+    """
+
+    endpoints: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of targets this configlet has been applied to.",
+            title="Targets",
+        ),
+    ] = None
+
+
+class ConfigletDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ConfigletDeletedResources(RootModel[List[ConfigletDeletedResourceEntry]]):
+    root: List[ConfigletDeletedResourceEntry]
+
+
+class ConfigletMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class Configlet(BaseModel):
+    """
+    Configlet is the Schema for the configlets API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ConfigletMetadata
+    spec: Annotated[
+        ConfigletSpec,
+        Field(
+            description="Configlet is a configuration snippet that can be applied to a set of targets.\nThe path on the target is provided in jspath notation, and the configuration is provided as a JSON string.\nConfiglets can be applied to a set of targets based on a label selector, a list of targets, or a combination of both.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[ConfigletStatus],
+        Field(description="Deployment status of this Configlet.", title="Status"),
+    ] = None
+
+
+class ConfigletList(BaseModel):
+    """
+    ConfigletList is a list of configlets
+    """
+
+    apiVersion: str
+    items: Optional[List[Configlet]] = None
+    kind: str

@@ -7,14 +7,6 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -76,117 +68,72 @@ class ErrorResponse(BaseModel):
     ] = None
 
 
-class Fabric(BaseModel):
-    """
-    Fabric is the Schema for the fabrics API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: FabricMetadata
-    spec: Annotated[
-        FabricSpec,
-        Field(
-            description="The Fabric defines the desired state of a Fabric resource, enabling the automation and management of data center network fabrics. It includes configurations for IP address allocation pools, network topology roles (Leafs, Spines, SuperSpines, BorderLeafs), inter-switch links, and network protocols (underlay and overlay). The specification allows for detailed control over routing strategies, including ASN allocations for BGP-based protocols, and supports advanced features like BFD.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[FabricStatus],
-        Field(
-            description="FabricStatus defines the observed state of Fabric",
-            title="Status",
-        ),
-    ] = None
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class FabricDeletedResourceEntry(BaseModel):
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class FabricDeletedResources(RootModel[List[FabricDeletedResourceEntry]]):
-    root: List[FabricDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class FabricList(BaseModel):
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class FabricSpecBorderLeafsRouteLeaking(BaseModel):
     """
-    FabricList is a list of fabrics
+    Route leaking controlled by routing policies in and out of the DefaultRouters on each node.  If specifided under the Leafs, Spines, SuperSpines, or BorderLeafs those will take precedence.
     """
 
-    apiVersion: str
-    items: Optional[List[Fabric]] = None
-    kind: str
-
-
-class FabricMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
+    exportPolicy: Annotated[
         str,
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
+            title="Export Policy",
         ),
     ]
-    namespace: str
-
-
-class FabricSpec(BaseModel):
-    """
-    The Fabric defines the desired state of a Fabric resource, enabling the automation and management of data center network fabrics. It includes configurations for IP address allocation pools, network topology roles (Leafs, Spines, SuperSpines, BorderLeafs), inter-switch links, and network protocols (underlay and overlay). The specification allows for detailed control over routing strategies, including ASN allocations for BGP-based protocols, and supports advanced features like BFD.
-    """
-
-    borderLeafs: Annotated[
-        Optional[FabricSpecBorderLeafs], Field(title="Borderleafs")
-    ] = None
-    fabricSelector: Annotated[
-        Optional[List[str]],
+    importPolicy: Annotated[
+        str,
         Field(
-            description="Selects Fabric resources when connecting multiple Fabrics together. Only one Fabric needs the selector, typically the upper layer (e.g., Superspine) selecting the lower layer (e.g., a pod fabric of leafs and spines). This helps build complete Fabrics in smaller instances of the Fabric resource. This instance selecting other fabrics must also select the InterSwitchLinks connecting itself to the selected Fabrics.",
-            title="Fabric Selector",
+            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
+            title="Import Policy",
         ),
-    ] = None
-    interSwitchLinks: Annotated[
-        Optional[FabricSpecInterSwitchLinks], Field(title="InterSwitchLinks")
-    ] = None
-    leafs: Annotated[Optional[FabricSpecLeafs], Field(title="Leafs")] = None
-    overlayProtocol: Annotated[
-        Optional[FabricSpecOverlayProtocol],
-        Field(description="Set the overlay protocol used", title="Overlay Protocol"),
-    ] = None
-    routeLeaking: Annotated[
-        Optional[FabricSpecRouteLeaking],
-        Field(
-            description="Route leaking controlled by routing policies in and out of the DefaulRouters on each node.  If specifided under the Leafs, Spines, SuperSpines, or BorderLeafs those will take precedence.",
-            title="Route Leaking",
-        ),
-    ] = None
-    spines: Annotated[Optional[FabricSpecSpines], Field(title="Spines")] = None
-    superSpines: Annotated[
-        Optional[FabricSpecSuperSpines], Field(title="Superspines")
-    ] = None
-    systemPoolIPV4: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.  Both IPv4 and IPv6 pools can be configured simultaneously for dual-stack system/lo0 interfaces.",
-            title="IPv4 Pool - System IP",
-        ),
-    ] = None
-    systemPoolIPV6: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPAllocationPool used to dynamically allocate an IPv6 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.  Both IPv4 and IPv6 pools can be configured simultaneously for dual-stack system/lo0 interfaces.",
-            title="IPv6 Pool - System IP",
-        ),
-    ] = None
-    underlayProtocol: Annotated[
-        Optional[FabricSpecUnderlayProtocol],
-        Field(description="Set the underlay protocol used", title="Underlay Protocol"),
-    ] = None
+    ]
 
 
 class FabricSpecBorderLeafs(BaseModel):
@@ -227,25 +174,9 @@ class FabricSpecBorderLeafs(BaseModel):
     ] = None
 
 
-class FabricSpecBorderLeafsRouteLeaking(BaseModel):
-    """
-    Route leaking controlled by routing policies in and out of the DefaultRouters on each node.  If specifided under the Leafs, Spines, SuperSpines, or BorderLeafs those will take precedence.
-    """
-
-    exportPolicy: Annotated[
-        str,
-        Field(
-            description="Reference to a Policy resource to use when evaluating route exports from the DefaultRouter.",
-            title="Export Policy",
-        ),
-    ]
-    importPolicy: Annotated[
-        str,
-        Field(
-            description="Reference to a Policy resource to use when evaluating route imports into the DefaultRouter.",
-            title="Import Policy",
-        ),
-    ]
+class FabricSpecInterSwitchLinksQos(BaseModel):
+    egressPolicy: Annotated[Optional[str], Field(title="Egress Policy")] = None
+    ingressPolicy: Annotated[Optional[str], Field(title="Ingress Policy")] = None
 
 
 class FabricSpecInterSwitchLinks(BaseModel):
@@ -289,9 +220,7 @@ class FabricSpecInterSwitchLinks(BaseModel):
     ] = None
 
 
-class FabricSpecInterSwitchLinksQos(BaseModel):
-    egressPolicy: Annotated[Optional[str], Field(title="Egress Policy")] = None
-    ingressPolicy: Annotated[Optional[str], Field(title="Ingress Policy")] = None
+FabricSpecLeafsRouteLeaking = FabricSpecBorderLeafsRouteLeaking
 
 
 class FabricSpecLeafs(BaseModel):
@@ -330,33 +259,6 @@ class FabricSpecLeafs(BaseModel):
             title="IPv6 Pool - System IP",
         ),
     ] = None
-
-
-FabricSpecLeafsRouteLeaking = FabricSpecBorderLeafsRouteLeaking
-
-
-class FabricSpecOverlayProtocol(BaseModel):
-    """
-    Set the overlay protocol used
-    """
-
-    bfd: Annotated[
-        Optional[FabricSpecOverlayProtocolBfd],
-        Field(
-            description="Enable BFD on overlay protocol", title="Overlay Protocol BFD"
-        ),
-    ] = None
-    bgp: Annotated[
-        Optional[FabricSpecOverlayProtocolBgp],
-        Field(description="Overlay specific BGP properties.", title="BGP"),
-    ] = None
-    protocol: Annotated[
-        Literal["IBGP", "EBGP"],
-        Field(
-            description="List of routing protocols to used to advertise EVPN routes for overlay services.  When EBGP is used, the BGP properties configured under the spec.underlayProtocol will be used.",
-            title="Protocol",
-        ),
-    ]
 
 
 class FabricSpecOverlayProtocolBfd(BaseModel):
@@ -404,6 +306,49 @@ class FabricSpecOverlayProtocolBfd(BaseModel):
             title="Receive Interval",
         ),
     ] = 1000000
+
+
+class FabricSpecOverlayProtocolBgpTimers(BaseModel):
+    """
+    Timer configurations
+    """
+
+    connectRetry: Annotated[
+        Optional[int],
+        Field(
+            description="The time interval in seconds between successive attempts to establish a session with a peer.",
+            ge=1,
+            le=65535,
+            title="Connect Retry",
+        ),
+    ] = None
+    holdTime: Annotated[
+        Optional[int],
+        Field(
+            description="The hold-time interval in seconds that the router proposes to the peer in its OPEN message.",
+            ge=0,
+            le=65535,
+            title="Hold Time",
+        ),
+    ] = None
+    keepAlive: Annotated[
+        Optional[int],
+        Field(
+            description="The interval in seconds between successive keepalive messages sent to the peer.",
+            ge=0,
+            le=21845,
+            title="Keep Alive",
+        ),
+    ] = None
+    minimumAdvertisementInterval: Annotated[
+        Optional[int],
+        Field(
+            description="The value assigned to the MinRouteAdvertisementIntervalTimer of RFC 4271, for both EBGP and IBGP sessions.",
+            ge=1,
+            le=255,
+            title="Minimum Advertisement Interval",
+        ),
+    ] = None
 
 
 class FabricSpecOverlayProtocolBgp(BaseModel):
@@ -473,47 +418,28 @@ class FabricSpecOverlayProtocolBgp(BaseModel):
     ] = None
 
 
-class FabricSpecOverlayProtocolBgpTimers(BaseModel):
+class FabricSpecOverlayProtocol(BaseModel):
     """
-    Timer configurations
+    Set the overlay protocol used
     """
 
-    connectRetry: Annotated[
-        Optional[int],
+    bfd: Annotated[
+        Optional[FabricSpecOverlayProtocolBfd],
         Field(
-            description="The time interval in seconds between successive attempts to establish a session with a peer.",
-            ge=1,
-            le=65535,
-            title="Connect Retry",
+            description="Enable BFD on overlay protocol", title="Overlay Protocol BFD"
         ),
     ] = None
-    holdTime: Annotated[
-        Optional[int],
-        Field(
-            description="The hold-time interval in seconds that the router proposes to the peer in its OPEN message.",
-            ge=0,
-            le=65535,
-            title="Hold Time",
-        ),
+    bgp: Annotated[
+        Optional[FabricSpecOverlayProtocolBgp],
+        Field(description="Overlay specific BGP properties.", title="BGP"),
     ] = None
-    keepAlive: Annotated[
-        Optional[int],
+    protocol: Annotated[
+        Literal["IBGP", "EBGP"],
         Field(
-            description="The interval in seconds between successive keepalive messages sent to the peer.",
-            ge=0,
-            le=21845,
-            title="Keep Alive",
+            description="List of routing protocols to used to advertise EVPN routes for overlay services.  When EBGP is used, the BGP properties configured under the spec.underlayProtocol will be used.",
+            title="Protocol",
         ),
-    ] = None
-    minimumAdvertisementInterval: Annotated[
-        Optional[int],
-        Field(
-            description="The value assigned to the MinRouteAdvertisementIntervalTimer of RFC 4271, for both EBGP and IBGP sessions.",
-            ge=1,
-            le=255,
-            title="Minimum Advertisement Interval",
-        ),
-    ] = None
+    ]
 
 
 class FabricSpecRouteLeaking(BaseModel):
@@ -535,6 +461,9 @@ class FabricSpecRouteLeaking(BaseModel):
             title="Import Policy",
         ),
     ]
+
+
+FabricSpecSpinesRouteLeaking = FabricSpecBorderLeafsRouteLeaking
 
 
 class FabricSpecSpines(BaseModel):
@@ -575,7 +504,7 @@ class FabricSpecSpines(BaseModel):
     ] = None
 
 
-FabricSpecSpinesRouteLeaking = FabricSpecBorderLeafsRouteLeaking
+FabricSpecSuperSpinesRouteLeaking = FabricSpecBorderLeafsRouteLeaking
 
 
 class FabricSpecSuperSpines(BaseModel):
@@ -614,33 +543,6 @@ class FabricSpecSuperSpines(BaseModel):
             title="IPv6 Pool - System IP",
         ),
     ] = None
-
-
-FabricSpecSuperSpinesRouteLeaking = FabricSpecBorderLeafsRouteLeaking
-
-
-class FabricSpecUnderlayProtocol(BaseModel):
-    """
-    Set the underlay protocol used
-    """
-
-    bfd: Annotated[
-        Optional[FabricSpecUnderlayProtocolBfd],
-        Field(
-            description="Enable BFD on underlay protocol", title="Underlay Protocol BFD"
-        ),
-    ] = None
-    bgp: Annotated[
-        FabricSpecUnderlayProtocolBgp,
-        Field(description="Underlay specific BGP properties.", title="BGP"),
-    ]
-    protocol: Annotated[
-        List[Literal["EBGP"]],
-        Field(
-            description="List of routing protocols to used between peers of an ISL.  Multiple protocols may be listed, if so multiple protocols will be used.",
-            title="Protocol",
-        ),
-    ]
 
 
 class FabricSpecUnderlayProtocolBfd(BaseModel):
@@ -690,6 +592,9 @@ class FabricSpecUnderlayProtocolBfd(BaseModel):
     ] = 1000000
 
 
+FabricSpecUnderlayProtocolBgpTimers = FabricSpecOverlayProtocolBgpTimers
+
+
 class FabricSpecUnderlayProtocolBgp(BaseModel):
     """
     Underlay specific BGP properties.
@@ -726,7 +631,118 @@ class FabricSpecUnderlayProtocolBgp(BaseModel):
     ] = None
 
 
-FabricSpecUnderlayProtocolBgpTimers = FabricSpecOverlayProtocolBgpTimers
+class FabricSpecUnderlayProtocol(BaseModel):
+    """
+    Set the underlay protocol used
+    """
+
+    bfd: Annotated[
+        Optional[FabricSpecUnderlayProtocolBfd],
+        Field(
+            description="Enable BFD on underlay protocol", title="Underlay Protocol BFD"
+        ),
+    ] = None
+    bgp: Annotated[
+        FabricSpecUnderlayProtocolBgp,
+        Field(description="Underlay specific BGP properties.", title="BGP"),
+    ]
+    protocol: Annotated[
+        List[Literal["EBGP"]],
+        Field(
+            description="List of routing protocols to used between peers of an ISL.  Multiple protocols may be listed, if so multiple protocols will be used.",
+            title="Protocol",
+        ),
+    ]
+
+
+class FabricSpec(BaseModel):
+    """
+    The Fabric defines the desired state of a Fabric resource, enabling the automation and management of data center network fabrics. It includes configurations for IP address allocation pools, network topology roles (Leafs, Spines, SuperSpines, BorderLeafs), inter-switch links, and network protocols (underlay and overlay). The specification allows for detailed control over routing strategies, including ASN allocations for BGP-based protocols, and supports advanced features like BFD.
+    """
+
+    borderLeafs: Annotated[
+        Optional[FabricSpecBorderLeafs], Field(title="Borderleafs")
+    ] = None
+    fabricSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Selects Fabric resources when connecting multiple Fabrics together. Only one Fabric needs the selector, typically the upper layer (e.g., Superspine) selecting the lower layer (e.g., a pod fabric of leafs and spines). This helps build complete Fabrics in smaller instances of the Fabric resource. This instance selecting other fabrics must also select the InterSwitchLinks connecting itself to the selected Fabrics.",
+            title="Fabric Selector",
+        ),
+    ] = None
+    interSwitchLinks: Annotated[
+        Optional[FabricSpecInterSwitchLinks], Field(title="InterSwitchLinks")
+    ] = None
+    leafs: Annotated[Optional[FabricSpecLeafs], Field(title="Leafs")] = None
+    overlayProtocol: Annotated[
+        Optional[FabricSpecOverlayProtocol],
+        Field(description="Set the overlay protocol used", title="Overlay Protocol"),
+    ] = None
+    routeLeaking: Annotated[
+        Optional[FabricSpecRouteLeaking],
+        Field(
+            description="Route leaking controlled by routing policies in and out of the DefaulRouters on each node.  If specifided under the Leafs, Spines, SuperSpines, or BorderLeafs those will take precedence.",
+            title="Route Leaking",
+        ),
+    ] = None
+    spines: Annotated[Optional[FabricSpecSpines], Field(title="Spines")] = None
+    superSpines: Annotated[
+        Optional[FabricSpecSuperSpines], Field(title="Superspines")
+    ] = None
+    systemPoolIPV4: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IPAllocationPool used to dynamically allocate an IPv4 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.  Both IPv4 and IPv6 pools can be configured simultaneously for dual-stack system/lo0 interfaces.",
+            title="IPv4 Pool - System IP",
+        ),
+    ] = None
+    systemPoolIPV6: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IPAllocationPool used to dynamically allocate an IPv6 address to system/lo0 interfaces.  If specified under the Leaf/Spine/Superspine/Borderleaf those will take precedence.  Both IPv4 and IPv6 pools can be configured simultaneously for dual-stack system/lo0 interfaces.",
+            title="IPv6 Pool - System IP",
+        ),
+    ] = None
+    underlayProtocol: Annotated[
+        Optional[FabricSpecUnderlayProtocol],
+        Field(description="Set the underlay protocol used", title="Underlay Protocol"),
+    ] = None
+
+
+class FabricStatusBorderLeafNode(BaseModel):
+    node: Annotated[
+        Optional[str], Field(description="Name of the TopoNode.", title="Node")
+    ] = None
+    operatingSystem: Annotated[
+        Optional[str],
+        Field(
+            description="Operating system running on the node.",
+            title="Operating System",
+        ),
+    ] = None
+    operatingSystemVersion: Annotated[
+        Optional[str],
+        Field(
+            description="Operating system version running on the node.",
+            title="Operating System Version",
+        ),
+    ] = None
+    underlayAutonomousSystem: Annotated[
+        Optional[int],
+        Field(
+            description="Underlay Autonomous System used for eBGP peering session, when protocol is set to eBGP this is required.",
+            title="Underlay Autonomous System",
+        ),
+    ] = None
+
+
+FabricStatusLeafNode = FabricStatusBorderLeafNode
+
+
+FabricStatusSpineNode = FabricStatusBorderLeafNode
+
+
+FabricStatusSuperSpineNode = FabricStatusBorderLeafNode
 
 
 class FabricStatus(BaseModel):
@@ -786,148 +802,29 @@ class FabricStatus(BaseModel):
     ] = None
 
 
-class FabricStatusBorderLeafNode(BaseModel):
-    node: Annotated[
-        Optional[str], Field(description="Name of the TopoNode.", title="Node")
-    ] = None
-    operatingSystem: Annotated[
-        Optional[str],
-        Field(
-            description="Operating system running on the node.",
-            title="Operating System",
-        ),
-    ] = None
-    operatingSystemVersion: Annotated[
-        Optional[str],
-        Field(
-            description="Operating system version running on the node.",
-            title="Operating System Version",
-        ),
-    ] = None
-    underlayAutonomousSystem: Annotated[
-        Optional[int],
-        Field(
-            description="Underlay Autonomous System used for eBGP peering session, when protocol is set to eBGP this is required.",
-            title="Underlay Autonomous System",
-        ),
-    ] = None
+class FabricDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
 
 
-FabricStatusLeafNode = FabricStatusBorderLeafNode
+class FabricDeletedResources(RootModel[List[FabricDeletedResourceEntry]]):
+    root: List[FabricDeletedResourceEntry]
 
 
-FabricStatusSpineNode = FabricStatusBorderLeafNode
-
-
-FabricStatusSuperSpineNode = FabricStatusBorderLeafNode
-
-
-class ISL(BaseModel):
-    """
-    ISL is the Schema for the isls API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: ISLMetadata
-    spec: Annotated[
-        ISLSpec,
-        Field(
-            description="The ISL enables the configuration and management of direct links between Nodes. This resource allows for specifying IPv4 and IPv6 allocation pools, enabling BFD for fast failure detection, and configuring VLAN IDs for the ISL. It also supports BGP peering between the endpoints, with options for setting autonomous systems, AFI/SAFI configurations, and import/export routing policies.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[ISLStatus],
-        Field(
-            description="ISLStatus defines the observed state of ISL", title="Status"
-        ),
-    ] = None
-
-
-ISLDeletedResourceEntry = FabricDeletedResourceEntry
-
-
-class ISLDeletedResources(RootModel[List[ISLDeletedResourceEntry]]):
-    root: List[ISLDeletedResourceEntry]
-
-
-class ISLList(BaseModel):
-    """
-    ISLList is a list of isls
-    """
-
-    apiVersion: str
-    items: Optional[List[ISL]] = None
-    kind: str
-
-
-ISLMetadata = FabricMetadata
-
-
-class ISLSpec(BaseModel):
-    """
-    The ISL enables the configuration and management of direct links between Nodes. This resource allows for specifying IPv4 and IPv6 allocation pools, enabling BFD for fast failure detection, and configuring VLAN IDs for the ISL. It also supports BGP peering between the endpoints, with options for setting autonomous systems, AFI/SAFI configurations, and import/export routing policies.
-    """
-
-    bfd: Annotated[
-        Optional[ISLSpecBfd],
-        Field(
-            description="Enable or disable BFD on the ISL. [default=false]", title="BFD"
-        ),
-    ] = None
-    bgp: Annotated[Optional[ISLSpecBgp], Field(title="BGP")] = None
-    localDefaultRouter: Annotated[
+class FabricMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
         str,
         Field(
-            description="Reference to the DefautlRouter associated with the local Interface in which the ISL will be provisioned.",
-            title="Local Default Router",
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    localInterface: Annotated[
-        str, Field(description="Reference to an Interface.", title="Local Interface")
-    ]
-    poolIPV4: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPv4 allocation pool to use for ISL subnet allocations.",
-            title="IPv4 Allocation Pool",
-        ),
-    ] = None
-    poolIPV6: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to an IPv6 allocation pool to use for ISL subnet allocations.",
-            title="IPv6 Allocation Pool",
-        ),
-    ] = None
-    qos: Annotated[Optional[ISLSpecQos], Field(title="QoS")] = None
-    remoteDefaultRouter: Annotated[
-        str,
-        Field(
-            description="Reference to the DefautlRouter associated with the remote Interface in which the ISL will be provisioned.",
-            title="Remote Default Router",
-        ),
-    ]
-    remoteInterface: Annotated[
-        str, Field(description="Reference to an Interface", title="Remote Interface")
-    ]
-    unnumbered: Annotated[
-        Optional[Literal["IPV6"]],
-        Field(
-            description="Enables the use of unnumbered interfaces on the ISL. For IPv6, no IP address are configured on the sub-interface and only the link local address will be used. If any allocation pool is specified for IPv6 that will take precedence and IPs will be assigned to the interfaces.  When using eBGP for an underlay protocol, the DefaultInterfaces which are a part of the ISL will be added to the BGP dynamic neighbor list.",
-            title="Unnumbered",
-        ),
-    ] = None
-    vlanID: Annotated[
-        Optional[int],
-        Field(
-            description="Single VLAN tag value between 1-4094.",
-            ge=1,
-            le=4094,
-            title="VLAN ID",
-        ),
-    ] = None
+    namespace: str
 
 
 class ISLSpecBfd(BaseModel):
@@ -1037,40 +934,68 @@ class ISLSpecBgp(BaseModel):
 ISLSpecQos = FabricSpecInterSwitchLinksQos
 
 
-class ISLStatus(BaseModel):
+class ISLSpec(BaseModel):
     """
-    ISLStatus defines the observed state of ISL
+    The ISL enables the configuration and management of direct links between Nodes. This resource allows for specifying IPv4 and IPv6 allocation pools, enabling BFD for fast failure detection, and configuring VLAN IDs for the ISL. It also supports BGP peering between the endpoints, with options for setting autonomous systems, AFI/SAFI configurations, and import/export routing policies.
     """
 
-    health: Annotated[
-        Optional[int],
-        Field(description="Indicates the health score of the ISL", title="Health"),
-    ] = None
-    healthScoreReason: Annotated[
-        Optional[str],
+    bfd: Annotated[
+        Optional[ISLSpecBfd],
         Field(
-            description="Indicates the reason for the health score",
-            title="Health Score Reason",
+            description="Enable or disable BFD on the ISL. [default=false]", title="BFD"
         ),
     ] = None
-    lastChange: Annotated[
-        Optional[date],
+    bgp: Annotated[Optional[ISLSpecBgp], Field(title="BGP")] = None
+    localDefaultRouter: Annotated[
+        str,
         Field(
-            description="The time when the state of the resource last changed",
-            title="Last Change",
+            description="Reference to the DefautlRouter associated with the local Interface in which the ISL will be provisioned.",
+            title="Local Default Router",
         ),
-    ] = None
+    ]
     localInterface: Annotated[
-        Optional[ISLStatusLocalInterface],
-        Field(description="Local Interface", title="Local Interface"),
-    ] = None
-    operationalState: Annotated[
+        str, Field(description="Reference to an Interface.", title="Local Interface")
+    ]
+    poolIPV4: Annotated[
         Optional[str],
-        Field(description="Operational state of the ISL", title="Operational State"),
+        Field(
+            description="Reference to an IPv4 allocation pool to use for ISL subnet allocations.",
+            title="IPv4 Allocation Pool",
+        ),
     ] = None
+    poolIPV6: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an IPv6 allocation pool to use for ISL subnet allocations.",
+            title="IPv6 Allocation Pool",
+        ),
+    ] = None
+    qos: Annotated[Optional[ISLSpecQos], Field(title="QoS")] = None
+    remoteDefaultRouter: Annotated[
+        str,
+        Field(
+            description="Reference to the DefautlRouter associated with the remote Interface in which the ISL will be provisioned.",
+            title="Remote Default Router",
+        ),
+    ]
     remoteInterface: Annotated[
-        Optional[ISLStatusRemoteInterface],
-        Field(description="Remote Interface", title="Remote Interface"),
+        str, Field(description="Reference to an Interface", title="Remote Interface")
+    ]
+    unnumbered: Annotated[
+        Optional[Literal["IPV6"]],
+        Field(
+            description="Enables the use of unnumbered interfaces on the ISL. For IPv6, no IP address are configured on the sub-interface and only the link local address will be used. If any allocation pool is specified for IPv6 that will take precedence and IPs will be assigned to the interfaces.  When using eBGP for an underlay protocol, the DefaultInterfaces which are a part of the ISL will be added to the BGP dynamic neighbor list.",
+            title="Unnumbered",
+        ),
+    ] = None
+    vlanID: Annotated[
+        Optional[int],
+        Field(
+            description="Single VLAN tag value between 1-4094.",
+            ge=1,
+            le=4094,
+            title="VLAN ID",
+        ),
     ] = None
 
 
@@ -1132,45 +1057,63 @@ class ISLStatusRemoteInterface(BaseModel):
     ] = None
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+class ISLStatus(BaseModel):
+    """
+    ISLStatus defines the observed state of ISL
+    """
+
+    health: Annotated[
+        Optional[int],
+        Field(description="Indicates the health score of the ISL", title="Health"),
+    ] = None
+    healthScoreReason: Annotated[
+        Optional[str],
+        Field(
+            description="Indicates the reason for the health score",
+            title="Health Score Reason",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The time when the state of the resource last changed",
+            title="Last Change",
+        ),
+    ] = None
+    localInterface: Annotated[
+        Optional[ISLStatusLocalInterface],
+        Field(description="Local Interface", title="Local Interface"),
+    ] = None
+    operationalState: Annotated[
+        Optional[str],
+        Field(description="Operational state of the ISL", title="Operational State"),
+    ] = None
+    remoteInterface: Annotated[
+        Optional[ISLStatusRemoteInterface],
+        Field(description="Remote Interface", title="Remote Interface"),
+    ] = None
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+ISLDeletedResourceEntry = FabricDeletedResourceEntry
 
 
-class Resource(BaseModel):
+class ISLDeletedResources(RootModel[List[ISLDeletedResourceEntry]]):
+    root: List[ISLDeletedResourceEntry]
+
+
+ISLMetadata = FabricMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -1180,11 +1123,68 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class Fabric(BaseModel):
+    """
+    Fabric is the Schema for the fabrics API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: FabricMetadata
+    spec: Annotated[
+        FabricSpec,
+        Field(
+            description="The Fabric defines the desired state of a Fabric resource, enabling the automation and management of data center network fabrics. It includes configurations for IP address allocation pools, network topology roles (Leafs, Spines, SuperSpines, BorderLeafs), inter-switch links, and network protocols (underlay and overlay). The specification allows for detailed control over routing strategies, including ASN allocations for BGP-based protocols, and supports advanced features like BFD.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[FabricStatus],
+        Field(
+            description="FabricStatus defines the observed state of Fabric",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class FabricList(BaseModel):
+    """
+    FabricList is a list of fabrics
+    """
+
+    apiVersion: str
+    items: Optional[List[Fabric]] = None
+    kind: str
+
+
+class ISL(BaseModel):
+    """
+    ISL is the Schema for the isls API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ISLMetadata
+    spec: Annotated[
+        ISLSpec,
+        Field(
+            description="The ISL enables the configuration and management of direct links between Nodes. This resource allows for specifying IPv4 and IPv6 allocation pools, enabling BFD for fast failure detection, and configuring VLAN IDs for the ISL. It also supports BGP peering between the endpoints, with options for setting autonomous systems, AFI/SAFI configurations, and import/export routing policies.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[ISLStatus],
+        Field(
+            description="ISLStatus defines the observed state of ISL", title="Status"
+        ),
+    ] = None
+
+
+class ISLList(BaseModel):
+    """
+    ISLList is a list of isls
+    """
+
+    apiVersion: str
+    items: Optional[List[ISL]] = None
+    kind: str

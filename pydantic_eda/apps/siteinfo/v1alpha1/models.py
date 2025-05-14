@@ -6,124 +6,9 @@ from typing import Annotated, Any, Dict, List, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class Banner(BaseModel):
-    """
-    Banner is the Schema for the banners API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: BannerMetadata
-    spec: Annotated[
-        BannerSpec,
-        Field(
-            description="BannerSpec allows the configuration of login and MOTD (Message of the Day) banners on selected nodes. The banners can be applied to specific nodes or selected using label selectors.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[BannerStatus],
-        Field(
-            description="BannerStatus defines the observed state of Banner",
-            title="Status",
-        ),
-    ] = None
-
-
-class BannerDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class BannerDeletedResources(RootModel[List[BannerDeletedResourceEntry]]):
-    root: List[BannerDeletedResourceEntry]
-
-
-class BannerList(BaseModel):
-    """
-    BannerList is a list of banners
-    """
-
-    apiVersion: str
-    items: Optional[List[Banner]] = None
-    kind: str
-
-
-class BannerMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class BannerSpec(BaseModel):
-    """
-    BannerSpec allows the configuration of login and MOTD (Message of the Day) banners on selected nodes. The banners can be applied to specific nodes or selected using label selectors.
-    """
-
-    loginBanner: Annotated[
-        Optional[str],
-        Field(
-            description="This is the login banner displayed before a user has logged into the Node.",
-            title="Login Banner",
-        ),
-    ] = None
-    motd: Annotated[
-        Optional[str],
-        Field(
-            description="This is the MOTD banner displayed after a user has logged into the Node.",
-            title="MOTD",
-        ),
-    ] = None
-    nodeSelector: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Labe selector to select nodes on which to configure the banners.",
-            title="Node Selector",
-        ),
-    ] = None
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of nodes on which to configure the banners.",
-            title="Nodes",
-        ),
-    ] = None
-
-
-class BannerStatus(BaseModel):
-    """
-    BannerStatus defines the observed state of Banner
-    """
-
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(
-            description="List of nodes this banner has been applied to", title="Nodes"
-        ),
-    ] = None
 
 
 class ErrorIndex(BaseModel):
@@ -203,10 +88,6 @@ class Resource(BaseModel):
     uiCategory: Optional[str] = None
 
 
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
@@ -223,13 +104,6 @@ class ResourceList(BaseModel):
     resources: Optional[List[Resource]] = None
 
 
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
 class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
@@ -238,3 +112,129 @@ class StatusDetails(BaseModel):
 
 class UIResult(RootModel[str]):
     root: str
+
+
+class BannerSpec(BaseModel):
+    """
+    BannerSpec allows the configuration of login and MOTD (Message of the Day) banners on selected nodes. The banners can be applied to specific nodes or selected using label selectors.
+    """
+
+    loginBanner: Annotated[
+        Optional[str],
+        Field(
+            description="This is the login banner displayed before a user has logged into the Node.",
+            title="Login Banner",
+        ),
+    ] = None
+    motd: Annotated[
+        Optional[str],
+        Field(
+            description="This is the MOTD banner displayed after a user has logged into the Node.",
+            title="MOTD",
+        ),
+    ] = None
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Labe selector to select nodes on which to configure the banners.",
+            title="Node Selector",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of nodes on which to configure the banners.",
+            title="Nodes",
+        ),
+    ] = None
+
+
+class BannerStatus(BaseModel):
+    """
+    BannerStatus defines the observed state of Banner
+    """
+
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of nodes this banner has been applied to", title="Nodes"
+        ),
+    ] = None
+
+
+class BannerDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class BannerDeletedResources(RootModel[List[BannerDeletedResourceEntry]]):
+    root: List[BannerDeletedResourceEntry]
+
+
+class BannerMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
+class Banner(BaseModel):
+    """
+    Banner is the Schema for the banners API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: BannerMetadata
+    spec: Annotated[
+        BannerSpec,
+        Field(
+            description="BannerSpec allows the configuration of login and MOTD (Message of the Day) banners on selected nodes. The banners can be applied to specific nodes or selected using label selectors.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[BannerStatus],
+        Field(
+            description="BannerStatus defines the observed state of Banner",
+            title="Status",
+        ),
+    ] = None
+
+
+class BannerList(BaseModel):
+    """
+    BannerList is a list of banners
+    """
+
+    apiVersion: str
+    items: Optional[List[Banner]] = None
+    kind: str

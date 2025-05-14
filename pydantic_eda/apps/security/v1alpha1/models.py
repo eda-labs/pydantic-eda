@@ -6,14 +6,6 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -83,6 +75,131 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class KeychainSpecKey(BaseModel):
+    algorithm: Annotated[Literal["MD5"], Field(title="Algorithm")]
+    authenticationKey: Annotated[str, Field(title="Authentication Key")]
+
+
+class KeychainSpec(BaseModel):
+    """
+    KeychainSpec defines the desired state of Keychain
+    """
+
+    key: Annotated[KeychainSpecKey, Field(title="Key")]
+
+
+class KeychainDeploymentSpec(BaseModel):
+    """
+    KeychainDeploymentSpec defines the desired state of KeychainDeployment
+    """
+
+    keychain: Annotated[
+        str, Field(description="Reference to a Keychain", title="Keychain")
+    ]
+    node: Annotated[
+        str,
+        Field(
+            description="Reference to a Node on which to push the BgpGroup",
+            title="Node",
+        ),
+    ]
+
+
+class KeychainDeploymentDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class KeychainDeploymentDeletedResources(
+    RootModel[List[KeychainDeploymentDeletedResourceEntry]]
+):
+    root: List[KeychainDeploymentDeletedResourceEntry]
+
+
+class KeychainDeploymentMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+KeychainDeletedResourceEntry = KeychainDeploymentDeletedResourceEntry
+
+
+class KeychainDeletedResources(RootModel[List[KeychainDeletedResourceEntry]]):
+    root: List[KeychainDeletedResourceEntry]
+
+
+KeychainMetadata = KeychainDeploymentMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
+
+
+class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
+    root: List[ResourceHistoryEntry]
+
+
+class Status(BaseModel):
+    apiVersion: Optional[str] = None
+    details: Optional[StatusDetails] = None
+    kind: Optional[str] = None
+    string: Optional[str] = None
+
+
 class Keychain(BaseModel):
     """
     Keychain is the Schema for the keychains API
@@ -105,10 +222,6 @@ class Keychain(BaseModel):
             title="Status",
         ),
     ] = None
-
-
-class KeychainDeletedResources(RootModel[List[KeychainDeletedResourceEntry]]):
-    root: List[KeychainDeletedResourceEntry]
 
 
 class KeychainDeployment(BaseModel):
@@ -135,20 +248,6 @@ class KeychainDeployment(BaseModel):
     ] = None
 
 
-class KeychainDeploymentDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class KeychainDeploymentDeletedResources(
-    RootModel[List[KeychainDeploymentDeletedResourceEntry]]
-):
-    root: List[KeychainDeploymentDeletedResourceEntry]
-
-
 class KeychainDeploymentList(BaseModel):
     """
     KeychainDeploymentList is a list of keychaindeployments
@@ -159,36 +258,6 @@ class KeychainDeploymentList(BaseModel):
     kind: str
 
 
-class KeychainDeploymentMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class KeychainDeploymentSpec(BaseModel):
-    """
-    KeychainDeploymentSpec defines the desired state of KeychainDeployment
-    """
-
-    keychain: Annotated[
-        str, Field(description="Reference to a Keychain", title="Keychain")
-    ]
-    node: Annotated[
-        str,
-        Field(
-            description="Reference to a Node on which to push the BgpGroup",
-            title="Node",
-        ),
-    ]
-
-
 class KeychainList(BaseModel):
     """
     KeychainList is a list of keychains
@@ -197,72 +266,3 @@ class KeychainList(BaseModel):
     apiVersion: str
     items: Optional[List[Keychain]] = None
     kind: str
-
-
-KeychainMetadata = KeychainDeploymentMetadata
-
-
-class KeychainSpec(BaseModel):
-    """
-    KeychainSpec defines the desired state of Keychain
-    """
-
-    key: Annotated[KeychainSpecKey, Field(title="Key")]
-
-
-class KeychainSpecKey(BaseModel):
-    algorithm: Annotated[Literal["MD5"], Field(title="Algorithm")]
-    authenticationKey: Annotated[str, Field(title="Authentication Key")]
-
-
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class UIResult(RootModel[str]):
-    root: str
-
-
-KeychainDeletedResourceEntry = KeychainDeploymentDeletedResourceEntry

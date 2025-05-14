@@ -6,97 +6,9 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
-
-
-class CommunitySet(BaseModel):
-    """
-    CommunitySet is the Schema for the communitysets API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: CommunitySetMetadata
-    spec: Annotated[
-        CommunitySetSpec,
-        Field(
-            description="CommunitySetSpec defines the desired state of CommunitySet",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="CommunitySetStatus defines the observed state of CommunitySet",
-            title="Status",
-        ),
-    ] = None
-
-
-class CommunitySetDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class CommunitySetDeletedResources(RootModel[List[CommunitySetDeletedResourceEntry]]):
-    root: List[CommunitySetDeletedResourceEntry]
-
-
-class CommunitySetList(BaseModel):
-    """
-    CommunitySetList is a list of communitysets
-    """
-
-    apiVersion: str
-    items: Optional[List[CommunitySet]] = None
-    kind: str
-
-
-class CommunitySetMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class CommunitySetSpec(BaseModel):
-    """
-    CommunitySetSpec defines the desired state of CommunitySet
-    """
-
-    expressionMatch: Annotated[
-        Optional[str],
-        Field(
-            description="Options that determine the matching criteria that applies to the list of community members.",
-            title="Expression Match",
-        ),
-    ] = None
-    members: Annotated[
-        Optional[List[str]],
-        Field(
-            description="A standard BGP community value, regular expression or well-known name or else a large BGP community value or regular expression.",
-            title="Community Set Members",
-        ),
-    ] = None
 
 
 class ErrorIndex(BaseModel):
@@ -167,81 +79,85 @@ class Patch(RootModel[List[K8SPatchOp]]):
     root: List[K8SPatchOp]
 
 
-class Policy(BaseModel):
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    message: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
+
+
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class CommunitySetSpec(BaseModel):
     """
-    Policy is the Schema for the policys API
+    CommunitySetSpec defines the desired state of CommunitySet
     """
 
-    apiVersion: str
-    kind: str
-    metadata: PolicyMetadata
-    spec: Annotated[
-        PolicySpec,
+    expressionMatch: Annotated[
+        Optional[str],
         Field(
-            description="Policy defines a set of rules and actions to manage network traffic or routing behavior, with statements that include matching conditions and actions, such as accepting or rejecting routes, or modifying route attributes like BGP parameters.",
-            title="Specification",
+            description="Options that determine the matching criteria that applies to the list of community members.",
+            title="Expression Match",
+        ),
+    ] = None
+    members: Annotated[
+        Optional[List[str]],
+        Field(
+            description="A standard BGP community value, regular expression or well-known name or else a large BGP community value or regular expression.",
+            title="Community Set Members",
+        ),
+    ] = None
+
+
+class CommunitySetDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class CommunitySetDeletedResources(RootModel[List[CommunitySetDeletedResourceEntry]]):
+    root: List[CommunitySetDeletedResourceEntry]
+
+
+class CommunitySetMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
         ),
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="PolicyStatus defines the observed state of Policy.",
-            title="Status",
-        ),
-    ] = None
-
-
-PolicyDeletedResourceEntry = CommunitySetDeletedResourceEntry
-
-
-class PolicyDeletedResources(RootModel[List[PolicyDeletedResourceEntry]]):
-    root: List[PolicyDeletedResourceEntry]
-
-
-class PolicyList(BaseModel):
-    """
-    PolicyList is a list of policys
-    """
-
-    apiVersion: str
-    items: Optional[List[Policy]] = None
-    kind: str
-
-
-PolicyMetadata = CommunitySetMetadata
-
-
-class PolicySpec(BaseModel):
-    """
-    Policy defines a set of rules and actions to manage network traffic or routing behavior, with statements that include matching conditions and actions, such as accepting or rejecting routes, or modifying route attributes like BGP parameters.
-    """
-
-    defaultAction: Annotated[
-        Optional[PolicySpecDefaultAction],
-        Field(
-            description="The default action to apply if no other actions are defined.",
-            title="Default Action",
-        ),
-    ] = None
-    statement: Annotated[
-        Optional[List[PolicySpecStatementItem]],
-        Field(description="List of policy statements.", title="Statements"),
-    ] = None
-
-
-class PolicySpecDefaultAction(BaseModel):
-    """
-    The default action to apply if no other actions are defined.
-    """
-
-    bgp: Annotated[
-        Optional[PolicySpecDefaultActionBgp],
-        Field(description="Actions related to the BGP protocol.", title="BGP"),
-    ] = None
-    policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
-        Field(description="Final disposition for the route.", title="Policy Result"),
-    ] = None
+    namespace: str
 
 
 class PolicySpecDefaultActionBgp(BaseModel):
@@ -289,21 +205,22 @@ class PolicySpecDefaultActionBgp(BaseModel):
     ] = None
 
 
-class PolicySpecStatementItem(BaseModel):
-    action: Annotated[
-        Optional[PolicySpecStatementItemAction],
-        Field(
-            description="Actions for routes that match the policy statement.",
-            title="Action",
-        ),
+class PolicySpecDefaultAction(BaseModel):
+    """
+    The default action to apply if no other actions are defined.
+    """
+
+    bgp: Annotated[
+        Optional[PolicySpecDefaultActionBgp],
+        Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
-    match: Annotated[
-        Optional[PolicySpecStatementItemMatch],
-        Field(description="Match conditions of the policy statement.", title="Match"),
+    policyResult: Annotated[
+        Optional[Literal["accept", "reject"]],
+        Field(description="Final disposition for the route.", title="Policy Result"),
     ] = None
-    name: Annotated[
-        str, Field(description="Name of the policy statement.", title="Name")
-    ]
+
+
+PolicySpecStatementItemActionBgp = PolicySpecDefaultActionBgp
 
 
 class PolicySpecStatementItemAction(BaseModel):
@@ -321,7 +238,24 @@ class PolicySpecStatementItemAction(BaseModel):
     ] = None
 
 
-PolicySpecStatementItemActionBgp = PolicySpecDefaultActionBgp
+class PolicySpecStatementItemMatchBgp(BaseModel):
+    """
+    Configuration for BGP-specific policy match criteria.
+    """
+
+    communitySet: Annotated[
+        Optional[str],
+        Field(
+            description="Match conditions for BGP communities.", title="BGP Community"
+        ),
+    ] = None
+    evpnRouteType: Annotated[
+        Optional[List[int]],
+        Field(
+            description="Match conditions for EVPN route types.",
+            title="EVPN Route Type",
+        ),
+    ] = None
 
 
 class PolicySpecStatementItemMatch(BaseModel):
@@ -370,82 +304,49 @@ class PolicySpecStatementItemMatch(BaseModel):
     ] = None
 
 
-class PolicySpecStatementItemMatchBgp(BaseModel):
-    """
-    Configuration for BGP-specific policy match criteria.
-    """
-
-    communitySet: Annotated[
-        Optional[str],
+class PolicySpecStatementItem(BaseModel):
+    action: Annotated[
+        Optional[PolicySpecStatementItemAction],
         Field(
-            description="Match conditions for BGP communities.", title="BGP Community"
+            description="Actions for routes that match the policy statement.",
+            title="Action",
         ),
     ] = None
-    evpnRouteType: Annotated[
-        Optional[List[int]],
-        Field(
-            description="Match conditions for EVPN route types.",
-            title="EVPN Route Type",
-        ),
+    match: Annotated[
+        Optional[PolicySpecStatementItemMatch],
+        Field(description="Match conditions of the policy statement.", title="Match"),
     ] = None
-
-
-class PrefixSet(BaseModel):
-    """
-    PrefixSet is the Schema for the prefixsets API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: PrefixSetMetadata
-    spec: Annotated[
-        PrefixSetSpec,
-        Field(
-            description="PrefixSet defines a collection of IP prefixes, which may include specific CIDR blocks or a range of prefixes. This set is typically used for matching routes or implementing routing policies.",
-            title="Specification",
-        ),
+    name: Annotated[
+        str, Field(description="Name of the policy statement.", title="Name")
     ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
+
+
+class PolicySpec(BaseModel):
+    """
+    Policy defines a set of rules and actions to manage network traffic or routing behavior, with statements that include matching conditions and actions, such as accepting or rejecting routes, or modifying route attributes like BGP parameters.
+    """
+
+    defaultAction: Annotated[
+        Optional[PolicySpecDefaultAction],
         Field(
-            description="PrefixSetStatus defines the observed state of PrefixSet.",
-            title="Status",
+            description="The default action to apply if no other actions are defined.",
+            title="Default Action",
         ),
+    ] = None
+    statement: Annotated[
+        Optional[List[PolicySpecStatementItem]],
+        Field(description="List of policy statements.", title="Statements"),
     ] = None
 
 
-PrefixSetDeletedResourceEntry = CommunitySetDeletedResourceEntry
+PolicyDeletedResourceEntry = CommunitySetDeletedResourceEntry
 
 
-class PrefixSetDeletedResources(RootModel[List[PrefixSetDeletedResourceEntry]]):
-    root: List[PrefixSetDeletedResourceEntry]
+class PolicyDeletedResources(RootModel[List[PolicyDeletedResourceEntry]]):
+    root: List[PolicyDeletedResourceEntry]
 
 
-class PrefixSetList(BaseModel):
-    """
-    PrefixSetList is a list of prefixsets
-    """
-
-    apiVersion: str
-    items: Optional[List[PrefixSet]] = None
-    kind: str
-
-
-PrefixSetMetadata = CommunitySetMetadata
-
-
-class PrefixSetSpec(BaseModel):
-    """
-    PrefixSet defines a collection of IP prefixes, which may include specific CIDR blocks or a range of prefixes. This set is typically used for matching routes or implementing routing policies.
-    """
-
-    prefix: Annotated[
-        List[PrefixSetSpecPrefixItem],
-        Field(
-            description="List of IPv4 or IPv6 prefixes in CIDR notation.",
-            title="Prefixes",
-        ),
-    ]
+PolicyMetadata = CommunitySetMetadata
 
 
 class PrefixSetSpecPrefixItem(BaseModel):
@@ -483,33 +384,40 @@ class PrefixSetSpecPrefixItem(BaseModel):
     ] = None
 
 
-class Resource(BaseModel):
+class PrefixSetSpec(BaseModel):
+    """
+    PrefixSet defines a collection of IP prefixes, which may include specific CIDR blocks or a range of prefixes. This set is typically used for matching routes or implementing routing policies.
+    """
+
+    prefix: Annotated[
+        List[PrefixSetSpecPrefixItem],
+        Field(
+            description="List of IPv4 or IPv6 prefixes in CIDR notation.",
+            title="Prefixes",
+        ),
+    ]
+
+
+PrefixSetDeletedResourceEntry = CommunitySetDeletedResourceEntry
+
+
+class PrefixSetDeletedResources(RootModel[List[PrefixSetDeletedResourceEntry]]):
+    root: List[PrefixSetDeletedResourceEntry]
+
+
+PrefixSetMetadata = CommunitySetMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -519,11 +427,103 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class CommunitySet(BaseModel):
+    """
+    CommunitySet is the Schema for the communitysets API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: CommunitySetMetadata
+    spec: Annotated[
+        CommunitySetSpec,
+        Field(
+            description="CommunitySetSpec defines the desired state of CommunitySet",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="CommunitySetStatus defines the observed state of CommunitySet",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class CommunitySetList(BaseModel):
+    """
+    CommunitySetList is a list of communitysets
+    """
+
+    apiVersion: str
+    items: Optional[List[CommunitySet]] = None
+    kind: str
+
+
+class Policy(BaseModel):
+    """
+    Policy is the Schema for the policys API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PolicyMetadata
+    spec: Annotated[
+        PolicySpec,
+        Field(
+            description="Policy defines a set of rules and actions to manage network traffic or routing behavior, with statements that include matching conditions and actions, such as accepting or rejecting routes, or modifying route attributes like BGP parameters.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="PolicyStatus defines the observed state of Policy.",
+            title="Status",
+        ),
+    ] = None
+
+
+class PolicyList(BaseModel):
+    """
+    PolicyList is a list of policys
+    """
+
+    apiVersion: str
+    items: Optional[List[Policy]] = None
+    kind: str
+
+
+class PrefixSet(BaseModel):
+    """
+    PrefixSet is the Schema for the prefixsets API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: PrefixSetMetadata
+    spec: Annotated[
+        PrefixSetSpec,
+        Field(
+            description="PrefixSet defines a collection of IP prefixes, which may include specific CIDR blocks or a range of prefixes. This set is typically used for matching routes or implementing routing policies.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="PrefixSetStatus defines the observed state of PrefixSet.",
+            title="Status",
+        ),
+    ] = None
+
+
+class PrefixSetList(BaseModel):
+    """
+    PrefixSetList is a list of prefixsets
+    """
+
+    apiVersion: str
+    items: Optional[List[PrefixSet]] = None
+    kind: str

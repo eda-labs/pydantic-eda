@@ -7,14 +7,6 @@ from pydantic import BaseModel, Field, RootModel
 from datetime import date
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
@@ -84,63 +76,67 @@ class K8SPatchOp(BaseModel):
     x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
 
 
-class NTPClient(BaseModel):
-    """
-    NTPClient is the Schema for the ntpclients API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: NTPClientMetadata
-    spec: Annotated[
-        NTPClientSpec,
-        Field(
-            description="The NTP client allows for configuring NTP servers and the source of NTP traffic in order for the devices to synchronize their clocks.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[NTPClientStatus],
-        Field(
-            description="NTPClientStatus defines the observed state of NTPClient",
-            title="Status",
-        ),
-    ] = None
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
 
 
-class NTPClientDeletedResourceEntry(BaseModel):
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class NTPClientDeletedResources(RootModel[List[NTPClientDeletedResourceEntry]]):
-    root: List[NTPClientDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class NTPClientList(BaseModel):
-    """
-    NTPClientList is a list of ntpclients
-    """
-
-    apiVersion: str
-    items: Optional[List[NTPClient]] = None
-    kind: str
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
 
 
-class NTPClientMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
+class UIResult(RootModel[str]):
+    root: str
+
+
+class NTPClientSpecServer(BaseModel):
+    iBurst: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates whether this server should enable burst synchronization or not",
+            title="Enable iBurst",
+        ),
+    ] = None
+    preferred: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates whether this server should be preferred or not",
+            title="Preferred Server",
+        ),
+    ] = None
+    server: Annotated[
         str,
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description="An NTP server can either be an IP address or an FQDN",
+            title="Server",
         ),
     ]
-    namespace: str
 
 
 class NTPClientSpec(BaseModel):
@@ -189,28 +185,15 @@ class NTPClientSpec(BaseModel):
     ] = None
 
 
-class NTPClientSpecServer(BaseModel):
-    iBurst: Annotated[
-        Optional[bool],
-        Field(
-            description="Indicates whether this server should enable burst synchronization or not",
-            title="Enable iBurst",
-        ),
-    ] = None
-    preferred: Annotated[
-        Optional[bool],
-        Field(
-            description="Indicates whether this server should be preferred or not",
-            title="Preferred Server",
-        ),
-    ] = None
-    server: Annotated[
-        str,
-        Field(
-            description="An NTP server can either be an IP address or an FQDN",
-            title="Server",
-        ),
+class NTPClientStatusNode(BaseModel):
+    node: Annotated[str, Field(description="Reference to Node object", title="Node")]
+    operatingSystem: Annotated[
+        str, Field(description="Operating System of the Node", title="Operating System")
     ]
+    synchronized: Annotated[
+        Optional[str],
+        Field(description="Synchronized state of the Node", title="Synchronized"),
+    ] = None
 
 
 class NTPClientStatus(BaseModel):
@@ -254,48 +237,41 @@ class NTPClientStatus(BaseModel):
     ] = None
 
 
-class NTPClientStatusNode(BaseModel):
-    node: Annotated[str, Field(description="Reference to Node object", title="Node")]
-    operatingSystem: Annotated[
-        str, Field(description="Operating System of the Node", title="Operating System")
+class NTPClientDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class NTPClientDeletedResources(RootModel[List[NTPClientDeletedResourceEntry]]):
+    root: List[NTPClientDeletedResourceEntry]
+
+
+class NTPClientMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
     ]
-    synchronized: Annotated[
-        Optional[str],
-        Field(description="Synchronized state of the Node", title="Synchronized"),
-    ] = None
+    namespace: str
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
-
-
-class Resource(BaseModel):
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -305,11 +281,35 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class NTPClient(BaseModel):
+    """
+    NTPClient is the Schema for the ntpclients API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: NTPClientMetadata
+    spec: Annotated[
+        NTPClientSpec,
+        Field(
+            description="The NTP client allows for configuring NTP servers and the source of NTP traffic in order for the devices to synchronize their clocks.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[NTPClientStatus],
+        Field(
+            description="NTPClientStatus defines the observed state of NTPClient",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class NTPClientList(BaseModel):
+    """
+    NTPClientList is a list of ntpclients
+    """
+
+    apiVersion: str
+    items: Optional[List[NTPClient]] = None
+    kind: str

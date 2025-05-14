@@ -6,116 +6,141 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, RootModel
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
 class AppGroupVersion(BaseModel):
     groupVersion: Optional[str] = None
     version: Optional[str] = None
 
 
-class ControlPlaneFilter(BaseModel):
+class ErrorIndex(BaseModel):
+    index: Optional[int] = None
+
+
+class ErrorItem(BaseModel):
+    error: Optional[Dict[str, Any]] = None
+    type: Optional[str] = None
+
+
+class ErrorResponse(BaseModel):
     """
-    ControlPlaneFilter is the Schema for the controlplanefilters API
+    Generic error response for REST APIs
     """
 
-    apiVersion: str
-    kind: str
-    metadata: ControlPlaneFilterMetadata
-    spec: Annotated[
-        ControlPlaneFilterSpec,
-        Field(
-            description="ControlPlaneFilter allows for specifying a list of Nodes or Node selectors where the filter should be applied and managing filter entries in order.",
-            title="Specification",
-        ),
+    code: Annotated[
+        int, Field(description="the numeric HTTP error code for the response.")
     ]
-    status: Annotated[
+    details: Annotated[
+        Optional[str], Field(description="The optional details of the error response.")
+    ] = None
+    dictionary: Annotated[
         Optional[Dict[str, Any]],
         Field(
-            description="ControlPlaneFilterStatus defines the observed state of ControlPlaneFilter",
-            title="Status",
+            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    errors: Annotated[
+        Optional[List[ErrorItem]],
+        Field(
+            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
+        ),
+    ] = None
+    index: Optional[ErrorIndex] = None
+    internal: Annotated[
+        Optional[int],
+        Field(
+            description="Internal error code in cases where we don't have an array of errors"
+        ),
+    ] = None
+    message: Annotated[
+        str, Field(description="The basic text error message for the error response.")
+    ]
+    ref: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to the error source. Should typically be the URI of the request"
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(
+            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
         ),
     ] = None
 
 
-class ControlPlaneFilterDeletedResourceEntry(BaseModel):
+class K8SPatchOp(BaseModel):
+    from_: Annotated[Optional[str], Field(alias="from")] = None
+    op: str
+    path: str
+    value: Optional[Dict[str, Any]] = None
+    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+
+
+class Patch(RootModel[List[K8SPatchOp]]):
+    root: List[K8SPatchOp]
+
+
+class Resource(BaseModel):
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespaced: Optional[bool] = None
+    readOnly: Optional[bool] = None
+    singularName: Optional[str] = None
+    uiCategory: Optional[str] = None
+
+
+class ResourceHistoryEntry(BaseModel):
+    author: Optional[str] = None
+    changeType: Optional[str] = None
     commitTime: Optional[str] = None
     hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
+    message: Optional[str] = None
     transactionId: Optional[int] = None
 
 
-class ControlPlaneFilterDeletedResources(
-    RootModel[List[ControlPlaneFilterDeletedResourceEntry]]
-):
-    root: List[ControlPlaneFilterDeletedResourceEntry]
+class ResourceList(BaseModel):
+    apiVersion: Optional[str] = None
+    groupVersion: Optional[str] = None
+    kind: Optional[str] = None
+    resources: Optional[List[Resource]] = None
 
 
-class ControlPlaneFilterList(BaseModel):
+class StatusDetails(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UIResult(RootModel[str]):
+    root: str
+
+
+class ControlPlaneFilterSpecEntryIpEntryRateLimit(BaseModel):
     """
-    ControlPlaneFilterList is a list of controlplanefilters
-    """
-
-    apiVersion: str
-    items: Optional[List[ControlPlaneFilter]] = None
-    kind: str
-
-
-class ControlPlaneFilterMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
-
-
-class ControlPlaneFilterSpec(BaseModel):
-    """
-    ControlPlaneFilter allows for specifying a list of Nodes or Node selectors where the filter should be applied and managing filter entries in order.
+    Rate limit to apply when the action is 'RateLimit'.
     """
 
-    entries: Annotated[
-        List[ControlPlaneFilterSpecEntry],
+    burstSize: Annotated[
+        Optional[int],
+        Field(description="The maximum burst size in bytes.", title="Burst Size"),
+    ] = None
+    entrySpecificPolicer: Annotated[
+        Optional[bool],
         Field(
-            description="Specifies the list of filter entries, in order.",
-            title="Entries",
+            description="Controls policer instantiation: false for shared instance, true for per-entry instances",
+            title="Entry Specific Policer",
         ),
-    ]
-    nodeSelector: Annotated[
-        Optional[List[str]],
+    ] = False
+    peakRate: Annotated[
+        Optional[int],
+        Field(description="The peak rate in kilobytes per second.", title="Peak Rate"),
+    ] = None
+    scope: Annotated[
+        Optional[Literal["Global", "Subinterface"]],
         Field(
-            description="Label selector used to select Toponodes on which to deploy the CPM filter.",
-            title="Node Selector",
+            description="Determines how the policer is applied across subinterfaces. Global applies the policer across all subinterfaces, while Subinterface applies it individually to each subinterface.",
+            title="Scope",
         ),
-    ] = None
-    nodes: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Reference to a list of TopoNodes on which to deploy the CPM filter.",
-            title="Nodes",
-        ),
-    ] = None
-
-
-class ControlPlaneFilterSpecEntry(BaseModel):
-    ipEntry: Annotated[
-        Optional[ControlPlaneFilterSpecEntryIpEntry], Field(title="IP Entry")
-    ] = None
-    macEntry: Annotated[
-        Optional[ControlPlaneFilterSpecEntryMacEntry], Field(title="MAC Entry")
-    ] = None
-    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
+    ] = "Global"
 
 
 class ControlPlaneFilterSpecEntryIpEntry(BaseModel):
@@ -653,33 +678,9 @@ class ControlPlaneFilterSpecEntryIpEntry(BaseModel):
     ] = None
 
 
-class ControlPlaneFilterSpecEntryIpEntryRateLimit(BaseModel):
-    """
-    Rate limit to apply when the action is 'RateLimit'.
-    """
-
-    burstSize: Annotated[
-        Optional[int],
-        Field(description="The maximum burst size in bytes.", title="Burst Size"),
-    ] = None
-    entrySpecificPolicer: Annotated[
-        Optional[bool],
-        Field(
-            description="Controls policer instantiation: false for shared instance, true for per-entry instances",
-            title="Entry Specific Policer",
-        ),
-    ] = False
-    peakRate: Annotated[
-        Optional[int],
-        Field(description="The peak rate in kilobytes per second.", title="Peak Rate"),
-    ] = None
-    scope: Annotated[
-        Optional[Literal["Global", "Subinterface"]],
-        Field(
-            description="Determines how the policer is applied across subinterfaces. Global applies the policer across all subinterfaces, while Subinterface applies it individually to each subinterface.",
-            title="Scope",
-        ),
-    ] = "Global"
+ControlPlaneFilterSpecEntryMacEntryRateLimit = (
+    ControlPlaneFilterSpecEntryIpEntryRateLimit
+)
 
 
 class ControlPlaneFilterSpecEntryMacEntry(BaseModel):
@@ -776,131 +777,72 @@ class ControlPlaneFilterSpecEntryMacEntry(BaseModel):
     ] = None
 
 
-ControlPlaneFilterSpecEntryMacEntryRateLimit = (
-    ControlPlaneFilterSpecEntryIpEntryRateLimit
-)
-
-
-class ErrorIndex(BaseModel):
-    index: Optional[int] = None
-
-
-class ErrorItem(BaseModel):
-    error: Optional[Dict[str, Any]] = None
-    type: Optional[str] = None
-
-
-class ErrorResponse(BaseModel):
-    """
-    Generic error response for REST APIs
-    """
-
-    code: Annotated[
-        int, Field(description="the numeric HTTP error code for the response.")
-    ]
-    details: Annotated[
-        Optional[str], Field(description="The optional details of the error response.")
+class ControlPlaneFilterSpecEntry(BaseModel):
+    ipEntry: Annotated[
+        Optional[ControlPlaneFilterSpecEntryIpEntry], Field(title="IP Entry")
     ] = None
-    dictionary: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
-        ),
+    macEntry: Annotated[
+        Optional[ControlPlaneFilterSpecEntryMacEntry], Field(title="MAC Entry")
     ] = None
-    errors: Annotated[
-        Optional[List[ErrorItem]],
-        Field(
-            description="Collection of errors in cases where more than one exists. This needs to be\nflexible so we can support multiple formats"
-        ),
-    ] = None
-    index: Optional[ErrorIndex] = None
-    internal: Annotated[
-        Optional[int],
-        Field(
-            description="Internal error code in cases where we don't have an array of errors"
-        ),
-    ] = None
-    message: Annotated[
-        str, Field(description="The basic text error message for the error response.")
-    ]
-    ref: Annotated[
-        Optional[str],
-        Field(
-            description="Reference to the error source. Should typically be the URI of the request"
-        ),
-    ] = None
-    type: Annotated[
-        Optional[str],
-        Field(
-            description="URI pointing at a document that describes the error and mitigation steps\nIf there is no document, point to the RFC for the HTTP error code"
-        ),
-    ] = None
+    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
 
 
-class Filter(BaseModel):
+class ControlPlaneFilterSpec(BaseModel):
     """
-    Filter is the Schema for the filters API
-    """
-
-    apiVersion: str
-    kind: str
-    metadata: FilterMetadata
-    spec: Annotated[
-        FilterSpec,
-        Field(
-            description="Filter allows for the creation and management of ordered filtering rules based on IP or MAC criteria. The resource supports various conditions and actions, enabling fine-grained control over network traffic by specifying rules for source and destination addresses, ports, and protocols.",
-            title="Specification",
-        ),
-    ]
-    status: Annotated[
-        Optional[Dict[str, Any]],
-        Field(
-            description="FilterStatus defines the observed state of Filter",
-            title="Status",
-        ),
-    ] = None
-
-
-FilterDeletedResourceEntry = ControlPlaneFilterDeletedResourceEntry
-
-
-class FilterDeletedResources(RootModel[List[FilterDeletedResourceEntry]]):
-    root: List[FilterDeletedResourceEntry]
-
-
-class FilterList(BaseModel):
-    """
-    FilterList is a list of filters
-    """
-
-    apiVersion: str
-    items: Optional[List[Filter]] = None
-    kind: str
-
-
-FilterMetadata = ControlPlaneFilterMetadata
-
-
-class FilterSpec(BaseModel):
-    """
-    Filter allows for the creation and management of ordered filtering rules based on IP or MAC criteria. The resource supports various conditions and actions, enabling fine-grained control over network traffic by specifying rules for source and destination addresses, ports, and protocols.
+    ControlPlaneFilter allows for specifying a list of Nodes or Node selectors where the filter should be applied and managing filter entries in order.
     """
 
     entries: Annotated[
-        List[FilterSpecEntry],
+        List[ControlPlaneFilterSpecEntry],
         Field(
             description="Specifies the list of filter entries, in order.",
             title="Entries",
         ),
     ]
+    nodeSelector: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Label selector used to select Toponodes on which to deploy the CPM filter.",
+            title="Node Selector",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Reference to a list of TopoNodes on which to deploy the CPM filter.",
+            title="Nodes",
+        ),
+    ] = None
 
 
-class FilterSpecEntry(BaseModel):
-    ipEntry: Annotated[Optional[FilterSpecEntryIpEntry], Field(title="IP Entry")] = None
-    macEntry: Annotated[Optional[FilterSpecEntryMacEntry], Field(title="MAC Entry")] = (
-        None
-    )
-    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
+class ControlPlaneFilterDeletedResourceEntry(BaseModel):
+    commitTime: Optional[str] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ControlPlaneFilterDeletedResources(
+    RootModel[List[ControlPlaneFilterDeletedResourceEntry]]
+):
+    root: List[ControlPlaneFilterDeletedResourceEntry]
+
+
+class ControlPlaneFilterMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
+
+
+FilterSpecEntryIpEntryRateLimit = ControlPlaneFilterSpecEntryIpEntryRateLimit
 
 
 class FilterSpecEntryIpEntry(BaseModel):
@@ -1438,7 +1380,7 @@ class FilterSpecEntryIpEntry(BaseModel):
     ] = None
 
 
-FilterSpecEntryIpEntryRateLimit = ControlPlaneFilterSpecEntryIpEntryRateLimit
+FilterSpecEntryMacEntryRateLimit = ControlPlaneFilterSpecEntryIpEntryRateLimit
 
 
 class FilterSpecEntryMacEntry(BaseModel):
@@ -1535,48 +1477,48 @@ class FilterSpecEntryMacEntry(BaseModel):
     ] = None
 
 
-FilterSpecEntryMacEntryRateLimit = ControlPlaneFilterSpecEntryIpEntryRateLimit
+class FilterSpecEntry(BaseModel):
+    ipEntry: Annotated[Optional[FilterSpecEntryIpEntry], Field(title="IP Entry")] = None
+    macEntry: Annotated[Optional[FilterSpecEntryMacEntry], Field(title="MAC Entry")] = (
+        None
+    )
+    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+class FilterSpec(BaseModel):
+    """
+    Filter allows for the creation and management of ordered filtering rules based on IP or MAC criteria. The resource supports various conditions and actions, enabling fine-grained control over network traffic by specifying rules for source and destination addresses, ports, and protocols.
+    """
+
+    entries: Annotated[
+        List[FilterSpecEntry],
+        Field(
+            description="Specifies the list of filter entries, in order.",
+            title="Entries",
+        ),
+    ]
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+FilterDeletedResourceEntry = ControlPlaneFilterDeletedResourceEntry
 
 
-class Resource(BaseModel):
+class FilterDeletedResources(RootModel[List[FilterDeletedResourceEntry]]):
+    root: List[FilterDeletedResourceEntry]
+
+
+FilterMetadata = ControlPlaneFilterMetadata
+
+
+class AppGroup(BaseModel):
+    apiVersion: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+    preferredVersion: Optional[AppGroupVersion] = None
+    versions: Optional[List[AppGroupVersion]] = None
 
 
 class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
     root: List[ResourceHistoryEntry]
-
-
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
 
 
 class Status(BaseModel):
@@ -1586,11 +1528,69 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
+class ControlPlaneFilter(BaseModel):
+    """
+    ControlPlaneFilter is the Schema for the controlplanefilters API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ControlPlaneFilterMetadata
+    spec: Annotated[
+        ControlPlaneFilterSpec,
+        Field(
+            description="ControlPlaneFilter allows for specifying a list of Nodes or Node selectors where the filter should be applied and managing filter entries in order.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="ControlPlaneFilterStatus defines the observed state of ControlPlaneFilter",
+            title="Status",
+        ),
+    ] = None
 
 
-class UIResult(RootModel[str]):
-    root: str
+class ControlPlaneFilterList(BaseModel):
+    """
+    ControlPlaneFilterList is a list of controlplanefilters
+    """
+
+    apiVersion: str
+    items: Optional[List[ControlPlaneFilter]] = None
+    kind: str
+
+
+class Filter(BaseModel):
+    """
+    Filter is the Schema for the filters API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: FilterMetadata
+    spec: Annotated[
+        FilterSpec,
+        Field(
+            description="Filter allows for the creation and management of ordered filtering rules based on IP or MAC criteria. The resource supports various conditions and actions, enabling fine-grained control over network traffic by specifying rules for source and destination addresses, ports, and protocols.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="FilterStatus defines the observed state of Filter",
+            title="Status",
+        ),
+    ] = None
+
+
+class FilterList(BaseModel):
+    """
+    FilterList is a list of filters
+    """
+
+    apiVersion: str
+    items: Optional[List[Filter]] = None
+    kind: str
