@@ -29,6 +29,10 @@ class ErrorItem(BaseModel):
 
 
 class ErrorResponse(BaseModel):
+    """
+    Generic error response for REST APIs
+    """
+
     code: Annotated[
         int, Field(description="the numeric HTTP error code for the response.")
     ]

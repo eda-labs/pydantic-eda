@@ -8,6 +8,10 @@ from datetime import date
 
 
 class Chassis(BaseModel):
+    """
+    Chassis is the Schema for the chassis API
+    """
+
     apiVersion: str
     kind: str
     metadata: ChassisMetadata
@@ -28,6 +32,10 @@ class Chassis(BaseModel):
 
 
 class ChassisList(BaseModel):
+    """
+    ChassisList is a list of chassis
+    """
+
     apiVersion: str
     items: Optional[List[Chassis]] = None
     kind: str
@@ -70,6 +78,10 @@ class Child(BaseModel):
 
 
 class Component(BaseModel):
+    """
+    Component is the Schema for the components API
+    """
+
     apiVersion: str
     kind: str
     metadata: ComponentMetadata
@@ -90,6 +102,10 @@ class Component(BaseModel):
 
 
 class ComponentList(BaseModel):
+    """
+    ComponentList is a list of components
+    """
+
     apiVersion: str
     items: Optional[List[Component]] = None
     kind: str
@@ -99,6 +115,10 @@ ComponentMetadata = ChassisMetadata
 
 
 class ControlModule(BaseModel):
+    """
+    ControlModule is the Schema for the controlmodules API
+    """
+
     apiVersion: str
     kind: str
     metadata: ControlModuleMetadata
@@ -119,6 +139,10 @@ class ControlModule(BaseModel):
 
 
 class ControlModuleList(BaseModel):
+    """
+    ControlModuleList is a list of controlmodules
+    """
+
     apiVersion: str
     items: Optional[List[ControlModule]] = None
     kind: str
@@ -128,6 +152,10 @@ ControlModuleMetadata = ChassisMetadata
 
 
 class Cpu(BaseModel):
+    """
+    CPU monitoring for targets matching this Monitor.
+    """
+
     enabled: Annotated[
         bool, Field(description="Enable or disable CPU monitoring.", title="Enabled")
     ]
@@ -141,6 +169,10 @@ class Cpu(BaseModel):
 
 
 class FabricModule(BaseModel):
+    """
+    FabricModule is the Schema for the fabricmodules API
+    """
+
     apiVersion: str
     kind: str
     metadata: FabricModuleMetadata
@@ -161,6 +193,10 @@ class FabricModule(BaseModel):
 
 
 class FabricModuleList(BaseModel):
+    """
+    FabricModuleList is a list of fabricmodules
+    """
+
     apiVersion: str
     items: Optional[List[FabricModule]] = None
     kind: str
@@ -170,6 +206,10 @@ FabricModuleMetadata = ChassisMetadata
 
 
 class Fan(BaseModel):
+    """
+    Fan is the Schema for the fans API
+    """
+
     apiVersion: str
     kind: str
     metadata: FanMetadata
@@ -189,6 +229,10 @@ class Fan(BaseModel):
 
 
 class FanList(BaseModel):
+    """
+    FanList is a list of fans
+    """
+
     apiVersion: str
     items: Optional[List[Fan]] = None
     kind: str
@@ -198,6 +242,10 @@ FanMetadata = ChassisMetadata
 
 
 class InterfaceModule(BaseModel):
+    """
+    InterfaceModule is the Schema for the interfacemodules API
+    """
+
     apiVersion: str
     kind: str
     metadata: InterfaceModuleMetadata
@@ -218,6 +266,10 @@ class InterfaceModule(BaseModel):
 
 
 class InterfaceModuleList(BaseModel):
+    """
+    InterfaceModuleList is a list of interfacemodules
+    """
+
     apiVersion: str
     items: Optional[List[InterfaceModule]] = None
     kind: str
@@ -227,11 +279,15 @@ InterfaceModuleMetadata = ChassisMetadata
 
 
 class Memory(BaseModel):
+    """
+    Memory monitoring for targets matching this Monitor.
+    """
+
     enabled: Annotated[
         bool, Field(description="Enable or disable memory monitoring.", title="Enabled")
     ]
     utilization: Annotated[
-        Optional[Utilization],
+        Optional[UtilizationModel],
         Field(
             description="Parameters relating to memory utilization monitoring.",
             title="Thresholds",
@@ -240,6 +296,10 @@ class Memory(BaseModel):
 
 
 class Monitor(BaseModel):
+    """
+    Monitor is the Schema for the monitors API
+    """
+
     apiVersion: str
     kind: str
     metadata: MonitorMetadata
@@ -272,6 +332,10 @@ class MonitorDeletedResources(RootModel[List[MonitorDeletedResourceEntry]]):
 
 
 class MonitorList(BaseModel):
+    """
+    MonitorList is a list of monitors
+    """
+
     apiVersion: str
     items: Optional[List[Monitor]] = None
     kind: str
@@ -281,6 +345,10 @@ MonitorMetadata = ChassisMetadata
 
 
 class PowerSupply(BaseModel):
+    """
+    PowerSupply is the Schema for the powersupplies API
+    """
+
     apiVersion: str
     kind: str
     metadata: PowerSupplyMetadata
@@ -301,6 +369,10 @@ class PowerSupply(BaseModel):
 
 
 class PowerSupplyList(BaseModel):
+    """
+    PowerSupplyList is a list of powersupplies
+    """
+
     apiVersion: str
     items: Optional[List[PowerSupply]] = None
     kind: str
@@ -310,6 +382,10 @@ PowerSupplyMetadata = ChassisMetadata
 
 
 class Spec(BaseModel):
+    """
+    ComponentSpec defines the desired state of Component
+    """
+
     node: Annotated[
         str,
         Field(
@@ -342,6 +418,10 @@ class Spec(BaseModel):
 
 
 class SpecModel(BaseModel):
+    """
+    MonitorSpec defines the desired state of Monitor
+    """
+
     cpu: Annotated[
         Optional[Cpu],
         Field(
@@ -376,6 +456,10 @@ class SpecModel(BaseModel):
 
 
 class SpecModel1(BaseModel):
+    """
+    PowerSupplySpec defines the desired state of PowerSupply
+    """
+
     foo: Annotated[
         str,
         Field(
@@ -385,6 +469,10 @@ class SpecModel1(BaseModel):
 
 
 class Status(BaseModel):
+    """
+    ChassisStatus defines the observed state of Chassis
+    """
+
     chassisMacAddress: Annotated[
         Optional[str],
         Field(description="MAC Address of the Chassis", title="Chassis MAC Address"),
@@ -456,6 +544,10 @@ class Status(BaseModel):
 
 
 class Status1Model(BaseModel):
+    """
+    ComponentStatus defines the observed state of Component
+    """
+
     enabled: Annotated[
         Optional[bool],
         Field(
@@ -504,6 +596,10 @@ class Status1Model(BaseModel):
 
 
 class Status1Model1(BaseModel):
+    """
+    ControlModuleStatus defines the observed state of ControlModule
+    """
+
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
         Field(description="The CLEI code of this component", title="CLEI Code"),
@@ -620,6 +716,10 @@ class Status1Model1(BaseModel):
 
 
 class Status1Model2(BaseModel):
+    """
+    FabricModuleStatus defines the observed state of FabricModule
+    """
+
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
         Field(description="The CLEI code of this component", title="CLEI Code"),
@@ -732,6 +832,10 @@ class Status1Model2(BaseModel):
 
 
 class Status1Model3(BaseModel):
+    """
+    FanStatus defines the observed state of Fan
+    """
+
     commonLanguageEquipmentIdentifier: Annotated[
         Optional[str],
         Field(description="The CLEI code of this component", title="CLEI Code"),
@@ -829,20 +933,254 @@ class Status1Model3(BaseModel):
     ] = None
 
 
-Status1Model4 = Status1Model2
+class Status1Model4(BaseModel):
+    """
+    InterfaceModuleStatus defines the observed state of InterfaceModule
+    """
+
+    commonLanguageEquipmentIdentifier: Annotated[
+        Optional[str],
+        Field(description="The CLEI code of this component", title="CLEI Code"),
+    ] = None
+    lastBooted: Annotated[
+        Optional[date],
+        Field(
+            description="The date and time this component last booted",
+            title="Last Booted",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The date and time this component last changed operational state",
+            title="Last Change",
+        ),
+    ] = None
+    locatorEnabled: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if the locator LED for the component is active",
+            title="Locator Enabled",
+        ),
+    ] = None
+    manufacturedDate: Annotated[
+        Optional[date],
+        Field(
+            description="The date this component was manufactured",
+            title="Manufactured Date",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
+        Field(
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
+        ),
+    ] = None
+    parent: Annotated[
+        Optional[str],
+        Field(description="Reference to a parent component", title="Parent"),
+    ] = None
+    parentType: Annotated[
+        Optional[
+            Literal[
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
+            ]
+        ],
+        Field(description="Type of the parent component", title="Parent Type"),
+    ] = None
+    partNumber: Annotated[
+        Optional[str],
+        Field(
+            description="The discovered part number of this component",
+            title="Part Number",
+        ),
+    ] = None
+    removable: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if this component is removable", title="Removable"
+        ),
+    ] = None
+    serialNumber: Annotated[
+        Optional[str],
+        Field(
+            description="The discovered serial number of this component",
+            title="Serial Number",
+        ),
+    ] = None
+    slot: Annotated[
+        Optional[str],
+        Field(
+            description="Slot this component resides in, unset for components that do not have a slot or ID",
+            title="Slot",
+        ),
+    ] = None
+    softwareVersion: Annotated[
+        Optional[str],
+        Field(
+            description="Version string of the software running on this component",
+            title="Software Version",
+        ),
+    ] = None
+    target: Annotated[
+        Optional[str],
+        Field(description="Target this component resides on.", title="Target"),
+    ] = None
+    temperature: Annotated[
+        Optional[Temperature],
+        Field(
+            description="Temperature information for this component",
+            title="Temperature",
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(description="Component type, as provided by the target", title="Type"),
+    ] = None
 
 
 class Status1Model5(BaseModel):
+    """
+    MonitorStatus defines the observed state of Monitor
+    """
+
     targets: Annotated[
         Optional[List[str]],
         Field(description="Targets being monitored.", title="Targets"),
     ] = None
 
 
-Status1Model6 = Status1Model2
+class Status1Model6(BaseModel):
+    """
+    PowerSupplyStatus defines the observed state of PowerSupply
+    """
+
+    commonLanguageEquipmentIdentifier: Annotated[
+        Optional[str],
+        Field(description="The CLEI code of this component", title="CLEI Code"),
+    ] = None
+    lastBooted: Annotated[
+        Optional[date],
+        Field(
+            description="The date and time this component last booted",
+            title="Last Booted",
+        ),
+    ] = None
+    lastChange: Annotated[
+        Optional[date],
+        Field(
+            description="The date and time this component last changed operational state",
+            title="Last Change",
+        ),
+    ] = None
+    locatorEnabled: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if the locator LED for the component is active",
+            title="Locator Enabled",
+        ),
+    ] = None
+    manufacturedDate: Annotated[
+        Optional[date],
+        Field(
+            description="The date this component was manufactured",
+            title="Manufactured Date",
+        ),
+    ] = None
+    operationalState: Annotated[
+        Optional[Literal["Up", "Down", "Rebooting", "Unknown", "Starting", "Empty"]],
+        Field(
+            description="Indicates the current operational state of this component.",
+            title="Operational State",
+        ),
+    ] = None
+    parent: Annotated[
+        Optional[str],
+        Field(description="Reference to a parent component", title="Parent"),
+    ] = None
+    parentType: Annotated[
+        Optional[
+            Literal[
+                "Fan",
+                "FanTray",
+                "PowerSupply",
+                "PowerModule",
+                "PowerShelf",
+                "InterfaceModule",
+                "ControlModule",
+                "FabricModule",
+                "Chassis",
+                "Transceiver",
+            ]
+        ],
+        Field(description="Type of the parent component", title="Parent Type"),
+    ] = None
+    partNumber: Annotated[
+        Optional[str],
+        Field(
+            description="The discovered part number of this component",
+            title="Part Number",
+        ),
+    ] = None
+    removable: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if this component is removable", title="Removable"
+        ),
+    ] = None
+    serialNumber: Annotated[
+        Optional[str],
+        Field(
+            description="The discovered serial number of this component",
+            title="Serial Number",
+        ),
+    ] = None
+    slot: Annotated[
+        Optional[str],
+        Field(
+            description="Slot this component resides in, unset for components that do not have a slot or ID",
+            title="Slot",
+        ),
+    ] = None
+    softwareVersion: Annotated[
+        Optional[str],
+        Field(
+            description="Version string of the software running on this component",
+            title="Software Version",
+        ),
+    ] = None
+    target: Annotated[
+        Optional[str],
+        Field(description="Target this component resides on.", title="Target"),
+    ] = None
+    temperature: Annotated[
+        Optional[Temperature],
+        Field(
+            description="Temperature information for this component",
+            title="Temperature",
+        ),
+    ] = None
+    type: Annotated[
+        Optional[str],
+        Field(description="Component type, as provided by the target", title="Type"),
+    ] = None
 
 
 class Temperature(BaseModel):
+    """
+    Temperature information for this component
+    """
+
     alarmState: Annotated[
         Optional[bool],
         Field(
@@ -871,6 +1209,96 @@ class Temperature(BaseModel):
 
 
 class Utilization(BaseModel):
+    """
+    Parameters relating to CPU utilization monitoring.
+    """
+
+    criticalThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
+            ge=1,
+            le=100,
+            title="Critical Threshold",
+        ),
+    ] = 95
+    fallingDelta: Annotated[
+        Optional[int],
+        Field(
+            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
+            ge=1,
+            le=25,
+            title="Falling Delta",
+        ),
+    ] = 5
+    majorThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
+            ge=1,
+            le=100,
+            title="Major Threshold",
+        ),
+    ] = 90
+    minorThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
+            ge=1,
+            le=100,
+            title="Minor Threshold",
+        ),
+    ] = 80
+
+
+class UtilizationModel(BaseModel):
+    """
+    Parameters relating to memory utilization monitoring.
+    """
+
+    criticalThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a critical alarm.\nThis value must be greater than the majorThreshold.",
+            ge=1,
+            le=100,
+            title="Critical Threshold",
+        ),
+    ] = 95
+    fallingDelta: Annotated[
+        Optional[int],
+        Field(
+            description="The delta in which a triggered threshold must drop below to clear an alarm.\nFor example, with a criticalThreshold of 90 and a fallingDelta of 5, the critical alarm will clear when the utilization drops below 85.",
+            ge=1,
+            le=25,
+            title="Falling Delta",
+        ),
+    ] = 5
+    majorThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a major alarm.\nThis value must be greater than the minorThreshold.",
+            ge=1,
+            le=100,
+            title="Major Threshold",
+        ),
+    ] = 90
+    minorThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="The minimum average utilization over the last 1 minute to trigger a minor alarm.",
+            ge=1,
+            le=100,
+            title="Minor Threshold",
+        ),
+    ] = 80
+
+
+class UtilizationModel1(BaseModel):
+    """
+    Parameters relating to volume utilization monitoring.
+    """
+
     criticalThreshold: Annotated[
         Optional[int],
         Field(
@@ -910,11 +1338,15 @@ class Utilization(BaseModel):
 
 
 class Volume(BaseModel):
+    """
+    Volume monitoring for targets matching this Monitor.
+    """
+
     enabled: Annotated[
         bool, Field(description="Enable or disable volume monitoring.", title="Enabled")
     ]
     utilization: Annotated[
-        Optional[Utilization],
+        Optional[UtilizationModel1],
         Field(
             description="Parameters relating to volume utilization monitoring.",
             title="Thresholds",
