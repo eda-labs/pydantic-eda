@@ -30,4 +30,4 @@ The following table matches the project version with the version of the EDA deli
 
 | pydantic_eda | EDA release |
 | ------------ | ----------- |
-| 0.3.0        | 25.4.1      |
+| 0.3.2        | 25.4.1      |
