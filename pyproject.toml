@@ -1,6 +1,6 @@
 [project]
 name = "pydantic-eda"
-version = "0.3.2"
+version = "0.4.0"
 description = "Pydantic models for EDA OpenAPI specification"
 readme = "README.md"
 requires-python = "~=3.12"
