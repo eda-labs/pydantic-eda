@@ -2,9 +2,10 @@
 #   filename:  appstore.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
-from datetime import datetime
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -111,8 +118,179 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
+
+
+class AppInstallerSpecAppVersion(BaseModel):
+    """
+    Version of the App that is to be installed.
+    """
+
+    type: Annotated[
+        Optional[Literal["semver", "commit"]],
+        Field(
+            description="The version type of the App. Currently supported: semver, commit.\nDefault is semver.",
+            title="Type",
+        ),
+    ] = "semver"
+    value: Annotated[
+        str,
+        Field(
+            description='The version of the App.\nIf the VersionType is set to semver,\nthen the semantic version of the git tag in the form of "apps/<appname>/<semver>" is used.\nIf the VersionType is set to commit,\nthen the commit reference (e.g. git hash) is expected.',
+            title="Value",
+        ),
+    ]
+
+
+class AppInstallerSpecApp(BaseModel):
+    appId: Annotated[
+        str,
+        Field(
+            description="AppID of the app, which is the unique identifier of an app. It should be equal to the group of the app.",
+            title="App ID",
+        ),
+    ]
+    appSettings: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="AppSettings defines a list of variables and their value. Only variables that are customised need to be mentioned.\nIf AppSettings are not again mentioned on upgrade, values will remain as is.",
+            title="App Settings",
+        ),
+    ] = None
+    catalog: Annotated[
+        str,
+        Field(
+            description="Catalog of the app to be installed.\nThis is where app manifest is retrieved from, along with some other metadata.",
+            title="Catalog",
+        ),
+    ]
+    version: Annotated[
+        AppInstallerSpecAppVersion,
+        Field(
+            description="Version of the App that is to be installed.", title="Version"
+        ),
+    ]
+
+
+class AppInstallerSpec(BaseModel):
+    apps: Annotated[
+        List[AppInstallerSpecApp],
+        Field(description="Apps are the input apps to the installer.", title="Apps"),
+    ]
+    autoProcessRequirements: Annotated[
+        Optional[List[str]],
+        Field(
+            description="AutoProcessRequirements tells the installer what it can do w.r.t. the requirements of an app.\nCurrently only 'strict' is supported.",
+            title="Auto Process Requirements",
+        ),
+    ] = None
+    operation: Annotated[
+        Literal["install", "delete"],
+        Field(
+            description="Operation is the installing operation.\nCurrently supported are 'install', 'delete'.",
+            title="Operation",
+        ),
+    ]
+
+
+class AppInstallerStatus(BaseModel):
+    error: Annotated[Optional[str], Field(title="Error")] = None
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="ID is the workflow ID that can be used to get more information on.",
+            title="ID",
+        ),
+    ] = None
+    result: Annotated[str, Field(title="Result")]
+
+
+class AppInstallerMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
 
 
 class CatalogSpec(BaseModel):
@@ -186,7 +364,7 @@ class CatalogStatus(BaseModel):
         ),
     ] = None
     lastRefreshTime: Annotated[
-        Optional[datetime],
+        Optional[AwareDatetime],
         Field(
             description="LastRefreshTime is the last attempt to refresh the catalog cache by the controller.",
             title="Last Refresh Time",
@@ -202,7 +380,7 @@ class CatalogStatus(BaseModel):
 
 
 class CatalogDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     transactionId: Optional[int] = None
@@ -212,16 +390,7 @@ class CatalogDeletedResources(RootModel[List[CatalogDeletedResourceEntry]]):
     root: List[CatalogDeletedResourceEntry]
 
 
-class CatalogMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
+CatalogMetadata = AppInstallerMetadata
 
 
 class RegistrySpec(BaseModel):
@@ -294,7 +463,7 @@ class RegistryDeletedResources(RootModel[List[RegistryDeletedResourceEntry]]):
     root: List[RegistryDeletedResourceEntry]
 
 
-RegistryMetadata = CatalogMetadata
+RegistryMetadata = AppInstallerMetadata
 
 
 class AppGroup(BaseModel):
@@ -314,6 +483,97 @@ class Status(BaseModel):
     details: Optional[StatusDetails] = None
     kind: Optional[str] = None
     string: Optional[str] = None
+
+
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
+class AppInstaller(BaseModel):
+    """
+    AppInstaller is the Schema for the appinstallers API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: AppInstallerMetadata
+    spec: Annotated[AppInstallerSpec, Field(title="Specification")]
+    status: Annotated[Optional[AppInstallerStatus], Field(title="Status")] = None
+
+
+class AppInstallerList(BaseModel):
+    """
+    AppInstallerList is a list of appinstallers
+    """
+
+    apiVersion: str
+    items: Optional[List[AppInstaller]] = None
+    kind: str
 
 
 class Catalog(BaseModel):
@@ -382,3 +642,13 @@ class RegistryList(BaseModel):
     apiVersion: str
     items: Optional[List[Registry]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

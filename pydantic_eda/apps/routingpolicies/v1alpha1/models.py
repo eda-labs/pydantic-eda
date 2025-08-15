@@ -2,8 +2,10 @@
 #   filename:  routingpolicies.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -35,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -91,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -110,8 +118,91 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class ASPathSetSpec(BaseModel):
+    """
+    ASPathSetSpec defines the desired state of ASPathSet
+    """
+
+    members: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Members is a list of AS path regular expressions.",
+            title="AS Path Members",
+        ),
+    ] = None
+    regexMode: Annotated[
+        Optional[Literal["ASN", "Character"]],
+        Field(
+            description="Defines how AS_PATH attribute is converted into a string for regex matching.",
+            title="Regex Mode",
+        ),
+    ] = None
+
+
+class ASPathSetDeletedResourceEntry(BaseModel):
+    commitTime: Optional[AwareDatetime] = None
+    hash: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    transactionId: Optional[int] = None
+
+
+class ASPathSetDeletedResources(RootModel[List[ASPathSetDeletedResourceEntry]]):
+    root: List[ASPathSetDeletedResourceEntry]
+
+
+class ASPathSetMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
 
 
 class CommunitySetSpec(BaseModel):
@@ -126,6 +217,13 @@ class CommunitySetSpec(BaseModel):
             title="Expression Match",
         ),
     ] = None
+    matchSetOptions: Annotated[
+        Optional[Literal["All", "Any", "Invert"]],
+        Field(
+            description="The matching criteria that applies to the Members list.",
+            title="Match Set Options",
+        ),
+    ] = None
     members: Annotated[
         Optional[List[str]],
         Field(
@@ -135,29 +233,74 @@ class CommunitySetSpec(BaseModel):
     ] = None
 
 
-class CommunitySetDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
+CommunitySetDeletedResourceEntry = ASPathSetDeletedResourceEntry
 
 
 class CommunitySetDeletedResources(RootModel[List[CommunitySetDeletedResourceEntry]]):
     root: List[CommunitySetDeletedResourceEntry]
 
 
-class CommunitySetMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
+CommunitySetMetadata = ASPathSetMetadata
+
+
+class PolicySpecDefaultActionBgpCommunitySet(BaseModel):
+    """
+    Modify BGP communities associated with the route using hybrid Community Sets.
+    """
+
+    add: Annotated[
+        Optional[List[str]],
         Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            description="List of community sets to add to the route.",
+            max_length=1,
+            title="Add Communities",
         ),
-    ]
-    namespace: str
+    ] = None
+    remove: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of community sets to remove from the route.",
+            max_length=1,
+            title="Remove Communities",
+        ),
+    ] = None
+    replace: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of community sets to replace the existing communities with. Cannot be combined with Add or Remove.",
+            max_length=1,
+            title="Replace Communities",
+        ),
+    ] = None
+
+
+class PolicySpecDefaultActionBgpMed(BaseModel):
+    """
+    Set a new MED value.
+    """
+
+    numericalValue: Annotated[
+        Optional[int],
+        Field(
+            description="Fixed numerical value to set or add/subtract.",
+            ge=0,
+            le=4294967295,
+            title="MED Value",
+        ),
+    ] = None
+    operation: Annotated[
+        Optional[Literal["Set", "Add", "Subtract"]],
+        Field(
+            description="The operation to perform on the MED value.", title="Operation"
+        ),
+    ] = None
+    valueType: Annotated[
+        Optional[Literal["Fixed", "IGP"]],
+        Field(
+            description="Use a fixed value or an IGP metric to adjust the MED.",
+            title="Value Type",
+        ),
+    ] = None
 
 
 class PolicySpecDefaultActionBgp(BaseModel):
@@ -187,6 +330,13 @@ class PolicySpecDefaultActionBgp(BaseModel):
             title="AS Path Replace",
         ),
     ] = None
+    communitySet: Annotated[
+        Optional[PolicySpecDefaultActionBgpCommunitySet],
+        Field(
+            description="Modify BGP communities associated with the route using hybrid Community Sets.",
+            title="Modify Communities",
+        ),
+    ] = None
     localPreference: Annotated[
         Optional[int],
         Field(
@@ -195,6 +345,10 @@ class PolicySpecDefaultActionBgp(BaseModel):
             le=4294967295,
             title="Set Local Preference",
         ),
+    ] = None
+    med: Annotated[
+        Optional[PolicySpecDefaultActionBgpMed],
+        Field(description="Set a new MED value.", title="Set MED"),
     ] = None
     setOrigin: Annotated[
         Optional[Literal["egp", "igp", "incomplete"]],
@@ -215,12 +369,71 @@ class PolicySpecDefaultAction(BaseModel):
         Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
     policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
+        Optional[Literal["accept", "reject", "NextPolicy", "NextStatement"]],
         Field(description="Final disposition for the route.", title="Policy Result"),
     ] = None
 
 
-PolicySpecStatementItemActionBgp = PolicySpecDefaultActionBgp
+PolicySpecStatementItemActionBgpCommunitySet = PolicySpecDefaultActionBgpCommunitySet
+
+
+PolicySpecStatementItemActionBgpMed = PolicySpecDefaultActionBgpMed
+
+
+class PolicySpecStatementItemActionBgp(BaseModel):
+    """
+    Actions related to the BGP protocol.
+    """
+
+    asPathPrepend: Annotated[
+        Optional[int],
+        Field(
+            description="AS number to prepend to the AS Path attributes.",
+            ge=1,
+            le=4294967295,
+            title="AS Path Prepend",
+        ),
+    ] = None
+    asPathRemove: Annotated[
+        Optional[bool],
+        Field(
+            description="Clear the AS path to make it empty.", title="AS Path Remove"
+        ),
+    ] = None
+    asPathReplace: Annotated[
+        Optional[List[int]],
+        Field(
+            description="Replace the existing AS path with a new AS_SEQUENCE containing the listed AS numbers.",
+            title="AS Path Replace",
+        ),
+    ] = None
+    communitySet: Annotated[
+        Optional[PolicySpecStatementItemActionBgpCommunitySet],
+        Field(
+            description="Modify BGP communities associated with the route using hybrid Community Sets.",
+            title="Modify Communities",
+        ),
+    ] = None
+    localPreference: Annotated[
+        Optional[int],
+        Field(
+            description="Set a new LOCAL_PREF value for matching BGP routes.",
+            ge=0,
+            le=4294967295,
+            title="Set Local Preference",
+        ),
+    ] = None
+    med: Annotated[
+        Optional[PolicySpecStatementItemActionBgpMed],
+        Field(description="Set a new MED value.", title="Set MED"),
+    ] = None
+    setOrigin: Annotated[
+        Optional[Literal["egp", "igp", "incomplete"]],
+        Field(
+            description="Set a new ORIGIN attribute for matching BGP routes.",
+            title="Set Origin",
+        ),
+    ] = None
 
 
 class PolicySpecStatementItemAction(BaseModel):
@@ -233,8 +446,36 @@ class PolicySpecStatementItemAction(BaseModel):
         Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
     policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
+        Optional[Literal["accept", "reject", "NextPolicy", "NextStatement"]],
         Field(description="Final disposition for the route.", title="Policy Result"),
+    ] = None
+
+
+class PolicySpecStatementItemMatchBgpAsPathMatch(BaseModel):
+    """
+    AS Path match criteria.
+    """
+
+    asPathExpression: Annotated[
+        Optional[str],
+        Field(
+            description="A singular regular expression string to match against AS_PATH objects. Mutually exclusive with the ASPathSet reference.",
+            title="AS Path Expression",
+        ),
+    ] = None
+    asPathSet: Annotated[
+        Optional[str],
+        Field(
+            description="Reference to an ASPathSet resource. Mutually exclusive with the ASPathExpression.",
+            title="AS Path Set",
+        ),
+    ] = None
+    matchSetOptions: Annotated[
+        Optional[Literal["Any", "All", "Invert"]],
+        Field(
+            description="The matching criteria that applies to the members in the referenced set.",
+            title="Match Set Options",
+        ),
     ] = None
 
 
@@ -243,6 +484,10 @@ class PolicySpecStatementItemMatchBgp(BaseModel):
     Configuration for BGP-specific policy match criteria.
     """
 
+    asPathMatch: Annotated[
+        Optional[PolicySpecStatementItemMatchBgpAsPathMatch],
+        Field(description="AS Path match criteria.", title="AS Path"),
+    ] = None
     communitySet: Annotated[
         Optional[str],
         Field(
@@ -339,14 +584,14 @@ class PolicySpec(BaseModel):
     ] = None
 
 
-PolicyDeletedResourceEntry = CommunitySetDeletedResourceEntry
+PolicyDeletedResourceEntry = ASPathSetDeletedResourceEntry
 
 
 class PolicyDeletedResources(RootModel[List[PolicyDeletedResourceEntry]]):
     root: List[PolicyDeletedResourceEntry]
 
 
-PolicyMetadata = CommunitySetMetadata
+PolicyMetadata = ASPathSetMetadata
 
 
 class PrefixSetSpecPrefixItem(BaseModel):
@@ -398,14 +643,14 @@ class PrefixSetSpec(BaseModel):
     ]
 
 
-PrefixSetDeletedResourceEntry = CommunitySetDeletedResourceEntry
+PrefixSetDeletedResourceEntry = ASPathSetDeletedResourceEntry
 
 
 class PrefixSetDeletedResources(RootModel[List[PrefixSetDeletedResourceEntry]]):
     root: List[PrefixSetDeletedResourceEntry]
 
 
-PrefixSetMetadata = CommunitySetMetadata
+PrefixSetMetadata = ASPathSetMetadata
 
 
 class AppGroup(BaseModel):
@@ -425,6 +670,105 @@ class Status(BaseModel):
     details: Optional[StatusDetails] = None
     kind: Optional[str] = None
     string: Optional[str] = None
+
+
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class ASPathSet(BaseModel):
+    """
+    ASPathSet is the Schema for the aspathsets API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: ASPathSetMetadata
+    spec: Annotated[
+        ASPathSetSpec,
+        Field(
+            description="ASPathSetSpec defines the desired state of ASPathSet",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            description="ASPathSetStatus defines the observed state of ASPathSet",
+            title="Status",
+        ),
+    ] = None
+
+
+class ASPathSetList(BaseModel):
+    """
+    ASPathSetList is a list of aspathsets
+    """
+
+    apiVersion: str
+    items: Optional[List[ASPathSet]] = None
+    kind: str
 
 
 class CommunitySet(BaseModel):
@@ -527,3 +871,13 @@ class PrefixSetList(BaseModel):
     apiVersion: str
     items: Optional[List[PrefixSet]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

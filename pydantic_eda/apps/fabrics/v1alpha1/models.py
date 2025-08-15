@@ -2,9 +2,10 @@
 #   filename:  fabrics.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
-from datetime import date
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -111,8 +118,83 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class FabricSpecBorderLeafsRouteLeaking(BaseModel):
@@ -180,6 +262,15 @@ class FabricSpecInterSwitchLinksQos(BaseModel):
 
 
 class FabricSpecInterSwitchLinks(BaseModel):
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="Sets the IP MTU for the DefaultInterface.",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = None
     linkSelector: Annotated[
         Optional[List[str]],
         Field(
@@ -306,6 +397,15 @@ class FabricSpecOverlayProtocolBfd(BaseModel):
             title="Receive Interval",
         ),
     ] = 1000000
+    ttl: Annotated[
+        Optional[int],
+        Field(
+            description="Sets custom IP TTL or Hop Limit for multi-hop BFD sessions packets. Not appllicable to single-hop BFD sessions.",
+            ge=2,
+            le=255,
+            title="IP TTL/Hop Limit",
+        ),
+    ] = None
 
 
 class FabricSpecOverlayProtocolBgpTimers(BaseModel):
@@ -590,6 +690,15 @@ class FabricSpecUnderlayProtocolBfd(BaseModel):
             title="Receive Interval",
         ),
     ] = 1000000
+    ttl: Annotated[
+        Optional[int],
+        Field(
+            description="Sets custom IP TTL or Hop Limit for multi-hop BFD sessions packets. Not appllicable to single-hop BFD sessions.",
+            ge=2,
+            le=255,
+            title="IP TTL/Hop Limit",
+        ),
+    ] = None
 
 
 FabricSpecUnderlayProtocolBgpTimers = FabricSpecOverlayProtocolBgpTimers
@@ -772,7 +881,7 @@ class FabricStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -803,7 +912,7 @@ class FabricStatus(BaseModel):
 
 
 class FabricDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -872,6 +981,15 @@ class ISLSpecBfd(BaseModel):
             title="Receive Interval",
         ),
     ] = 1000000
+    ttl: Annotated[
+        Optional[int],
+        Field(
+            description="Sets custom IP TTL or Hop Limit for multi-hop BFD sessions packets. Not appllicable to single-hop BFD sessions.",
+            ge=2,
+            le=255,
+            title="IP TTL/Hop Limit",
+        ),
+    ] = None
 
 
 class ISLSpecBgp(BaseModel):
@@ -946,6 +1064,15 @@ class ISLSpec(BaseModel):
         ),
     ] = None
     bgp: Annotated[Optional[ISLSpecBgp], Field(title="BGP")] = None
+    ipMTU: Annotated[
+        Optional[int],
+        Field(
+            description="Sets the IP MTU for the local and remote Interfaces",
+            ge=1280,
+            le=9486,
+            title="IP MTU",
+        ),
+    ] = None
     localDefaultRouter: Annotated[
         str,
         Field(
@@ -1074,7 +1201,7 @@ class ISLStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed",
             title="Last Change",
@@ -1104,6 +1231,119 @@ class ISLDeletedResources(RootModel[List[ISLDeletedResourceEntry]]):
 ISLMetadata = FabricMetadata
 
 
+class IslPingSpec(BaseModel):
+    """
+    This workflow is used to ping ISLs (Inter-Switch Links) to verify connectivity within a Fabric.
+    It accepts a list of fabrics, ISLs, or selectors for both to match ISLs,
+    and returns the results of the pings, including the status of each ISL.
+    """
+
+    count: Annotated[
+        Optional[int],
+        Field(description="Count is the number of pings to send.", title="Count"),
+    ] = 1
+    fabricSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='Fabric Selectors is a list of fabric selectors to execute ISL pings for.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf", "eda.nokia.com/region=us-west"].',
+            title="Fabric Selectors",
+        ),
+    ] = None
+    fabrics: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Fabrics is a list of fabrics to execute ISL pings for.",
+            title="Fabrics",
+        ),
+    ] = None
+    islSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='Inter-Switch Link Selectors is a list of selectors to execute ISL pings for.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf", "eda.nokia.com/region=us-west"].',
+            title="Inter-Switch Link Selectors",
+        ),
+    ] = None
+    isls: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Inter-Switch Links is a list of named ISL resources to execute ISL pings for.",
+            title="Inter-Switch Links",
+        ),
+    ] = None
+    timeoutSeconds: Annotated[
+        Optional[int],
+        Field(
+            description="TimeoutSeconds is the timeout for the ping in seconds.",
+            title="Timeout Seconds",
+        ),
+    ] = 5
+
+
+class IslPingStatusDetailDetails(BaseModel):
+    averageTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    maxTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    minTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    received: Optional[int] = None
+    sent: Optional[int] = None
+    stdDevNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    totalTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+
+
+class IslPingStatusDetail(BaseModel):
+    details: Optional[IslPingStatusDetailDetails] = None
+    error: Optional[str] = None
+    name: Optional[str] = None
+    success: Optional[bool] = None
+
+
+class IslPingStatus(BaseModel):
+    """
+    IslPingStatus defines the observed state of IslPing
+    """
+
+    details: Annotated[
+        Optional[List[IslPingStatusDetail]],
+        Field(
+            description="Details contains the results of the pings performed for each ISL.\nEach entry in the list corresponds to an ISL that was pinged."
+        ),
+    ] = None
+    result: Annotated[
+        Optional[Literal["Success", "Failed", "PartialSuccess"]],
+        Field(
+            description='Result is the overall result of the ping operation.\nIt can be one of the following values:\n- "Success": All pings were successful.\n- "Failed": No pings were successful.\n- "PartialSuccess": Some pings were successful, but not all.',
+            title="Result",
+        ),
+    ] = None
+
+
+IslPingMetadata = FabricMetadata
+
+
 class AppGroup(BaseModel):
     apiVersion: Optional[str] = None
     kind: Optional[str] = None
@@ -1121,6 +1361,75 @@ class Status(BaseModel):
     details: Optional[StatusDetails] = None
     kind: Optional[str] = None
     string: Optional[str] = None
+
+
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
 
 
 class Fabric(BaseModel):
@@ -1188,3 +1497,47 @@ class ISLList(BaseModel):
     apiVersion: str
     items: Optional[List[ISL]] = None
     kind: str
+
+
+class IslPing(BaseModel):
+    """
+    IslPing is the Schema for the islpings API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: IslPingMetadata
+    spec: Annotated[
+        IslPingSpec,
+        Field(
+            description="This workflow is used to ping ISLs (Inter-Switch Links) to verify connectivity within a Fabric.\nIt accepts a list of fabrics, ISLs, or selectors for both to match ISLs,\nand returns the results of the pings, including the status of each ISL.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[IslPingStatus],
+        Field(
+            description="IslPingStatus defines the observed state of IslPing",
+            title="Status",
+        ),
+    ] = None
+
+
+class IslPingList(BaseModel):
+    """
+    IslPingList is a list of islpings
+    """
+
+    apiVersion: str
+    items: Optional[List[IslPing]] = None
+    kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

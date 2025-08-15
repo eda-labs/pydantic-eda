@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
@@ -160,6 +159,16 @@ class UIResult(RootModel[str]):
     root: str
 
 
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
 class WorkflowId(BaseModel):
     id: Annotated[
         Optional[int],
@@ -167,6 +176,25 @@ class WorkflowId(BaseModel):
             description="A workflow identifier; these are assigned by the system to a posted workflow."
         ),
     ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class BridgeDomainSpecL2proxyARPNDDynamicLearning(BaseModel):
@@ -369,10 +397,18 @@ class BridgeDomainSpec(BaseModel):
             title="MAC Duplication Detection",
         ),
     ] = None
+    macLearning: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable MAC learning for this BridgeDomain.",
+            title="MAC Learning",
+        ),
+    ] = True
     macLimit: Annotated[
         Optional[int],
         Field(
             description="Sets the maximum number of MAC entries accepted in the bridge table.",
+            ge=1,
             title="MAC Limit",
         ),
     ] = None
@@ -445,7 +481,7 @@ class BridgeDomainStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -784,7 +820,7 @@ class BridgeInterfaceStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -1472,7 +1508,7 @@ class IRBInterfaceStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(description="Timestamp of the last state change.", title="Last Change"),
     ] = None
     operationalState: Annotated[
@@ -1805,7 +1841,7 @@ class RoutedInterfaceStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2238,7 +2274,7 @@ class RouterStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(description="Timestamp of the last state change.", title="Last Change"),
     ] = None
     nodes: Annotated[
@@ -2435,7 +2471,7 @@ class VLANStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2584,10 +2620,18 @@ class VirtualNetworkSpecBridgeDomainSpec(BaseModel):
             title="MAC Duplication Detection",
         ),
     ] = None
+    macLearning: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable MAC learning for this BridgeDomain.",
+            title="MAC Learning",
+        ),
+    ] = True
     macLimit: Annotated[
         Optional[int],
         Field(
             description="Sets the maximum number of MAC entries accepted in the bridge table.",
+            ge=1,
             title="MAC Limit",
         ),
     ] = None
@@ -3121,6 +3165,81 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecAsPathOptions(BaseModel):
     ] = None
 
 
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted(
+    BaseModel
+):
+    logOnly: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines the action to take when the maximum number of prefixes is exceeded. Session is reset if set to false, otherwise only a warning is logged.",
+            title="Log Only",
+        ),
+    ] = None
+    maxReceivedRoutes: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of prefixes allowed to be received from the neighbor, counting only accepted routes.",
+            ge=1,
+            le=4294967295,
+            title="Max Received Routes",
+        ),
+    ] = None
+    warningThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="A percentage of the maximum number of prefixes that can be accepted before a warning is logged.",
+            ge=1,
+            le=100,
+            title="Warning Threshold Percentage",
+        ),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived(
+    BaseModel
+):
+    logOnly: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines the action to take when the maximum number of prefixes is exceeded. Session is reset if set to false, otherwise only a warning is logged.",
+            title="Log Only",
+        ),
+    ] = None
+    maxReceivedRoutes: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of prefixes allowed to be received from the neighbor, counting all routes (accepted and rejected by import policies).",
+            ge=1,
+            le=4294967295,
+            title="Max Received Routes",
+        ),
+    ] = None
+    warningThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="A percentage of the maximum number of prefixes that can be received before a warning is logged.",
+            ge=1,
+            le=100,
+            title="Warning Threshold Percentage",
+        ),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
 class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast(BaseModel):
     """
     Parameters relating to the IPv4 unicast AFI/SAFI.
@@ -3137,14 +3256,9 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast(BaseModel):
         Optional[bool],
         Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
     ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of IPv4 Unicast routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
+    prefixLimit: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
     ] = None
     receiveIPV6NextHops: Annotated[
         Optional[bool],
@@ -3152,6 +3266,31 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast(BaseModel):
             description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
             title="Receive IPv6 Next Hops",
         ),
+    ] = None
+
+
+VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
     ] = None
 
 
@@ -3164,14 +3303,9 @@ class VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast(BaseModel):
         Optional[bool],
         Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
     ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of IPv6 Unicast routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
+    prefixLimit: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
     ] = None
 
 
@@ -3469,14 +3603,98 @@ class VirtualNetworkSpecProtocolsBgpBgpPeerSpecAsPathOptions(BaseModel):
     ] = None
 
 
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4Unicast = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4Unicast
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
 )
 
 
-VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6Unicast = (
-    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv6Unicast
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
 )
+
+
+class VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv4UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    VirtualNetworkSpecProtocolsBgpBgpGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[VirtualNetworkSpecProtocolsBgpBgpPeerSpecIpv6UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
 
 
 VirtualNetworkSpecProtocolsBgpBgpPeerSpecLocalAS = (
@@ -3717,6 +3935,39 @@ class VirtualNetworkSpecProtocolsBgp(BaseModel):
     ] = None
 
 
+class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgpCommunitySet(
+    BaseModel
+):
+    """
+    Modify BGP communities associated with the route using hybrid Community Sets.
+    """
+
+    add: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of community sets to add to the route.",
+            max_length=1,
+            title="Add Communities",
+        ),
+    ] = None
+    remove: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of community sets to remove from the route.",
+            max_length=1,
+            title="Remove Communities",
+        ),
+    ] = None
+    replace: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of community sets to replace the existing communities with. Cannot be combined with Add or Remove.",
+            max_length=1,
+            title="Replace Communities",
+        ),
+    ] = None
+
+
 class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgpMed(
     BaseModel
 ):
@@ -3775,6 +4026,15 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgp(BaseM
             title="AS Path Replace",
         ),
     ] = None
+    communitySet: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgpCommunitySet
+        ],
+        Field(
+            description="Modify BGP communities associated with the route using hybrid Community Sets.",
+            title="Modify Communities",
+        ),
+    ] = None
     localPreference: Annotated[
         Optional[int],
         Field(
@@ -3809,9 +4069,12 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultAction(BaseMode
         Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
     policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
+        Optional[Literal["accept", "reject", "NextPolicy", "NextStatement"]],
         Field(description="Final disposition for the route.", title="Policy Result"),
     ] = None
+
+
+VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgpCommunitySet = VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecDefaultActionBgpCommunitySet
 
 
 VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgpMed = (
@@ -3846,6 +4109,15 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgp
         Field(
             description="Replace the existing AS path with a new AS_SEQUENCE containing the listed AS numbers.",
             title="AS Path Replace",
+        ),
+    ] = None
+    communitySet: Annotated[
+        Optional[
+            VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemActionBgpCommunitySet
+        ],
+        Field(
+            description="Modify BGP communities associated with the route using hybrid Community Sets.",
+            title="Modify Communities",
         ),
     ] = None
     localPreference: Annotated[
@@ -3886,7 +4158,7 @@ class VirtualNetworkSpecProtocolsRoutingPoliciesPolicySpecStatementItemAction(
         Field(description="Actions related to the BGP protocol.", title="BGP"),
     ] = None
     policyResult: Annotated[
-        Optional[Literal["accept", "reject"]],
+        Optional[Literal["accept", "reject", "NextPolicy", "NextStatement"]],
         Field(description="Final disposition for the route.", title="Policy Result"),
     ] = None
 
@@ -4137,19 +4409,6 @@ class VirtualNetworkSpecProtocolsStaticRouteSpecNexthopGroupBfd(BaseModel):
         Field(
             description="Defines the local address to use when establishing the BFD session with the nexthop.",
             title="Local Address",
-        ),
-    ] = None
-    localDiscriminator: Annotated[
-        Optional[int],
-        Field(
-            description="Defines the local discriminator.", title="Local Discriminator"
-        ),
-    ] = None
-    remoteDiscriminator: Annotated[
-        Optional[int],
-        Field(
-            description="Defines the remote discriminator.",
-            title="Remote Discriminator",
         ),
     ] = None
 
@@ -5037,7 +5296,7 @@ class VirtualNetworkStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -5214,6 +5473,10 @@ class Topology(BaseModel):
     version: Optional[str] = None
 
 
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
 class BridgeDomain(BaseModel):
     """
     BridgeDomain is the Schema for the bridgedomains API
@@ -5332,6 +5595,16 @@ class EdgePing(BaseModel):
             title="Status",
         ),
     ] = None
+
+
+class EdgePingList(BaseModel):
+    """
+    EdgePingList is a list of edgepings
+    """
+
+    apiVersion: str
+    items: Optional[List[EdgePing]] = None
+    kind: str
 
 
 class IRBInterface(BaseModel):

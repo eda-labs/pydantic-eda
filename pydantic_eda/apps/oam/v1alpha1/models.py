@@ -2,9 +2,10 @@
 #   filename:  oam.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
-from datetime import date
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -111,8 +118,83 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class MirrorSpecLocalDestination(BaseModel):
@@ -475,6 +557,10 @@ class MirrorSpecSourcesFilterFilterEntryIpEntry(BaseModel):
             title="ICMP Type Number",
         ),
     ] = None
+    log: Annotated[
+        Optional[bool],
+        Field(description="Log the matches for this entry.", title="Log"),
+    ] = None
     protocolName: Annotated[
         Optional[
             Literal[
@@ -739,10 +825,20 @@ class MirrorSpecSourcesFilterFilterEntryIpEntry(BaseModel):
 
 
 class MirrorSpecSourcesFilterFilterEntry(BaseModel):
+    description: Annotated[
+        Optional[str],
+        Field(description="Description of the FilterEntry.", title="Description"),
+    ] = None
     ipEntry: Annotated[
         Optional[MirrorSpecSourcesFilterFilterEntryIpEntry], Field(title="IP Entry")
     ] = None
-    type: Annotated[Literal["IPV4", "IPV6", "Auto"], Field(title="Type")]
+    type: Annotated[
+        Literal["IPV4", "IPV6", "Auto"],
+        Field(
+            description="Type of the entry which can be IPV4, IPV6 or Auto.",
+            title="Type",
+        ),
+    ]
 
 
 class MirrorSpecSourcesFilterFilter(BaseModel):
@@ -757,6 +853,13 @@ class MirrorSpecSourcesFilterFilter(BaseModel):
             title="Entries",
         ),
     ]
+    statisticsPerEntry: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable per-entry counters.",
+            title="Per-entry counters",
+        ),
+    ] = None
 
 
 class MirrorSpecSourcesFilterSubinterfacesSubinterface(BaseModel):
@@ -971,7 +1074,7 @@ class MirrorStatus(BaseModel):
     """
 
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="Indicates when this SubInterface last changed state.",
             title="Last Change",
@@ -1040,7 +1143,7 @@ class MirrorStatus(BaseModel):
 
 
 class MirrorDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -1064,47 +1167,149 @@ class MirrorMetadata(BaseModel):
     namespace: str
 
 
-class PingSpec(BaseModel):
+class NewPingSpec(BaseModel):
     """
-    PingSpec defines the desired state of Ping
+    Ping allows a ping to be initiated to a specific address on node/set of nodes.
     """
 
-    address: Annotated[Optional[str], Field(title="address")] = None
-    networkInstance: Annotated[Optional[str], Field(title="NetworkInstance")] = None
-    node: Annotated[Optional[str], Field(title="node")] = None
-    pingType: Annotated[Literal["isl", "node", "system"], Field(title="pingtype")]
-    pods: Annotated[Optional[List[str]], Field(title="Pods")] = None
-    roles: Annotated[Optional[List[str]], Field(title="roles")] = None
+    address: Annotated[
+        str,
+        Field(
+            description="Address to ping.\nThis is a single IP address (IPv4 or IPv6) or a hostname that resolves to an IP address.",
+            title="Target Address",
+        ),
+    ]
+    count: Annotated[
+        Optional[int],
+        Field(description="Count is the number of pings to send.", title="Count"),
+    ] = 1
+    networkInstance: Annotated[
+        Optional[str],
+        Field(
+            description='The network instance to use for the ping. This is the named network instance on the node, typically "default" or some other base name.\nIf not specified, the default network instance will be used, which is typically the main/default/global network interface on the node.',
+            title="Network Instance",
+        ),
+    ] = None
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description="NodeSelectors is a list of node selectors to select nodes to perform pings on.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that pings will be performed on.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
+            title="Node Selectors",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Nodes is a list of nodes to perform pings on.\nItems in the list should be the names of the nodes, where each node will have a ping performed on it.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
+            title="Nodes",
+        ),
+    ] = None
+    timeoutSeconds: Annotated[
+        Optional[int],
+        Field(
+            description="TimeoutSeconds is the timeout for the ping in seconds.",
+            title="Timeout Seconds",
+        ),
+    ] = 5
 
 
-class PingStatus(BaseModel):
+class NewPingStatusDetailDetails(BaseModel):
+    averageTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    maxTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    minTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    received: Optional[int] = None
+    sent: Optional[int] = None
+    stdDevNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+    totalTimeNanoseconds: Annotated[
+        Optional[int],
+        Field(
+            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+        ),
+    ] = None
+
+
+class NewPingStatusDetail(BaseModel):
+    details: Optional[NewPingStatusDetailDetails] = None
+    error: Optional[str] = None
+    networkInstance: Optional[str] = None
+    node: Optional[str] = None
+    success: Optional[bool] = None
+
+
+class NewPingStatus(BaseModel):
     """
-    PingStatus defines the observed state of Ping
+    NewPingStatus defines the observed state of NewPing
+    """
+
+    details: Annotated[
+        Optional[List[NewPingStatusDetail]],
+        Field(
+            description="Details contains the results of the pings performed on each node.\nEach entry in the list corresponds to a node that was pinged."
+        ),
+    ] = None
+    result: Annotated[
+        Optional[Literal["Success", "Failed", "PartialSuccess"]],
+        Field(
+            description='Result is the overall result of the ping operation.\nIt can be one of the following values:\n- "Success": All pings were successful.\n- "Failed": No pings were successful.\n- "PartialSuccess": Some pings were successful, but not all.',
+            title="Result",
+        ),
+    ] = "Success"
+
+
+NewPingMetadata = MirrorMetadata
+
+
+class TechSupportSpec(BaseModel):
+    """
+    Generate technical support packages for a node or set of nodes.
+    """
+
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='List of node selectors to select nodes generate technical support packages for.\nThis matches labels on TopoNode resources.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf"].',
+            title="Node Selectors",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="List of nodes to generate and collect technical support packages for.",
+            title="Nodes",
+        ),
+    ] = None
+
+
+class TechSupportStatus(BaseModel):
+    """
+    Result of the technical support package generation.
     """
 
     id: Annotated[Optional[int], Field(description="Id", title="ID")] = None
-    result: Annotated[
-        Literal[
-            "OK",
-            "Failed",
-            "Terminated",
-            "WaitingForInput",
-            "Running",
-            "WaitingToStart",
-            "SubflowWaitingForInput",
-        ],
-        Field(description="Aggregate result of the Flow", title="Result"),
-    ]
+    result: Annotated[Optional[str], Field(description="Result", title="Result")] = None
 
 
-PingDeletedResourceEntry = MirrorDeletedResourceEntry
-
-
-class PingDeletedResources(RootModel[List[PingDeletedResourceEntry]]):
-    root: List[PingDeletedResourceEntry]
-
-
-PingMetadata = MirrorMetadata
+TechSupportMetadata = MirrorMetadata
 
 
 class ThresholdSpecAlarm(BaseModel):
@@ -1280,6 +1485,75 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
 class Mirror(BaseModel):
     """
     Mirror is the Schema for the mirrors API
@@ -1314,36 +1588,71 @@ class MirrorList(BaseModel):
     kind: str
 
 
-class Ping(BaseModel):
+class NewPing(BaseModel):
     """
-    Ping is the Schema for the pings API
+    NewPing is the Schema for the newpings API
     """
 
     apiVersion: str
     kind: str
-    metadata: PingMetadata
+    metadata: NewPingMetadata
     spec: Annotated[
-        PingSpec,
+        NewPingSpec,
         Field(
-            description="PingSpec defines the desired state of Ping",
+            description="Ping allows a ping to be initiated to a specific address on node/set of nodes.",
             title="Specification",
         ),
     ]
     status: Annotated[
-        Optional[PingStatus],
+        Optional[NewPingStatus],
         Field(
-            description="PingStatus defines the observed state of Ping", title="Status"
+            description="NewPingStatus defines the observed state of NewPing",
+            title="Status",
         ),
     ] = None
 
 
-class PingList(BaseModel):
+class NewPingList(BaseModel):
     """
-    PingList is a list of pings
+    NewPingList is a list of newpings
     """
 
     apiVersion: str
-    items: Optional[List[Ping]] = None
+    items: Optional[List[NewPing]] = None
+    kind: str
+
+
+class TechSupport(BaseModel):
+    """
+    TechSupport is the Schema for the techsupports API
+    """
+
+    apiVersion: str
+    kind: str
+    metadata: TechSupportMetadata
+    spec: Annotated[
+        TechSupportSpec,
+        Field(
+            description="Generate technical support packages for a node or set of nodes.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[TechSupportStatus],
+        Field(
+            description="Result of the technical support package generation.",
+            title="Status",
+        ),
+    ] = None
+
+
+class TechSupportList(BaseModel):
+    """
+    TechSupportList is a list of techsupports
+    """
+
+    apiVersion: str
+    items: Optional[List[TechSupport]] = None
     kind: str
 
 
@@ -1379,3 +1688,13 @@ class ThresholdList(BaseModel):
     apiVersion: str
     items: Optional[List[Threshold]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

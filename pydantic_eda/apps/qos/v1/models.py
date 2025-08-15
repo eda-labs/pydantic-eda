@@ -1587,7 +1587,7 @@ class PolicyDeploymentSpec(BaseModel):
         ),
     ] = None
     interfaceSelector: Annotated[
-        Optional[str],
+        Optional[List[str]],
         Field(
             description="Specifies a label selector to filter the interfaces on which to deploy the policies.",
             title="Interface Selector",
@@ -1612,7 +1612,7 @@ class PolicyDeploymentSpec(BaseModel):
         Field(description="Specifies a Node to deploy the policies on.", title="Node"),
     ] = None
     nodeSelector: Annotated[
-        Optional[str],
+        Optional[List[str]],
         Field(
             description="Specifies a label selector to filter the nodes on which to deploy the policies.",
             title="Node Selector",
@@ -1797,12 +1797,12 @@ class ForwardingClass(BaseModel):
     kind: str
     metadata: ForwardingClassMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="The ForwaringClass is used as a placeholder for to allow multiple other resources to reference the same forwarding class.",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[Dict[str, Any]],
         Field(

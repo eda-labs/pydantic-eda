@@ -2,14 +2,10 @@
 #   filename:  os.json
 
 from __future__ import annotations
-from typing import Annotated, Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, Field, RootModel
-from enum import Enum
 
+from typing import Annotated, Any, Dict, List, Literal, Optional
 
-class AppGroupVersion(BaseModel):
-    groupVersion: Optional[str] = None
-    version: Optional[str] = None
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class ErrorIndex(BaseModel):
@@ -36,6 +32,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -68,140 +70,293 @@ class ErrorResponse(BaseModel):
     ] = None
 
 
-class K8SPatchOp(BaseModel):
-    from_: Annotated[Optional[str], Field(alias="from")] = None
-    op: str
-    path: str
-    value: Optional[Dict[str, Any]] = None
-    x_permissive: Annotated[Optional[bool], Field(alias="x-permissive")] = None
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
 
 
-class Patch(RootModel[List[K8SPatchOp]]):
-    root: List[K8SPatchOp]
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
 
 
-class Resource(BaseModel):
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    namespaced: Optional[bool] = None
-    readOnly: Optional[bool] = None
-    singularName: Optional[str] = None
-    uiCategory: Optional[str] = None
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
 
 
-class ResourceHistoryEntry(BaseModel):
-    author: Optional[str] = None
-    changeType: Optional[str] = None
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    message: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class ResourceList(BaseModel):
-    apiVersion: Optional[str] = None
-    groupVersion: Optional[str] = None
-    kind: Optional[str] = None
-    resources: Optional[List[Resource]] = None
-
-
-class StatusDetails(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-
-
-class UIResult(RootModel[str]):
-    root: str
-
-
-class DeployImageSpecChecksChecks(Enum):
-    """
-    Checks to run before (pre) and after (post) any image changes
-    """
-
-    Interface = "Interface"
-    DefaultBGP = "DefaultBGP"
-    PingISL = "PingISL"
-    PingSystem = "PingSystem"
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class DeployImageSpecChecks(BaseModel):
+    """
+    Configure pre and post checks.
+    """
+
     checks: Annotated[
-        Union[List[str], DeployImageSpecChecksChecks],
+        Optional[List[Literal["Interface", "DefaultBGP", "PingISL", "PingSystem"]]],
         Field(
-            description="Checks to run before (pre) and after (post) any image changes",
-            title="checks",
+            description="Checks to run before (pre) and after (post) any image changes.\nIf none are specified, a default set of checks will be run.",
+            title="Checks to Run",
         ),
-    ]
+    ] = None
     force: Annotated[
-        bool, Field(description="Do not prompt for user input, even if checks fail")
-    ]
-    skip: Annotated[bool, Field(description="Do not run any checks")]
+        Optional[bool],
+        Field(
+            description="Ignore result of pre and post checks, do not prompt on failure.",
+            title="Force",
+        ),
+    ] = None
+    skip: Annotated[
+        Optional[bool],
+        Field(
+            description="Do not run any checks pre or post image change.",
+            title="Skip Checks",
+        ),
+    ] = None
 
 
 class DeployImageSpecDrains(BaseModel):
-    interfaceDisableSelectors: Annotated[
-        Optional[List[str]], Field(title="InterfaceDisableSelectors")
-    ] = None
-    minimumWaitTime: Annotated[Optional[int], Field(title="minimumWaitTime")] = None
+    """
+    Configure drains to gracefully drain traffic away from nodes before imaging.
+    """
+
+    minimumWaitTimeSeconds: Annotated[
+        Optional[int],
+        Field(
+            description="Seconds to wait before rebooting a node after it has been drained.\nThis is used to allow time for any traffic to drain away from the node before reboot.",
+            title="Minimum Wait Time",
+        ),
+    ] = 60
     skip: Annotated[
-        Optional[bool], Field(description="Do not run any drains", title="skip")
+        Optional[bool],
+        Field(
+            description="Do not run any drain operations. Nodes will be rebooted without attempting to gracefully drain them.",
+            title="Skip Drains",
+        ),
     ] = None
-
-
-class DeployImageSpecPrompt(Enum):
-    AfterPreChecks = "AfterPreChecks"
-    AfterPostChecks = "AfterPostChecks"
 
 
 class DeployImageSpecTranch(BaseModel):
-    name: Annotated[Optional[str], Field(title="name")] = None
-    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
+    name: Annotated[
+        Optional[str],
+        Field(
+            description="Name of the tranche.\nThis is used to identify the tranche in the UI and in logs.",
+            title="Name",
+        ),
+    ] = None
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='Node Selectors is a list of node selectors to select nodes to deploy images on in this tranche.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that will be imaged.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf"].',
+            title="Node Selectors",
+        ),
+    ] = None
 
 
 class DeployImageSpec(BaseModel):
     """
-    DeployImageSpec defines the desired state of DeployImage
+    Upgrade / downgrade images on targets.
+    This workflow can be used directly on a target or list of targets, or with selectors to select targets through labels.
+    It also supports tranches, which are groups of targets that can be upgraded together.
+    By default a set of checks are run before and after the image change, but this can be controlled via the checks field.
+    It also supports canaries, which are upgraded before any other targets.
     """
 
-    canaries: Annotated[Optional[List[str]], Field(title="canaries")] = None
-    checks: Annotated[Optional[DeployImageSpecChecks], Field(title="checks")] = None
-    drains: Annotated[Optional[DeployImageSpecDrains], Field(title="drains")] = None
-    nodeProfile: Annotated[Optional[str], Field(title="nodeProfile")] = None
-    nodeSelector: Annotated[Optional[List[str]], Field(title="nodeSelector")] = None
-    nodes: Annotated[Optional[List[str]], Field(title="nodes")] = None
+    canaries: Annotated[
+        Optional[List[str]],
+        Field(
+            description='List of node selectors to use to match canary nodes.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that will be imaged.\nCanary nodes are upgraded before any other nodes, and are used to test images before broader roll out.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=canary"].',
+            title="Canaries",
+        ),
+    ] = None
+    checks: Annotated[
+        Optional[DeployImageSpecChecks],
+        Field(description="Configure pre and post checks.", title="Checks"),
+    ] = None
+    drains: Annotated[
+        Optional[DeployImageSpecDrains],
+        Field(
+            description="Configure drains to gracefully drain traffic away from nodes before imaging.",
+            title="Drains",
+        ),
+    ] = None
+    nodeProfile: Annotated[
+        str,
+        Field(
+            description="Destination profile to use for imaging.\nThis profile contains the image to deploy, and other configuration for the node.",
+            title="Node Profile",
+        ),
+    ]
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='List of node selectors to select nodes to deploy images on.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that will be imaged.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf"].',
+            title="Node Selectors",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(description="List of nodes to deploy images on.", title="Nodes"),
+    ] = None
     prompt: Annotated[
-        Optional[Union[List[str], DeployImageSpecPrompt]], Field(title="prompt")
+        Optional[List[Literal["AfterPreChecks", "AfterPostChecks"]]],
+        Field(
+            description="Control when to prompt the user for input.\nIf any pre or post checks fail, the user will be prompted for input, but this may be used to prompt even if they're successful.",
+            title="Prompt",
+        ),
     ] = None
     tranches: Annotated[
-        Optional[List[DeployImageSpecTranch]], Field(title="tranches")
+        Optional[List[DeployImageSpecTranch]],
+        Field(
+            description="List of tranches to use for imaging.\nA tranche is a list of node selectors, and a name.\nTranches are upgraded in order, sequentially.",
+            title="Tranches",
+        ),
     ] = None
-    type: Annotated[Literal["node", "nodeselector", "tranche"], Field(title="type")]
-    version: Annotated[Optional[str], Field(title="version")] = None
+
+
+class DeployImageStatusDetail(BaseModel):
+    drainedTime: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the node was drained.\nThis is the time when the node was drained before the imaging operation.",
+            title="Drained Time",
+        ),
+    ] = None
+    newNodeProfile: Annotated[
+        Optional[str],
+        Field(description="The new profile of the node.", title="New Node Profile"),
+    ] = None
+    newVersion: Annotated[
+        Optional[str],
+        Field(description="The new version of the node.", title="New Version"),
+    ] = None
+    node: Annotated[
+        Optional[str],
+        Field(description="The name of the node this result is for.", title="Node"),
+    ] = None
+    postCheckSuccessful: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if post checks were successful for this node.\nThis is true if all post checks passed, false if any post checks failed.",
+            title="Post Check Successful",
+        ),
+    ] = None
+    preCheckSuccessful: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if pre checks were successful for this node.\nThis is true if all pre checks passed, false if any pre checks failed.",
+            title="Pre Check Successful",
+        ),
+    ] = None
+    previousNodeProfile: Annotated[
+        Optional[str],
+        Field(
+            description="The previous profile of the node.\nThis is the node profile that was running before the imaging operation.",
+            title="Previous Node Profile",
+        ),
+    ] = None
+    previousVersion: Annotated[
+        Optional[str],
+        Field(
+            description="The previous version of the node.\nThis is the version of the image that was running before the imaging operation.",
+            title="Previous Version",
+        ),
+    ] = None
+    rebootRecoveryTime: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the node was recovered after reboot.\nThis is the time when the node was recovered after the imaging operation.",
+            title="Reboot Recovery Time",
+        ),
+    ] = None
+    rebootTime: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the node was rebooted.\nThis is the time when the node was rebooted during the imaging operation.",
+            title="Reboot Time",
+        ),
+    ] = None
+    success: Annotated[
+        Optional[bool],
+        Field(
+            description="Indicates if the imaging operation was successful for this node.\nThis is true if the imaging operation was successful, false if it failed.",
+            title="Success",
+        ),
+    ] = None
+    undrainedTime: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the node was undrained.\nThis is the time when the node was undrained after the imaging operation.",
+            title="Undrained Time",
+        ),
+    ] = None
 
 
 class DeployImageStatus(BaseModel):
     """
-    DeployImageStatus defines the observed state of DeployImage
+    Status of the imaging operation.
     """
 
-    id: Annotated[Optional[int], Field(description="Id", title="ID")] = None
-    result: Annotated[
-        Optional[str], Field(description="Aggregate result of the Flow", title="Result")
+    details: Annotated[
+        Optional[List[DeployImageStatusDetail]],
+        Field(description="Per-node image deployment details.", title="Details"),
     ] = None
-
-
-class DeployImageDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
-    hash: Optional[str] = None
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    transactionId: Optional[int] = None
-
-
-class DeployImageDeletedResources(RootModel[List[DeployImageDeletedResourceEntry]]):
-    root: List[DeployImageDeletedResourceEntry]
+    firstNodeDrained: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the first node was drained.",
+            title="First Node Drained",
+        ),
+    ] = None
+    firstNodeRebooted: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the first node was rebooted.",
+            title="First Node Rebooted",
+        ),
+    ] = None
+    lastNodeRebootRecovered: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the last node recovered post reboot.",
+            title="Last Node Recovered",
+        ),
+    ] = None
+    lastNodeUndrained: Annotated[
+        Optional[AwareDatetime],
+        Field(
+            description="The time when the last node was undrained.",
+            title="Last Node Undrained",
+        ),
+    ] = None
+    result: Annotated[
+        Literal["Success", "Failed", "PartialSuccess"],
+        Field(
+            description='Result is the overall result of the image operation.\nIt can be one of the following values:\n- "Success": All images were successfully deployed.\n- "Failed": No images were successfully deployed.\n- "PartialSuccess": Some images were successfully deployed, but not all.',
+            title="Result",
+        ),
+    ]
 
 
 class DeployImageMetadata(BaseModel):
@@ -217,23 +372,8 @@ class DeployImageMetadata(BaseModel):
     namespace: str
 
 
-class AppGroup(BaseModel):
-    apiVersion: Optional[str] = None
-    kind: Optional[str] = None
-    name: Optional[str] = None
-    preferredVersion: Optional[AppGroupVersion] = None
-    versions: Optional[List[AppGroupVersion]] = None
-
-
-class ResourceHistory(RootModel[List[ResourceHistoryEntry]]):
-    root: List[ResourceHistoryEntry]
-
-
-class Status(BaseModel):
-    apiVersion: Optional[str] = None
-    details: Optional[StatusDetails] = None
-    kind: Optional[str] = None
-    string: Optional[str] = None
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
 
 
 class DeployImage(BaseModel):
@@ -247,16 +387,13 @@ class DeployImage(BaseModel):
     spec: Annotated[
         DeployImageSpec,
         Field(
-            description="DeployImageSpec defines the desired state of DeployImage",
+            description="Upgrade / downgrade images on targets.\nThis workflow can be used directly on a target or list of targets, or with selectors to select targets through labels.\nIt also supports tranches, which are groups of targets that can be upgraded together.\nBy default a set of checks are run before and after the image change, but this can be controlled via the checks field.\nIt also supports canaries, which are upgraded before any other targets.",
             title="Specification",
         ),
     ]
     status: Annotated[
         Optional[DeployImageStatus],
-        Field(
-            description="DeployImageStatus defines the observed state of DeployImage",
-            title="Status",
-        ),
+        Field(description="Status of the imaging operation.", title="Status"),
     ] = None
 
 
