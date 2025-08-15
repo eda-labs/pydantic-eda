@@ -8,13 +8,13 @@ Pydantic models for EDA OpenAPI spec. Models are generated for the EDA Core API 
 
 Install dev dependencies:
 
-```
+```bash
 uv sync --all-groups
 ```
 
 Generate models for a specific version of the openapi repo (git ref):
 
-```
+```bash
 python gen_models.py --version v25.4.1
 ```
 
