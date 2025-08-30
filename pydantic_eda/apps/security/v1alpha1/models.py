@@ -315,8 +315,8 @@ class Keychain(BaseModel):
     Keychain is the Schema for the keychains API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^security\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Keychain$")]
     metadata: KeychainMetadata
     spec: Annotated[
         KeychainSpec,
@@ -339,8 +339,8 @@ class KeychainDeployment(BaseModel):
     KeychainDeployment is the Schema for the keychaindeployments API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^security\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^KeychainDeployment$")]
     metadata: KeychainDeploymentMetadata
     spec: Annotated[
         KeychainDeploymentSpec,

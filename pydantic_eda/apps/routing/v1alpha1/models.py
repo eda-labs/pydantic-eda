@@ -1171,8 +1171,8 @@ class AttachmentLookup(BaseModel):
     AttachmentLookup is the Schema for the attachmentlookups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^AttachmentLookup$")]
     metadata: AttachmentLookupMetadata
     spec: Annotated[
         AttachmentLookupSpec,
@@ -1205,8 +1205,8 @@ class DefaultInterface(BaseModel):
     DefaultInterface is the Schema for the defaultinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^DefaultInterface$")]
     metadata: DefaultInterfaceMetadata
     spec: Annotated[
         DefaultInterfaceSpec,
@@ -1239,8 +1239,8 @@ class DefaultRouter(BaseModel):
     DefaultRouter is the Schema for the defaultrouters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouter$")]
     metadata: DefaultRouterMetadata
     spec: Annotated[
         DefaultRouterSpec,
@@ -1273,8 +1273,8 @@ class Drain(BaseModel):
     Drain is the Schema for the drains API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Drain$")]
     metadata: DrainMetadata
     spec: Annotated[
         DrainSpec,
@@ -1307,8 +1307,8 @@ class RouteLookup(BaseModel):
     RouteLookup is the Schema for the routelookups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^RouteLookup$")]
     metadata: RouteLookupMetadata
     spec: Annotated[
         RouteLookupSpec,
@@ -1341,8 +1341,8 @@ class SystemInterface(BaseModel):
     SystemInterface is the Schema for the systeminterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^SystemInterface$")]
     metadata: SystemInterfaceMetadata
     spec: Annotated[
         SystemInterfaceSpec,

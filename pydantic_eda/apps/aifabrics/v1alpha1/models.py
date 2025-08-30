@@ -556,8 +556,10 @@ class Backend(BaseModel):
     Backend is the Schema for the backends API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^aifabrics\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Backend$")]
     metadata: BackendMetadata
     spec: Annotated[
         BackendSpec,

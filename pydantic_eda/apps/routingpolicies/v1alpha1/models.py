@@ -742,8 +742,10 @@ class ASPathSet(BaseModel):
     ASPathSet is the Schema for the aspathsets API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^routingpolicies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^ASPathSet$")]
     metadata: ASPathSetMetadata
     spec: Annotated[
         ASPathSetSpec,
@@ -776,8 +778,10 @@ class CommunitySet(BaseModel):
     CommunitySet is the Schema for the communitysets API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^routingpolicies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^CommunitySet$")]
     metadata: CommunitySetMetadata
     spec: Annotated[
         CommunitySetSpec,
@@ -810,8 +814,10 @@ class Policy(BaseModel):
     Policy is the Schema for the policys API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^routingpolicies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Policy$")]
     metadata: PolicyMetadata
     spec: Annotated[
         PolicySpec,
@@ -844,8 +850,10 @@ class PrefixSet(BaseModel):
     PrefixSet is the Schema for the prefixsets API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^routingpolicies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^PrefixSet$")]
     metadata: PrefixSetMetadata
     spec: Annotated[
         PrefixSetSpec,

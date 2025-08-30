@@ -1759,8 +1759,8 @@ class EgressPolicy(BaseModel):
     EgressPolicy is the Schema for the egresspolicys API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^EgressPolicy$")]
     metadata: EgressPolicyMetadata
     spec: Annotated[
         EgressPolicySpec,
@@ -1793,8 +1793,8 @@ class ForwardingClass(BaseModel):
     ForwardingClass is the Schema for the forwardingclasss API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^ForwardingClass$")]
     metadata: ForwardingClassMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1827,8 +1827,8 @@ class IngressPolicy(BaseModel):
     IngressPolicy is the Schema for the ingresspolicys API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IngressPolicy$")]
     metadata: IngressPolicyMetadata
     spec: Annotated[
         IngressPolicySpec,
@@ -1861,8 +1861,8 @@ class PolicyAttachment(BaseModel):
     PolicyAttachment is the Schema for the policyattachments API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^PolicyAttachment$")]
     metadata: PolicyAttachmentMetadata
     spec: Annotated[
         PolicyAttachmentSpec,
@@ -1895,8 +1895,8 @@ class PolicyDeployment(BaseModel):
     PolicyDeployment is the Schema for the policydeployments API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^PolicyDeployment$")]
     metadata: PolicyDeploymentMetadata
     spec: Annotated[
         PolicyDeploymentSpec,
@@ -1929,8 +1929,8 @@ class Queue(BaseModel):
     Queue is the Schema for the queues API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^qos\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Queue$")]
     metadata: QueueMetadata
     spec: Annotated[
         QueueSpec,

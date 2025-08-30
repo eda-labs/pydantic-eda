@@ -381,8 +381,8 @@ class DeployImage(BaseModel):
     DeployImage is the Schema for the deployimages API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^os\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^DeployImage$")]
     metadata: DeployImageMetadata
     spec: Annotated[
         DeployImageSpec,

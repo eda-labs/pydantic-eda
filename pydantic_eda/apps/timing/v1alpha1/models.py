@@ -395,8 +395,8 @@ class NTPClient(BaseModel):
     NTPClient is the Schema for the ntpclients API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^timing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^NTPClient$")]
     metadata: NTPClientMetadata
     spec: Annotated[
         NTPClientSpec,

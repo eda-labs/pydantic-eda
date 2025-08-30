@@ -1167,7 +1167,7 @@ class MirrorMetadata(BaseModel):
     namespace: str
 
 
-class NewPingSpec(BaseModel):
+class PingSpec(BaseModel):
     """
     Ping allows a ping to be initiated to a specific address on node/set of nodes.
     """
@@ -1193,14 +1193,14 @@ class NewPingSpec(BaseModel):
     nodeSelectors: Annotated[
         Optional[List[str]],
         Field(
-            description="NodeSelectors is a list of node selectors to select nodes to perform pings on.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that pings will be performed on.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
+            description="List of selectors to select nodes to perform pings on.\nThis matches labels on TopoNode resources, including those TopoNodes in the list of nodes that pings will be performed on.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
             title="Node Selectors",
         ),
     ] = None
     nodes: Annotated[
         Optional[List[str]],
         Field(
-            description="Nodes is a list of nodes to perform pings on.\nItems in the list should be the names of the nodes, where each node will have a ping performed on it.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
+            description="List of nodes to perform pings from.\nItems in the list should be the names of the nodes, where each node will have a ping performed on it.\nIf no nodes are specified, and no node selectors are specified, all nodes in the given namespace will be selected.",
             title="Nodes",
         ),
     ] = None
@@ -1213,56 +1213,82 @@ class NewPingSpec(BaseModel):
     ] = 5
 
 
-class NewPingStatusDetailDetails(BaseModel):
+class PingStatusDetailDetails(BaseModel):
+    """
+    Details of the ping result, if available.
+    """
+
     averageTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Average time taken for a ping reply.",
+            title="Average Time (ns)",
         ),
     ] = None
     maxTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Maximum time taken for a ping reply.",
+            title="Maximum Time (ns)",
         ),
     ] = None
     minTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Minimum time taken for a ping reply.",
+            title="Minimum Time (ns)",
         ),
     ] = None
-    received: Optional[int] = None
-    sent: Optional[int] = None
+    received: Annotated[
+        int, Field(description="Number of pings received.", title="Received")
+    ]
+    sent: Annotated[int, Field(description="Number of pings sent.", title="Sent")]
     stdDevNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Standard deviation of time taken for all pings.",
+            title="Standard Deviation (ns)",
         ),
     ] = None
     totalTimeNanoseconds: Annotated[
         Optional[int],
-        Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
-        ),
+        Field(description="Total time taken for all pings.", title="Total Time (ns)"),
     ] = None
 
 
-class NewPingStatusDetail(BaseModel):
-    details: Optional[NewPingStatusDetailDetails] = None
-    error: Optional[str] = None
-    networkInstance: Optional[str] = None
-    node: Optional[str] = None
-    success: Optional[bool] = None
+class PingStatusDetail(BaseModel):
+    details: Annotated[
+        Optional[PingStatusDetailDetails],
+        Field(description="Details of the ping result, if available.", title="Details"),
+    ] = None
+    error: Annotated[
+        Optional[str],
+        Field(description="Error message, if the ping failed.", title="Error"),
+    ] = None
+    networkInstance: Annotated[
+        Optional[str],
+        Field(
+            description="Network instance used to source the ping from.",
+            title="Network Instance",
+        ),
+    ] = None
+    node: Annotated[
+        Optional[str],
+        Field(description="Node the ping was sourced from.", title="Node"),
+    ] = None
+    success: Annotated[
+        Optional[bool],
+        Field(description="Indicates if the ping was successful.", title="Success"),
+    ] = None
 
 
-class NewPingStatus(BaseModel):
+class PingStatus(BaseModel):
     """
-    NewPingStatus defines the observed state of NewPing
+    PingStatus defines the observed state of Ping
     """
 
     details: Annotated[
-        Optional[List[NewPingStatusDetail]],
+        Optional[List[PingStatusDetail]],
         Field(
             description="Details contains the results of the pings performed on each node.\nEach entry in the list corresponds to a node that was pinged."
         ),
@@ -1276,7 +1302,7 @@ class NewPingStatus(BaseModel):
     ] = "Success"
 
 
-NewPingMetadata = MirrorMetadata
+PingMetadata = MirrorMetadata
 
 
 class TechSupportSpec(BaseModel):
@@ -1559,8 +1585,8 @@ class Mirror(BaseModel):
     Mirror is the Schema for the mirrors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^oam\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Mirror$")]
     metadata: MirrorMetadata
     spec: Annotated[
         MirrorSpec,
@@ -1588,37 +1614,36 @@ class MirrorList(BaseModel):
     kind: str
 
 
-class NewPing(BaseModel):
+class Ping(BaseModel):
     """
-    NewPing is the Schema for the newpings API
+    Ping is the Schema for the pings API
     """
 
-    apiVersion: str
-    kind: str
-    metadata: NewPingMetadata
+    apiVersion: Annotated[str, Field(pattern="^oam\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Ping$")]
+    metadata: PingMetadata
     spec: Annotated[
-        NewPingSpec,
+        PingSpec,
         Field(
             description="Ping allows a ping to be initiated to a specific address on node/set of nodes.",
             title="Specification",
         ),
     ]
     status: Annotated[
-        Optional[NewPingStatus],
+        Optional[PingStatus],
         Field(
-            description="NewPingStatus defines the observed state of NewPing",
-            title="Status",
+            description="PingStatus defines the observed state of Ping", title="Status"
         ),
     ] = None
 
 
-class NewPingList(BaseModel):
+class PingList(BaseModel):
     """
-    NewPingList is a list of newpings
+    PingList is a list of pings
     """
 
     apiVersion: str
-    items: Optional[List[NewPing]] = None
+    items: Optional[List[Ping]] = None
     kind: str
 
 
@@ -1627,8 +1652,8 @@ class TechSupport(BaseModel):
     TechSupport is the Schema for the techsupports API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^oam\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^TechSupport$")]
     metadata: TechSupportMetadata
     spec: Annotated[
         TechSupportSpec,
@@ -1661,8 +1686,8 @@ class Threshold(BaseModel):
     Threshold is the Schema for the thresholds API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^oam\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Threshold$")]
     metadata: ThresholdMetadata
     spec: Annotated[
         ThresholdSpec,

@@ -4105,8 +4105,8 @@ class AggregateRoute(BaseModel):
     AggregateRoute is the Schema for the aggregateroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^AggregateRoute$")]
     metadata: AggregateRouteMetadata
     spec: Annotated[
         AggregateRouteSpec,
@@ -4139,8 +4139,8 @@ class BGPGroup(BaseModel):
     BGPGroup is the Schema for the bgpgroups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPGroup$")]
     metadata: BGPGroupMetadata
     spec: Annotated[
         BGPGroupSpec,
@@ -4173,8 +4173,8 @@ class BGPPeer(BaseModel):
     BGPPeer is the Schema for the bgppeers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPPeer$")]
     metadata: BGPPeerMetadata
     spec: Annotated[
         BGPPeerSpec,
@@ -4207,8 +4207,8 @@ class BGPPeerState(BaseModel):
     BGPPeerState is the Schema for the bgppeerstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPPeerState$")]
     metadata: BGPPeerStateMetadata
     spec: Annotated[
         BGPPeerStateSpec,
@@ -4241,8 +4241,8 @@ class CheckDefaultBgpPeers(BaseModel):
     CheckDefaultBgpPeers is the Schema for the checkdefaultbgppeerss API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^CheckDefaultBgpPeers$")]
     metadata: CheckDefaultBgpPeersMetadata
     spec: Annotated[
         CheckDefaultBgpPeersSpec,
@@ -4275,8 +4275,8 @@ class DefaultAggregateRoute(BaseModel):
     DefaultAggregateRoute is the Schema for the defaultaggregateroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultAggregateRoute$")]
     metadata: DefaultAggregateRouteMetadata
     spec: Annotated[
         DefaultAggregateRouteSpec,
@@ -4309,8 +4309,8 @@ class DefaultBGPGroup(BaseModel):
     DefaultBGPGroup is the Schema for the defaultbgpgroups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultBGPGroup$")]
     metadata: DefaultBGPGroupMetadata
     spec: Annotated[
         DefaultBGPGroupSpec,
@@ -4343,8 +4343,8 @@ class DefaultBGPPeer(BaseModel):
     DefaultBGPPeer is the Schema for the defaultbgppeers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultBGPPeer$")]
     metadata: DefaultBGPPeerMetadata
     spec: Annotated[
         DefaultBGPPeerSpec,
@@ -4377,8 +4377,8 @@ class DefaultRouteReflector(BaseModel):
     DefaultRouteReflector is the Schema for the defaultroutereflectors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouteReflector$")]
     metadata: DefaultRouteReflectorMetadata
     spec: Annotated[
         DefaultRouteReflectorSpec,
@@ -4401,8 +4401,8 @@ class DefaultRouteReflectorClient(BaseModel):
     DefaultRouteReflectorClient is the Schema for the defaultroutereflectorclients API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouteReflectorClient$")]
     metadata: DefaultRouteReflectorClientMetadata
     spec: Annotated[
         DefaultRouteReflectorClientSpec,
@@ -4445,8 +4445,8 @@ class DefaultStaticRoute(BaseModel):
     DefaultStaticRoute is the Schema for the defaultstaticroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultStaticRoute$")]
     metadata: DefaultStaticRouteMetadata
     spec: Annotated[
         DefaultStaticRouteSpec,
@@ -4479,8 +4479,8 @@ class RouteReflector(BaseModel):
     RouteReflector is the Schema for the routereflectors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflector$")]
     metadata: RouteReflectorMetadata
     spec: Annotated[
         RouteReflectorSpec,
@@ -4503,8 +4503,8 @@ class RouteReflectorClient(BaseModel):
     RouteReflectorClient is the Schema for the routereflectorclients API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorClient$")]
     metadata: RouteReflectorClientMetadata
     spec: Annotated[
         RouteReflectorClientSpec,
@@ -4537,8 +4537,8 @@ class RouteReflectorClientState(BaseModel):
     RouteReflectorClientState is the Schema for the routereflectorclientstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorClientState$")]
     metadata: RouteReflectorClientStateMetadata
     spec: Annotated[
         RouteReflectorClientStateSpec,
@@ -4581,8 +4581,8 @@ class RouteReflectorState(BaseModel):
     RouteReflectorState is the Schema for the routereflectorstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorState$")]
     metadata: RouteReflectorStateMetadata
     spec: Annotated[
         RouteReflectorStateSpec,
@@ -4615,8 +4615,8 @@ class StaticRoute(BaseModel):
     StaticRoute is the Schema for the staticroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^StaticRoute$")]
     metadata: StaticRouteMetadata
     spec: Annotated[
         StaticRouteSpec,

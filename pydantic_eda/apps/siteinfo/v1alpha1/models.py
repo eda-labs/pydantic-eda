@@ -321,8 +321,8 @@ class Banner(BaseModel):
     Banner is the Schema for the banners API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^siteinfo\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Banner$")]
     metadata: BannerMetadata
     spec: Annotated[
         BannerSpec,

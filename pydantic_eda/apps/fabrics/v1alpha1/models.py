@@ -1242,20 +1242,6 @@ class IslPingSpec(BaseModel):
         Optional[int],
         Field(description="Count is the number of pings to send.", title="Count"),
     ] = 1
-    fabricSelectors: Annotated[
-        Optional[List[str]],
-        Field(
-            description='Fabric Selectors is a list of fabric selectors to execute ISL pings for.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf", "eda.nokia.com/region=us-west"].',
-            title="Fabric Selectors",
-        ),
-    ] = None
-    fabrics: Annotated[
-        Optional[List[str]],
-        Field(
-            description="Fabrics is a list of fabrics to execute ISL pings for.",
-            title="Fabrics",
-        ),
-    ] = None
     islSelectors: Annotated[
         Optional[List[str]],
         Field(
@@ -1280,50 +1266,69 @@ class IslPingSpec(BaseModel):
 
 
 class IslPingStatusDetailDetails(BaseModel):
+    """
+    Details of the ping result, if available.
+    """
+
     averageTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Average time taken for a ping reply.",
+            title="Average Time (ns)",
         ),
     ] = None
     maxTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Maximum time taken for a ping reply.",
+            title="Maximum Time (ns)",
         ),
     ] = None
     minTimeNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Minimum time taken for a ping reply.",
+            title="Minimum Time (ns)",
         ),
     ] = None
-    received: Optional[int] = None
-    sent: Optional[int] = None
+    received: Annotated[
+        int, Field(description="Number of pings received.", title="Received")
+    ]
+    sent: Annotated[int, Field(description="Number of pings sent.", title="Sent")]
     stdDevNanoseconds: Annotated[
         Optional[int],
         Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
+            description="Standard deviation of time taken for all pings.",
+            title="Standard Deviation (ns)",
         ),
     ] = None
     totalTimeNanoseconds: Annotated[
         Optional[int],
-        Field(
-            description="A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years."
-        ),
+        Field(description="Total time taken for all pings.", title="Total Time (ns)"),
     ] = None
 
 
 class IslPingStatusDetail(BaseModel):
-    details: Optional[IslPingStatusDetailDetails] = None
-    error: Optional[str] = None
-    name: Optional[str] = None
-    success: Optional[bool] = None
+    details: Annotated[
+        Optional[IslPingStatusDetailDetails],
+        Field(description="Details of the ping result, if available.", title="Details"),
+    ] = None
+    error: Annotated[
+        Optional[str],
+        Field(description="Error message, if the ping failed.", title="Error"),
+    ] = None
+    name: Annotated[
+        Optional[str], Field(description="Name of the ping result.", title="Name")
+    ] = None
+    success: Annotated[
+        bool,
+        Field(description="Indicates if the ping was successful.", title="Success"),
+    ]
 
 
 class IslPingStatus(BaseModel):
     """
-    IslPingStatus defines the observed state of IslPing
+    The result of the ISL ping
     """
 
     details: Annotated[
@@ -1437,8 +1442,8 @@ class Fabric(BaseModel):
     Fabric is the Schema for the fabrics API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^fabrics\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Fabric$")]
     metadata: FabricMetadata
     spec: Annotated[
         FabricSpec,
@@ -1471,8 +1476,8 @@ class ISL(BaseModel):
     ISL is the Schema for the isls API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^fabrics\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^ISL$")]
     metadata: ISLMetadata
     spec: Annotated[
         ISLSpec,
@@ -1504,8 +1509,8 @@ class IslPing(BaseModel):
     IslPing is the Schema for the islpings API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^fabrics\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^IslPing$")]
     metadata: IslPingMetadata
     spec: Annotated[
         IslPingSpec,
@@ -1516,10 +1521,7 @@ class IslPing(BaseModel):
     ]
     status: Annotated[
         Optional[IslPingStatus],
-        Field(
-            description="IslPingStatus defines the observed state of IslPing",
-            title="Status",
-        ),
+        Field(description="The result of the ISL ping", title="Status"),
     ] = None
 
 

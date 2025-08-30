@@ -363,8 +363,8 @@ class Configlet(BaseModel):
     Configlet is the Schema for the configlets API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^config\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Configlet$")]
     metadata: ConfigletMetadata
     spec: Annotated[
         ConfigletSpec,

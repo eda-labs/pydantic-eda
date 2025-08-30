@@ -5482,8 +5482,8 @@ class BridgeDomain(BaseModel):
     BridgeDomain is the Schema for the bridgedomains API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BridgeDomain$")]
     metadata: BridgeDomainMetadata
     spec: Annotated[
         BridgeDomainSpec,
@@ -5516,8 +5516,8 @@ class BridgeInterface(BaseModel):
     BridgeInterface is the Schema for the bridgeinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BridgeInterface$")]
     metadata: BridgeInterfaceMetadata
     spec: Annotated[
         BridgeInterfaceSpec,
@@ -5544,8 +5544,8 @@ class DHCPRelay(BaseModel):
     DHCPRelay is the Schema for the dhcprelays API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DHCPRelay$")]
     metadata: DHCPRelayMetadata
     spec: Annotated[
         DHCPRelaySpec,
@@ -5578,8 +5578,8 @@ class EdgePing(BaseModel):
     EdgePing is the Schema for the edgepings API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^EdgePing$")]
     metadata: EdgePingMetadata
     spec: Annotated[
         EdgePingSpec,
@@ -5612,8 +5612,8 @@ class IRBInterface(BaseModel):
     IRBInterface is the Schema for the irbinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IRBInterface$")]
     metadata: IRBInterfaceMetadata
     spec: Annotated[
         IRBInterfaceSpec,
@@ -5646,8 +5646,8 @@ class RoutedInterface(BaseModel):
     RoutedInterface is the Schema for the routedinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RoutedInterface$")]
     metadata: RoutedInterfaceMetadata
     spec: Annotated[
         RoutedInterfaceSpec,
@@ -5680,8 +5680,8 @@ class Router(BaseModel):
     Router is the Schema for the routers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Router$")]
     metadata: RouterMetadata
     spec: Annotated[
         RouterSpec,
@@ -5714,8 +5714,8 @@ class VLAN(BaseModel):
     VLAN is the Schema for the vlans API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^VLAN$")]
     metadata: VLANMetadata
     spec: Annotated[
         VLANSpec,
@@ -5742,8 +5742,8 @@ class VirtualNetwork(BaseModel):
     VirtualNetwork is the Schema for the virtualnetworks API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^services\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^VirtualNetwork$")]
     metadata: VirtualNetworkMetadata
     spec: Annotated[
         VirtualNetworkSpec,

@@ -227,7 +227,7 @@ class AppInstallerSpecApp(BaseModel):
         ),
     ]
     appSettings: Annotated[
-        Optional[Dict[str, Any]],
+        Optional[Any],
         Field(
             description="AppSettings defines a list of variables and their value. Only variables that are customised need to be mentioned.\nIf AppSettings are not again mentioned on upgrade, values will remain as is.",
             title="App Settings",
@@ -559,8 +559,8 @@ class AppInstaller(BaseModel):
     AppInstaller is the Schema for the appinstallers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^appstore\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^AppInstaller$")]
     metadata: AppInstallerMetadata
     spec: Annotated[AppInstallerSpec, Field(title="Specification")]
     status: Annotated[Optional[AppInstallerStatus], Field(title="Status")] = None
@@ -581,8 +581,8 @@ class Catalog(BaseModel):
     Catalog is the Schema for the catalogs API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^appstore\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Catalog$")]
     metadata: CatalogMetadata
     spec: Annotated[
         CatalogSpec,
@@ -615,8 +615,8 @@ class Registry(BaseModel):
     Registry is the Schema for the registries API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^appstore\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Registry$")]
     metadata: RegistryMetadata
     spec: Annotated[
         RegistrySpec,

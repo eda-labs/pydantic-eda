@@ -913,8 +913,10 @@ class Breakout(BaseModel):
     Breakout is the Schema for the breakouts API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^interfaces\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Breakout$")]
     metadata: BreakoutMetadata
     spec: Annotated[
         BreakoutSpec,
@@ -947,8 +949,10 @@ class CheckInterfaces(BaseModel):
     CheckInterfaces is the Schema for the checkinterfacess API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^interfaces\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^CheckInterfaces$")]
     metadata: CheckInterfacesMetadata
     spec: Annotated[
         CheckInterfacesSpec,
@@ -981,8 +985,10 @@ class Interface(BaseModel):
     Interface is the Schema for the interfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^interfaces\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Interface$")]
     metadata: InterfaceMetadata
     spec: Annotated[
         InterfaceSpec,
@@ -1009,8 +1015,10 @@ class InterfaceState(BaseModel):
     InterfaceState is the Schema for the interfacestates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^interfaces\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^InterfaceState$")]
     metadata: InterfaceStateMetadata
     spec: Annotated[InterfaceStateSpec, Field(title="Specification")]
     status: Annotated[

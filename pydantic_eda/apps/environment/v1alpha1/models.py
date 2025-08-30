@@ -185,8 +185,10 @@ class CliPlugin(BaseModel):
     CliPlugin is the Schema for the cliplugins API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^environment\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^CliPlugin$")]
     metadata: CliPluginMetadata
     spec: Annotated[
         CliPluginSpec,
@@ -219,8 +221,10 @@ class SetupEnv(BaseModel):
     SetupEnv is the Schema for the setupenvs API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^environment\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^SetupEnv$")]
     metadata: SetupEnvMetadata
     spec: Annotated[
         SetupEnvSpec,

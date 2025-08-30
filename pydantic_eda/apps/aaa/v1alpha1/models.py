@@ -366,8 +366,8 @@ class NodeGroup(BaseModel):
     NodeGroup is the Schema for the nodegroups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^aaa\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^NodeGroup$")]
     metadata: NodeGroupMetadata
     spec: Annotated[
         NodeGroupSpec,

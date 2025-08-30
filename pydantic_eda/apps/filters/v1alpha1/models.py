@@ -1693,8 +1693,8 @@ class ControlPlaneFilter(BaseModel):
     ControlPlaneFilter is the Schema for the controlplanefilters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^filters\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^ControlPlaneFilter$")]
     metadata: ControlPlaneFilterMetadata
     spec: Annotated[
         ControlPlaneFilterSpec,
@@ -1727,8 +1727,8 @@ class Filter(BaseModel):
     Filter is the Schema for the filters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^filters\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Filter$")]
     metadata: FilterMetadata
     spec: Annotated[
         FilterSpec,

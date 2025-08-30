@@ -650,8 +650,10 @@ class Topology(BaseModel):
     Topology is the Schema for the topologies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^topologies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Topology$")]
     metadata: TopologyMetadata
     spec: Annotated[
         TopologySpec,
@@ -674,8 +676,10 @@ class DeviationOverlay(BaseModel):
     DeviationOverlay is the Schema for the deviationoverlays API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^topologies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^DeviationOverlay$")]
     metadata: DeviationOverlayMetadata
     spec: Annotated[
         DeviationOverlaySpec,
@@ -708,8 +712,10 @@ class LldpOverlay(BaseModel):
     LldpOverlay is the Schema for the lldpoverlays API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^topologies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^LldpOverlay$")]
     metadata: LldpOverlayMetadata
     spec: Annotated[
         LldpOverlaySpec,
@@ -742,8 +748,10 @@ class TopologyGrouping(BaseModel):
     TopologyGrouping is the Schema for the topologygroupings API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^topologies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^TopologyGrouping$")]
     metadata: TopologyGroupingMetadata
     spec: Annotated[
         TopologyGroupingSpec,
@@ -786,8 +794,10 @@ class TrafficRateOverlay(BaseModel):
     TrafficRateOverlay is the Schema for the trafficrateoverlays API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^topologies\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^TrafficRateOverlay$")]
     metadata: TrafficRateOverlayMetadata
     spec: Annotated[
         TrafficRateOverlaySpec,

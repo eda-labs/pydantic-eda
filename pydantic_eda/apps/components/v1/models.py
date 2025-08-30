@@ -1334,8 +1334,8 @@ class Chassis(BaseModel):
     Chassis is the Schema for the chassis API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Chassis$")]
     metadata: ChassisMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1368,8 +1368,8 @@ class Component(BaseModel):
     Component is the Schema for the components API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Component$")]
     metadata: ComponentMetadata
     spec: Annotated[
         ComponentSpec,
@@ -1402,8 +1402,8 @@ class ControlModule(BaseModel):
     ControlModule is the Schema for the controlmodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^ControlModule$")]
     metadata: ControlModuleMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1436,8 +1436,8 @@ class FabricModule(BaseModel):
     FabricModule is the Schema for the fabricmodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^FabricModule$")]
     metadata: FabricModuleMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1470,8 +1470,8 @@ class Fan(BaseModel):
     Fan is the Schema for the fans API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Fan$")]
     metadata: FanMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1503,8 +1503,8 @@ class InterfaceModule(BaseModel):
     InterfaceModule is the Schema for the interfacemodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^InterfaceModule$")]
     metadata: InterfaceModuleMetadata
     spec: Annotated[
         Optional[Dict[str, Any]],
@@ -1537,8 +1537,8 @@ class Monitor(BaseModel):
     Monitor is the Schema for the monitors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Monitor$")]
     metadata: MonitorMetadata
     spec: Annotated[
         MonitorSpec,
@@ -1571,8 +1571,8 @@ class PowerSupply(BaseModel):
     PowerSupply is the Schema for the powersupplies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^PowerSupply$")]
     metadata: PowerSupplyMetadata
     spec: Annotated[
         PowerSupplySpec,

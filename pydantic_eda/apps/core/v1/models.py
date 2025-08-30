@@ -160,6 +160,44 @@ class UIResult(RootModel[str]):
     root: str
 
 
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
+
+
 class ClusterRoleSpecResourceRuleApiGroup(RootModel[str]):
     root: Annotated[str, Field(min_length=1)]
 
@@ -1989,6 +2027,38 @@ class UdpProxyDeletedResources(RootModel[List[UdpProxyDeletedResourceEntry]]):
 UdpProxyMetadata = ClusterRoleMetadata
 
 
+class WorkflowSpec(BaseModel):
+    """
+    WorkflowSpec defines the desired state of Flow
+    """
+
+    input: Annotated[
+        Optional[Any],
+        Field(
+            description="Input to this flow, adhering to the JSON schema defined in the referenced WorkflowDefinition.",
+            title="Input",
+        ),
+    ] = None
+    type: Annotated[
+        str,
+        Field(description="Select the WorkflowDefinition to execute.", title="Type"),
+    ]
+
+
+class WorkflowStatus(BaseModel):
+    """
+    WorkflowStatus defines the observed state of Flow
+    """
+
+    output: Annotated[
+        Optional[Any],
+        Field(
+            description="Output from this flow, adhering to the JSON schema defined in the referenced FlowDefinition",
+            title="Output",
+        ),
+    ] = None
+
+
 class WorkflowDefinitionSpecFlowDefinitionResource(BaseModel):
     """
     the resource type to be used for this flow, can only be set if Schema is not set
@@ -2070,6 +2140,9 @@ class WorkflowDefinitionDeletedResources(
 
 
 WorkflowDefinitionMetadata = ClusterRoleMetadata
+
+
+WorkflowMetadata = DeviationActionMetadata
 
 
 class AppGroup(BaseModel):
@@ -2156,13 +2229,17 @@ class Topology(BaseModel):
     version: Optional[str] = None
 
 
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
 class ClusterRole(BaseModel):
     """
     ClusterRole is the Schema for the clusterroles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^ClusterRole$")]
     metadata: ClusterRoleMetadata
     spec: Annotated[
         ClusterRoleSpec,
@@ -2194,8 +2271,8 @@ class Deviation(BaseModel):
     Deviation is the Schema for the deviations API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Deviation$")]
     metadata: DeviationMetadata
     spec: Annotated[
         DeviationSpec,
@@ -2218,8 +2295,8 @@ class DeviationAction(BaseModel):
     DeviationAction is the Schema for the deviationactions API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DeviationAction$")]
     metadata: DeviationActionMetadata
     spec: Annotated[
         DeviationActionSpec,
@@ -2262,8 +2339,8 @@ class EdgeInterface(BaseModel):
     EdgeInterface is the Schema for the edgeinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^EdgeInterface$")]
     metadata: EdgeInterfaceMetadata
     spec: Annotated[
         EdgeInterfaceSpec,
@@ -2296,8 +2373,8 @@ class HttpProxy(BaseModel):
     HttpProxy is the Schema for the httpproxies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^HttpProxy$")]
     metadata: HttpProxyMetadata
     spec: Annotated[
         HttpProxySpec,
@@ -2330,8 +2407,8 @@ class IPAllocationPool(BaseModel):
     IPAllocationPool is the Schema for the ipallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IPAllocationPool$")]
     metadata: IPAllocationPoolMetadata
     spec: Annotated[
         IPAllocationPoolSpec,
@@ -2364,8 +2441,8 @@ class IPInSubnetAllocationPool(BaseModel):
     IPInSubnetAllocationPool is the Schema for the ipinsubnetallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IPInSubnetAllocationPool$")]
     metadata: IPInSubnetAllocationPoolMetadata
     spec: Annotated[
         IPInSubnetAllocationPoolSpec,
@@ -2398,8 +2475,8 @@ class IndexAllocationPool(BaseModel):
     IndexAllocationPool is the Schema for the indexallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IndexAllocationPool$")]
     metadata: IndexAllocationPoolMetadata
     spec: Annotated[
         IndexAllocationPoolSpec,
@@ -2432,8 +2509,8 @@ class License(BaseModel):
     License is the Schema for the licenses API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^License$")]
     metadata: LicenseMetadata
     spec: Annotated[
         LicenseSpec,
@@ -2463,8 +2540,8 @@ class Namespace(BaseModel):
     Namespace is the Schema for the namespaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Namespace$")]
     metadata: NamespaceMetadata
     spec: Annotated[
         NamespaceSpec,
@@ -2497,8 +2574,8 @@ class NodeProfile(BaseModel):
     NodeProfile is the Schema for the nodeprofiles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^NodeProfile$")]
     metadata: NodeProfileMetadata
     spec: Annotated[
         NodeProfileSpec,
@@ -2525,8 +2602,8 @@ class NodeUser(BaseModel):
     NodeUser is the Schema for the nodeusers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^NodeUser$")]
     metadata: NodeUserMetadata
     spec: Annotated[
         NodeUserSpec,
@@ -2556,8 +2633,8 @@ class Role(BaseModel):
     Role is the Schema for the roles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Role$")]
     metadata: RoleMetadata
     spec: Annotated[
         RoleSpec,
@@ -2589,8 +2666,8 @@ class SubnetAllocationPool(BaseModel):
     SubnetAllocationPool is the Schema for the subnetallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^SubnetAllocationPool$")]
     metadata: SubnetAllocationPoolMetadata
     spec: Annotated[
         SubnetAllocationPoolSpec,
@@ -2623,8 +2700,8 @@ class TopoBreakout(BaseModel):
     TopoBreakout is the Schema for the topobreakouts API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoBreakout$")]
     metadata: TopoBreakoutMetadata
     spec: Annotated[
         TopoBreakoutSpec,
@@ -2657,8 +2734,8 @@ class TopoLink(BaseModel):
     TopoLink is the Schema for the topolinks API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoLink$")]
     metadata: TopoLinkMetadata
     spec: Annotated[
         TopoLinkSpec,
@@ -2691,8 +2768,8 @@ class TopoNode(BaseModel):
     TopoNode is the Schema for the toponodes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoNode$")]
     metadata: TopoNodeMetadata
     spec: Annotated[
         TopoNodeSpec,
@@ -2725,8 +2802,8 @@ class UdpProxy(BaseModel):
     UdpProxy is the Schema for the udpproxies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^UdpProxy$")]
     metadata: UdpProxyMetadata
     spec: Annotated[
         UdpProxySpec,
@@ -2754,13 +2831,37 @@ class UdpProxyList(BaseModel):
     kind: str
 
 
+class Workflow(BaseModel):
+    """
+    Workflow is the Schema for the workflows API
+    """
+
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Workflow$")]
+    metadata: WorkflowMetadata
+    spec: Annotated[
+        WorkflowSpec,
+        Field(
+            description="WorkflowSpec defines the desired state of Flow",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[WorkflowStatus],
+        Field(
+            description="WorkflowStatus defines the observed state of Flow",
+            title="Status",
+        ),
+    ] = None
+
+
 class WorkflowDefinition(BaseModel):
     """
     WorkflowDefinition is the Schema for the workflowdefinitions API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^WorkflowDefinition$")]
     metadata: WorkflowDefinitionMetadata
     spec: Annotated[
         WorkflowDefinitionSpec,
@@ -2785,6 +2886,16 @@ class WorkflowDefinitionList(BaseModel):
 
     apiVersion: str
     items: Optional[List[WorkflowDefinition]] = None
+    kind: str
+
+
+class WorkflowList(BaseModel):
+    """
+    WorkflowList is a list of workflows
+    """
+
+    apiVersion: str
+    items: Optional[List[Workflow]] = None
     kind: str
 
 

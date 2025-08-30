@@ -371,8 +371,10 @@ class Init(BaseModel):
     Init is the Schema for the inits API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^bootstrap\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Init$")]
     metadata: InitMetadata
     spec: Annotated[
         InitSpec,
@@ -404,8 +406,10 @@ class ManagementRouter(BaseModel):
     ManagementRouter is the Schema for the managementrouters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^bootstrap\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^ManagementRouter$")]
     metadata: ManagementRouterMetadata
     spec: Annotated[
         ManagementRouterSpec,

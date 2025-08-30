@@ -652,8 +652,8 @@ class Monitor(BaseModel):
     Monitor is the Schema for the monitors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^system\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Monitor$")]
     metadata: MonitorMetadata
     spec: Annotated[
         MonitorSpec,
@@ -676,8 +676,8 @@ class MonitorAggregateState(BaseModel):
     MonitorAggregateState is the Schema for the monitoraggregatestates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^system\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^MonitorAggregateState$")]
     metadata: MonitorAggregateStateMetadata
     spec: Annotated[
         MonitorAggregateStateSpec,
@@ -720,8 +720,8 @@ class MonitorState(BaseModel):
     MonitorState is the Schema for the monitorstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^system\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^MonitorState$")]
     metadata: MonitorStateMetadata
     spec: Annotated[
         MonitorStateSpec,
