@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
@@ -160,6 +159,16 @@ class UIResult(RootModel[str]):
     root: str
 
 
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
 class WorkflowId(BaseModel):
     id: Annotated[
         Optional[int],
@@ -167,6 +176,25 @@ class WorkflowId(BaseModel):
             description="A workflow identifier; these are assigned by the system to a posted workflow."
         ),
     ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class AggregateRouteSpec(BaseModel):
@@ -299,6 +327,73 @@ class BGPGroupSpecAsPathOptions(BaseModel):
     ] = None
 
 
+class BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted(BaseModel):
+    logOnly: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines the action to take when the maximum number of prefixes is exceeded. Session is reset if set to false, otherwise only a warning is logged.",
+            title="Log Only",
+        ),
+    ] = None
+    maxReceivedRoutes: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of prefixes allowed to be received from the neighbor, counting only accepted routes.",
+            ge=1,
+            le=4294967295,
+            title="Max Received Routes",
+        ),
+    ] = None
+    warningThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="A percentage of the maximum number of prefixes that can be accepted before a warning is logged.",
+            ge=1,
+            le=100,
+            title="Warning Threshold Percentage",
+        ),
+    ] = None
+
+
+class BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived(BaseModel):
+    logOnly: Annotated[
+        Optional[bool],
+        Field(
+            description="Defines the action to take when the maximum number of prefixes is exceeded. Session is reset if set to false, otherwise only a warning is logged.",
+            title="Log Only",
+        ),
+    ] = None
+    maxReceivedRoutes: Annotated[
+        Optional[int],
+        Field(
+            description="Maximum number of prefixes allowed to be received from the neighbor, counting all routes (accepted and rejected by import policies).",
+            ge=1,
+            le=4294967295,
+            title="Max Received Routes",
+        ),
+    ] = None
+    warningThreshold: Annotated[
+        Optional[int],
+        Field(
+            description="A percentage of the maximum number of prefixes that can be received before a warning is logged.",
+            ge=1,
+            le=100,
+            title="Warning Threshold Percentage",
+        ),
+    ] = None
+
+
+class BGPGroupSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
 class BGPGroupSpecIpv4Unicast(BaseModel):
     """
     Parameters relating to the IPv4 unicast AFI/SAFI.
@@ -315,14 +410,8 @@ class BGPGroupSpecIpv4Unicast(BaseModel):
         Optional[bool],
         Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
     ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of IPv4 Unicast routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
+    prefixLimit: Annotated[
+        Optional[BGPGroupSpecIpv4UnicastPrefixLimit], Field(title="Prefix Limit")
     ] = None
     receiveIPV6NextHops: Annotated[
         Optional[bool],
@@ -330,6 +419,27 @@ class BGPGroupSpecIpv4Unicast(BaseModel):
             description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
             title="Receive IPv6 Next Hops",
         ),
+    ] = None
+
+
+BGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+BGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class BGPGroupSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[BGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[BGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
     ] = None
 
 
@@ -342,14 +452,8 @@ class BGPGroupSpecIpv6Unicast(BaseModel):
         Optional[bool],
         Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
     ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of IPv6 Unicast routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
+    prefixLimit: Annotated[
+        Optional[BGPGroupSpecIpv6UnicastPrefixLimit], Field(title="Prefix Limit")
     ] = None
 
 
@@ -628,7 +732,7 @@ class BGPGroupStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -699,10 +803,88 @@ class BGPPeerSpecAsPathOptions(BaseModel):
     ] = None
 
 
-BGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+BGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-BGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+BGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class BGPPeerSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[BGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[BGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class BGPPeerSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[BGPPeerSpecIpv4UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+BGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+BGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class BGPPeerSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[BGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[BGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class BGPPeerSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[BGPPeerSpecIpv6UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
 
 
 BGPPeerSpecLocalAS = BGPGroupSpecLocalAS
@@ -936,7 +1118,7 @@ class BGPPeerStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -1165,10 +1347,109 @@ class DefaultBGPGroupSpecAsPathOptions(BaseModel):
     ] = None
 
 
-DefaultBGPGroupSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+DefaultBGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-DefaultBGPGroupSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+DefaultBGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultBGPGroupSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultBGPGroupSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultBGPGroupSpecIpv4UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+DefaultBGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultBGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultBGPGroupSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPGroupSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultBGPGroupSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultBGPGroupSpecIpv6UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+
+
+DefaultBGPGroupSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultBGPGroupSpecL2VPNEVPNPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultBGPGroupSpecL2VPNEVPNPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPGroupSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPGroupSpecL2VPNEVPNPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
 
 
 class DefaultBGPGroupSpecL2VPNEVPN(BaseModel):
@@ -1187,14 +1468,8 @@ class DefaultBGPGroupSpecL2VPNEVPN(BaseModel):
         Optional[bool],
         Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
     ] = None
-    maxReceivedRoutes: Annotated[
-        Optional[int],
-        Field(
-            description="Maximum number of EVPN routes that will be accepted from the neighbor, counting routes accepted and rejected by import policies.",
-            ge=1,
-            le=4294967295,
-            title="Max Received Routes",
-        ),
+    prefixLimit: Annotated[
+        Optional[DefaultBGPGroupSpecL2VPNEVPNPrefixLimit], Field(title="Prefix Limit")
     ] = None
 
 
@@ -1382,7 +1657,7 @@ class DefaultBGPGroupStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -1457,13 +1732,130 @@ class DefaultBGPPeerSpecAsPathOptions(BaseModel):
     ] = None
 
 
-DefaultBGPPeerSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+DefaultBGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-DefaultBGPPeerSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+DefaultBGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
 
 
-DefaultBGPPeerSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
+class DefaultBGPPeerSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPPeerSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultBGPPeerSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultBGPPeerSpecIpv4UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+DefaultBGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultBGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultBGPPeerSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPPeerSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultBGPPeerSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultBGPPeerSpecIpv6UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+
+
+DefaultBGPPeerSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultBGPPeerSpecL2VPNEVPNPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultBGPPeerSpecL2VPNEVPNPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultBGPPeerSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultBGPPeerSpecL2VPNEVPNPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultBGPPeerSpecL2VPNEVPN(BaseModel):
+    """
+    Parameters relating to the EVPN AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultBGPPeerSpecL2VPNEVPNPrefixLimit], Field(title="Prefix Limit")
+    ] = None
 
 
 DefaultBGPPeerSpecLocalAS = BGPGroupSpecLocalAS
@@ -1706,7 +2098,7 @@ class DefaultBGPPeerStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -1796,13 +2188,133 @@ class DefaultRouteReflectorSpecAsPathOptions(BaseModel):
     ] = None
 
 
-DefaultRouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+DefaultRouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-DefaultRouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+DefaultRouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
 
 
-DefaultRouteReflectorSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
+class DefaultRouteReflectorSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv4UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+DefaultRouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultRouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultRouteReflectorSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorSpecIpv6UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+
+
+DefaultRouteReflectorSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultRouteReflectorSpecL2VPNEVPNPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultRouteReflectorSpecL2VPNEVPNPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[DefaultRouteReflectorSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[DefaultRouteReflectorSpecL2VPNEVPNPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorSpecL2VPNEVPN(BaseModel):
+    """
+    Parameters relating to the EVPN AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorSpecL2VPNEVPNPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
 
 
 DefaultRouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
@@ -1984,7 +2496,7 @@ class DefaultRouteReflectorStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2048,13 +2560,145 @@ class DefaultRouteReflectorClientSpecAsPathOptions(BaseModel):
     ] = None
 
 
-DefaultRouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-DefaultRouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
 
 
-DefaultRouteReflectorClientSpecL2VPNEVPN = DefaultBGPGroupSpecL2VPNEVPN
+class DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorClientSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorClientSpecIpv4UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorClientSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorClientSpecIpv6UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+
+
+DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimitPrefixLimitAccepted
+        ],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[
+            DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimitPrefixLimitReceived
+        ],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class DefaultRouteReflectorClientSpecL2VPNEVPN(BaseModel):
+    """
+    Parameters relating to the EVPN AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of EVPN routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the L2VPN EVPN AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[DefaultRouteReflectorClientSpecL2VPNEVPNPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
 
 
 DefaultRouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
@@ -2231,7 +2875,7 @@ class DefaultRouteReflectorClientStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2308,19 +2952,6 @@ class DefaultStaticRouteSpecNexthopGroupBfd(BaseModel):
         Field(
             description="Defines the local address to use when establishing the BFD session with the nexthop.",
             title="Local Address",
-        ),
-    ] = None
-    localDiscriminator: Annotated[
-        Optional[int],
-        Field(
-            description="Defines the local discriminator.", title="Local Discriminator"
-        ),
-    ] = None
-    remoteDiscriminator: Annotated[
-        Optional[int],
-        Field(
-            description="Defines the remote discriminator.",
-            title="Remote Discriminator",
         ),
     ] = None
 
@@ -2468,7 +3099,7 @@ class DefaultStaticRouteStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2523,10 +3154,88 @@ class RouteReflectorSpecAsPathOptions(BaseModel):
     ] = None
 
 
-RouteReflectorSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+RouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-RouteReflectorSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+RouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class RouteReflectorSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[RouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[RouteReflectorSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class RouteReflectorSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[RouteReflectorSpecIpv4UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+RouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+RouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class RouteReflectorSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[RouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[RouteReflectorSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class RouteReflectorSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[RouteReflectorSpecIpv6UnicastPrefixLimit], Field(title="Prefix Limit")
+    ] = None
 
 
 RouteReflectorSpecLocalAS = BGPGroupSpecLocalAS
@@ -2706,7 +3415,7 @@ class RouteReflectorStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -2770,10 +3479,90 @@ class RouteReflectorClientSpecAsPathOptions(BaseModel):
     ] = None
 
 
-RouteReflectorClientSpecIpv4Unicast = BGPGroupSpecIpv4Unicast
+RouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
 
 
-RouteReflectorClientSpecIpv6Unicast = BGPGroupSpecIpv6Unicast
+RouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class RouteReflectorClientSpecIpv4UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[RouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[RouteReflectorClientSpecIpv4UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class RouteReflectorClientSpecIpv4Unicast(BaseModel):
+    """
+    Parameters relating to the IPv4 unicast AFI/SAFI.
+    """
+
+    advertiseIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables advertisement of IPv4 Unicast routes with IPv6 next-hops to peers.",
+            title="Advertise IPv6 Next Hops",
+        ),
+    ] = None
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv4 unicast AFISAFI.", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[RouteReflectorClientSpecIpv4UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
+    receiveIPV6NextHops: Annotated[
+        Optional[bool],
+        Field(
+            description="Enables the advertisement of the RFC 5549 capability to receive IPv4 routes with IPv6 next-hops.",
+            title="Receive IPv6 Next Hops",
+        ),
+    ] = None
+
+
+RouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitAccepted = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitAccepted
+)
+
+
+RouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitReceived = (
+    BGPGroupSpecIpv4UnicastPrefixLimitPrefixLimitReceived
+)
+
+
+class RouteReflectorClientSpecIpv6UnicastPrefixLimit(BaseModel):
+    prefixLimitAccepted: Annotated[
+        Optional[RouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitAccepted],
+        Field(title="Prefix Limit Accepted"),
+    ] = None
+    prefixLimitReceived: Annotated[
+        Optional[RouteReflectorClientSpecIpv6UnicastPrefixLimitPrefixLimitReceived],
+        Field(title="Prefix Limit Received"),
+    ] = None
+
+
+class RouteReflectorClientSpecIpv6Unicast(BaseModel):
+    """
+    Parameters relating to the IPv6 unicast AFI/SAFI.
+    """
+
+    enabled: Annotated[
+        Optional[bool],
+        Field(description="Enables the IPv6 unicast AFISAFI", title="Enabled"),
+    ] = None
+    prefixLimit: Annotated[
+        Optional[RouteReflectorClientSpecIpv6UnicastPrefixLimit],
+        Field(title="Prefix Limit"),
+    ] = None
 
 
 RouteReflectorClientSpecLocalAS = BGPGroupSpecLocalAS
@@ -2947,7 +3736,7 @@ class RouteReflectorClientStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -3191,7 +3980,7 @@ class StaticRouteStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -3307,13 +4096,17 @@ class Topology(BaseModel):
     version: Optional[str] = None
 
 
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
 class AggregateRoute(BaseModel):
     """
     AggregateRoute is the Schema for the aggregateroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^AggregateRoute$")]
     metadata: AggregateRouteMetadata
     spec: Annotated[
         AggregateRouteSpec,
@@ -3346,8 +4139,8 @@ class BGPGroup(BaseModel):
     BGPGroup is the Schema for the bgpgroups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPGroup$")]
     metadata: BGPGroupMetadata
     spec: Annotated[
         BGPGroupSpec,
@@ -3380,8 +4173,8 @@ class BGPPeer(BaseModel):
     BGPPeer is the Schema for the bgppeers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPPeer$")]
     metadata: BGPPeerMetadata
     spec: Annotated[
         BGPPeerSpec,
@@ -3414,8 +4207,8 @@ class BGPPeerState(BaseModel):
     BGPPeerState is the Schema for the bgppeerstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^BGPPeerState$")]
     metadata: BGPPeerStateMetadata
     spec: Annotated[
         BGPPeerStateSpec,
@@ -3448,8 +4241,8 @@ class CheckDefaultBgpPeers(BaseModel):
     CheckDefaultBgpPeers is the Schema for the checkdefaultbgppeerss API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^CheckDefaultBgpPeers$")]
     metadata: CheckDefaultBgpPeersMetadata
     spec: Annotated[
         CheckDefaultBgpPeersSpec,
@@ -3467,13 +4260,23 @@ class CheckDefaultBgpPeers(BaseModel):
     ] = None
 
 
+class CheckDefaultBgpPeersList(BaseModel):
+    """
+    CheckDefaultBgpPeersList is a list of checkdefaultbgppeerss
+    """
+
+    apiVersion: str
+    items: Optional[List[CheckDefaultBgpPeers]] = None
+    kind: str
+
+
 class DefaultAggregateRoute(BaseModel):
     """
     DefaultAggregateRoute is the Schema for the defaultaggregateroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultAggregateRoute$")]
     metadata: DefaultAggregateRouteMetadata
     spec: Annotated[
         DefaultAggregateRouteSpec,
@@ -3506,8 +4309,8 @@ class DefaultBGPGroup(BaseModel):
     DefaultBGPGroup is the Schema for the defaultbgpgroups API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultBGPGroup$")]
     metadata: DefaultBGPGroupMetadata
     spec: Annotated[
         DefaultBGPGroupSpec,
@@ -3540,8 +4343,8 @@ class DefaultBGPPeer(BaseModel):
     DefaultBGPPeer is the Schema for the defaultbgppeers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultBGPPeer$")]
     metadata: DefaultBGPPeerMetadata
     spec: Annotated[
         DefaultBGPPeerSpec,
@@ -3574,8 +4377,8 @@ class DefaultRouteReflector(BaseModel):
     DefaultRouteReflector is the Schema for the defaultroutereflectors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouteReflector$")]
     metadata: DefaultRouteReflectorMetadata
     spec: Annotated[
         DefaultRouteReflectorSpec,
@@ -3598,8 +4401,8 @@ class DefaultRouteReflectorClient(BaseModel):
     DefaultRouteReflectorClient is the Schema for the defaultroutereflectorclients API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouteReflectorClient$")]
     metadata: DefaultRouteReflectorClientMetadata
     spec: Annotated[
         DefaultRouteReflectorClientSpec,
@@ -3642,8 +4445,8 @@ class DefaultStaticRoute(BaseModel):
     DefaultStaticRoute is the Schema for the defaultstaticroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DefaultStaticRoute$")]
     metadata: DefaultStaticRouteMetadata
     spec: Annotated[
         DefaultStaticRouteSpec,
@@ -3676,8 +4479,8 @@ class RouteReflector(BaseModel):
     RouteReflector is the Schema for the routereflectors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflector$")]
     metadata: RouteReflectorMetadata
     spec: Annotated[
         RouteReflectorSpec,
@@ -3700,8 +4503,8 @@ class RouteReflectorClient(BaseModel):
     RouteReflectorClient is the Schema for the routereflectorclients API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorClient$")]
     metadata: RouteReflectorClientMetadata
     spec: Annotated[
         RouteReflectorClientSpec,
@@ -3734,8 +4537,8 @@ class RouteReflectorClientState(BaseModel):
     RouteReflectorClientState is the Schema for the routereflectorclientstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorClientState$")]
     metadata: RouteReflectorClientStateMetadata
     spec: Annotated[
         RouteReflectorClientStateSpec,
@@ -3778,8 +4581,8 @@ class RouteReflectorState(BaseModel):
     RouteReflectorState is the Schema for the routereflectorstates API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^RouteReflectorState$")]
     metadata: RouteReflectorStateMetadata
     spec: Annotated[
         RouteReflectorStateSpec,
@@ -3812,8 +4615,8 @@ class StaticRoute(BaseModel):
     StaticRoute is the Schema for the staticroutes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^protocols\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^StaticRoute$")]
     metadata: StaticRouteMetadata
     spec: Annotated[
         StaticRouteSpec,

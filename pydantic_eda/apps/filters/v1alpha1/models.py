@@ -2,8 +2,10 @@
 #   filename:  filters.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -35,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -91,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -108,6 +116,43 @@ class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
+
+
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
 
 
 class UIResult(RootModel[str]):
@@ -414,6 +459,10 @@ class ControlPlaneFilterSpecEntryIpEntry(BaseModel):
             le=255,
             title="ICMP Type Number",
         ),
+    ] = None
+    log: Annotated[
+        Optional[bool],
+        Field(description="Log the matches for this entry.", title="Log"),
     ] = None
     protocolName: Annotated[
         Optional[
@@ -733,6 +782,10 @@ class ControlPlaneFilterSpecEntryMacEntry(BaseModel):
             title="Ethertype",
         ),
     ] = None
+    log: Annotated[
+        Optional[bool],
+        Field(description="Log the matches for this entry.", title="Log"),
+    ] = None
     outerVLANIDOperator: Annotated[
         Optional[Literal["Equals", "GreaterOrEquals", "LessOrEquals"]],
         Field(
@@ -778,13 +831,23 @@ class ControlPlaneFilterSpecEntryMacEntry(BaseModel):
 
 
 class ControlPlaneFilterSpecEntry(BaseModel):
+    description: Annotated[
+        Optional[str],
+        Field(description="Description of the FilterEntry.", title="Description"),
+    ] = None
     ipEntry: Annotated[
         Optional[ControlPlaneFilterSpecEntryIpEntry], Field(title="IP Entry")
     ] = None
     macEntry: Annotated[
         Optional[ControlPlaneFilterSpecEntryMacEntry], Field(title="MAC Entry")
     ] = None
-    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
+    type: Annotated[
+        Literal["IPV4", "IPV6", "MAC", "Auto"],
+        Field(
+            description="Type of the entry which can be IPV4, IPV6, MAC or Auto.",
+            title="Type",
+        ),
+    ]
 
 
 class ControlPlaneFilterSpec(BaseModel):
@@ -813,10 +876,17 @@ class ControlPlaneFilterSpec(BaseModel):
             title="Nodes",
         ),
     ] = None
+    statisticsPerEntry: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable per-entry counters.",
+            title="Per-entry counters",
+        ),
+    ] = None
 
 
 class ControlPlaneFilterDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -1116,6 +1186,10 @@ class FilterSpecEntryIpEntry(BaseModel):
             le=255,
             title="ICMP Type Number",
         ),
+    ] = None
+    log: Annotated[
+        Optional[bool],
+        Field(description="Log the matches for this entry.", title="Log"),
     ] = None
     protocolName: Annotated[
         Optional[
@@ -1433,6 +1507,10 @@ class FilterSpecEntryMacEntry(BaseModel):
             title="Ethertype",
         ),
     ] = None
+    log: Annotated[
+        Optional[bool],
+        Field(description="Log the matches for this entry.", title="Log"),
+    ] = None
     outerVLANIDOperator: Annotated[
         Optional[Literal["Equals", "GreaterOrEquals", "LessOrEquals"]],
         Field(
@@ -1478,11 +1556,21 @@ class FilterSpecEntryMacEntry(BaseModel):
 
 
 class FilterSpecEntry(BaseModel):
+    description: Annotated[
+        Optional[str],
+        Field(description="Description of the FilterEntry.", title="Description"),
+    ] = None
     ipEntry: Annotated[Optional[FilterSpecEntryIpEntry], Field(title="IP Entry")] = None
     macEntry: Annotated[Optional[FilterSpecEntryMacEntry], Field(title="MAC Entry")] = (
         None
     )
-    type: Annotated[Literal["IPV4", "IPV6", "MAC", "Auto"], Field(title="Type")]
+    type: Annotated[
+        Literal["IPV4", "IPV6", "MAC", "Auto"],
+        Field(
+            description="Type of the entry which can be IPV4, IPV6, MAC or Auto.",
+            title="Type",
+        ),
+    ]
 
 
 class FilterSpec(BaseModel):
@@ -1497,6 +1585,13 @@ class FilterSpec(BaseModel):
             title="Entries",
         ),
     ]
+    statisticsPerEntry: Annotated[
+        Optional[bool],
+        Field(
+            description="Enable or disable per-entry counters.",
+            title="Per-entry counters",
+        ),
+    ] = None
 
 
 FilterDeletedResourceEntry = ControlPlaneFilterDeletedResourceEntry
@@ -1528,13 +1623,78 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
 class ControlPlaneFilter(BaseModel):
     """
     ControlPlaneFilter is the Schema for the controlplanefilters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^filters\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^ControlPlaneFilter$")]
     metadata: ControlPlaneFilterMetadata
     spec: Annotated[
         ControlPlaneFilterSpec,
@@ -1567,8 +1727,8 @@ class Filter(BaseModel):
     Filter is the Schema for the filters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^filters\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Filter$")]
     metadata: FilterMetadata
     spec: Annotated[
         FilterSpec,
@@ -1594,3 +1754,13 @@ class FilterList(BaseModel):
     apiVersion: str
     items: Optional[List[Filter]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

@@ -2,9 +2,11 @@
 #   filename:  components.json
 
 from __future__ import annotations
-from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
+
 from datetime import date
+from typing import Annotated, Any, Dict, List, Literal, Optional
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +38,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +100,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -109,6 +117,43 @@ class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
+
+
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
 
 
 class UIResult(RootModel[str]):
@@ -156,14 +201,14 @@ class ChassisStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -274,7 +319,7 @@ class ComponentStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this Component last changed operational state",
             title="Last Change",
@@ -359,14 +404,14 @@ class ControlModuleStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -485,14 +530,14 @@ class FabricModuleStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -604,14 +649,14 @@ class FanStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -712,14 +757,14 @@ class InterfaceModuleStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -1051,7 +1096,7 @@ class MonitorStatus(BaseModel):
 
 
 class MonitorDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -1091,14 +1136,14 @@ class PowerSupplyStatus(BaseModel):
         Field(description="The CLEI code of this component", title="CLEI Code"),
     ] = None
     lastBooted: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last booted",
             title="Last Booted",
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The date and time this component last changed operational state",
             title="Last Change",
@@ -1219,21 +1264,86 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
 class Chassis(BaseModel):
     """
     Chassis is the Schema for the chassis API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Chassis$")]
     metadata: ChassisMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="ChassisSpec defines the desired state of Chassis",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[ChassisStatus],
         Field(
@@ -1258,8 +1368,8 @@ class Component(BaseModel):
     Component is the Schema for the components API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Component$")]
     metadata: ComponentMetadata
     spec: Annotated[
         ComponentSpec,
@@ -1292,16 +1402,16 @@ class ControlModule(BaseModel):
     ControlModule is the Schema for the controlmodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^ControlModule$")]
     metadata: ControlModuleMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="ControlModuleSpec defines the desired state of ControlModule",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[ControlModuleStatus],
         Field(
@@ -1326,16 +1436,16 @@ class FabricModule(BaseModel):
     FabricModule is the Schema for the fabricmodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^FabricModule$")]
     metadata: FabricModuleMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="FabricModuleSpec defines the desired state of FabricModule",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[FabricModuleStatus],
         Field(
@@ -1360,16 +1470,16 @@ class Fan(BaseModel):
     Fan is the Schema for the fans API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Fan$")]
     metadata: FanMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="FanSpec defines the desired state of Fan",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[FanStatus],
         Field(
@@ -1393,16 +1503,16 @@ class InterfaceModule(BaseModel):
     InterfaceModule is the Schema for the interfacemodules API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^InterfaceModule$")]
     metadata: InterfaceModuleMetadata
     spec: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             description="InterfaceModuleSpec defines the desired state of InterfaceModule",
             title="Specification",
         ),
-    ]
+    ] = None
     status: Annotated[
         Optional[InterfaceModuleStatus],
         Field(
@@ -1427,8 +1537,8 @@ class Monitor(BaseModel):
     Monitor is the Schema for the monitors API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Monitor$")]
     metadata: MonitorMetadata
     spec: Annotated[
         MonitorSpec,
@@ -1461,8 +1571,8 @@ class PowerSupply(BaseModel):
     PowerSupply is the Schema for the powersupplies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^components\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^PowerSupply$")]
     metadata: PowerSupplyMetadata
     spec: Annotated[
         PowerSupplySpec,
@@ -1488,3 +1598,13 @@ class PowerSupplyList(BaseModel):
     apiVersion: str
     items: Optional[List[PowerSupply]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

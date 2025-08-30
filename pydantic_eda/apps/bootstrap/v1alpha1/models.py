@@ -2,8 +2,10 @@
 #   filename:  bootstrap.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Optional
-from pydantic import BaseModel, Field, RootModel
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -35,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -91,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -108,6 +116,43 @@ class StatusDetails(BaseModel):
     group: Optional[str] = None
     kind: Optional[str] = None
     name: Optional[str] = None
+
+
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
 
 
 class UIResult(RootModel[str]):
@@ -180,7 +225,7 @@ class InitSpec(BaseModel):
 
 
 class InitDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -256,13 +301,80 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
 class Init(BaseModel):
     """
     Init is the Schema for the inits API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^bootstrap\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^Init$")]
     metadata: InitMetadata
     spec: Annotated[
         InitSpec,
@@ -294,8 +406,10 @@ class ManagementRouter(BaseModel):
     ManagementRouter is the Schema for the managementrouters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[
+        str, Field(pattern="^bootstrap\\.eda\\.nokia\\.com/v1alpha1$")
+    ]
+    kind: Annotated[str, Field(pattern="^ManagementRouter$")]
     metadata: ManagementRouterMetadata
     spec: Annotated[
         ManagementRouterSpec,
@@ -321,3 +435,13 @@ class ManagementRouterList(BaseModel):
     apiVersion: str
     items: Optional[List[ManagementRouter]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

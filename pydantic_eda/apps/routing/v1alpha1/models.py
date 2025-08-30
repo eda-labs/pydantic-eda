@@ -2,9 +2,10 @@
 #   filename:  routing.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
-from datetime import date
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +37,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +99,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -111,8 +118,151 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
+
+
+class AttachmentLookupSpec(BaseModel):
+    """
+    This workflow is used to look up attachments (where an address is attached in the network) on a set of nodes.
+    It takes an address, and an optional list of nodes (or node selectors - a list of label expressions) to perform the lookup on,
+    and returns the matching attachments, including the node,
+    network instance, prefix, interface, and next hop group ID.
+    """
+
+    address: Annotated[
+        str,
+        Field(
+            description="Address to perform a lookup for.\nThis is a standard IPv4 or IPv6 address, excluding mask or prefix length, e.g. 12.0.0.1.",
+            title="Address",
+        ),
+    ]
+    networkInstance: Annotated[
+        Optional[str],
+        Field(
+            description="Network Instance is the locally named network instance to use for the lookup.\nCan be omitted if the default network instance is to be used.",
+            title="Network Instance",
+        ),
+    ] = None
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='NodeSelectors is a list of node selectors to execute lookups on.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf", "eda.nokia.com/region=us-west"].',
+            title="Node Selectors",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Nodes is a list of node names to execute lookups on.",
+            title="Nodes",
+        ),
+    ] = None
+
+
+class AttachmentLookupStatusResult(BaseModel):
+    interface: Optional[str] = None
+    networkInstance: Optional[str] = None
+    nextHopGroupId: Optional[int] = None
+    node: Optional[str] = None
+    prefix: Optional[str] = None
+
+
+class AttachmentLookupStatus(BaseModel):
+    """
+    AttachmentLookupStatus defines the observed state of AttachmentLookup
+    """
+
+    found: bool
+    results: Optional[List[AttachmentLookupStatusResult]] = None
+
+
+class AttachmentLookupMetadata(BaseModel):
+    annotations: Optional[Dict[str, str]] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Annotated[
+        str,
+        Field(
+            max_length=253,
+            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+        ),
+    ]
+    namespace: str
 
 
 class DefaultInterfaceSpecBfd(BaseModel):
@@ -162,6 +312,15 @@ class DefaultInterfaceSpecBfd(BaseModel):
             title="Receive Interval",
         ),
     ]
+    ttl: Annotated[
+        Optional[int],
+        Field(
+            description="Sets custom IP TTL or Hop Limit for multi-hop BFD sessions packets. Not appllicable to single-hop BFD sessions.",
+            ge=2,
+            le=255,
+            title="IP TTL/Hop Limit",
+        ),
+    ] = None
 
 
 class DefaultInterfaceSpecIpv4Address(BaseModel):
@@ -195,6 +354,12 @@ class DefaultInterfaceSpec(BaseModel):
     defaultRouter: Annotated[
         str, Field(description="Reference to a DefaultRouter.", title="Default Router")
     ]
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="The description of the DefaultInterface.", title="Description"
+        ),
+    ] = None
     interface: Annotated[
         str,
         Field(
@@ -263,7 +428,7 @@ class DefaultInterfaceStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="Indicates when this Interface last changed state.",
             title="Last Change",
@@ -279,7 +444,7 @@ class DefaultInterfaceStatus(BaseModel):
 
 
 class DefaultInterfaceDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -292,17 +457,7 @@ class DefaultInterfaceDeletedResources(
     root: List[DefaultInterfaceDeletedResourceEntry]
 
 
-class DefaultInterfaceMetadata(BaseModel):
-    annotations: Optional[Dict[str, str]] = None
-    labels: Optional[Dict[str, str]] = None
-    name: Annotated[
-        str,
-        Field(
-            max_length=253,
-            pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
-        ),
-    ]
-    namespace: str
+DefaultInterfaceMetadata = AttachmentLookupMetadata
 
 
 class DefaultRouterSpecBgpIpv4UnicastMultipath(BaseModel):
@@ -619,7 +774,7 @@ class DefaultRouterStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="The time when the state of the resource last changed.",
             title="Last Change",
@@ -640,7 +795,7 @@ class DefaultRouterDeletedResources(RootModel[List[DefaultRouterDeletedResourceE
     root: List[DefaultRouterDeletedResourceEntry]
 
 
-DefaultRouterMetadata = DefaultInterfaceMetadata
+DefaultRouterMetadata = AttachmentLookupMetadata
 
 
 class DrainSpec(BaseModel):
@@ -687,7 +842,98 @@ class DrainDeletedResources(RootModel[List[DrainDeletedResourceEntry]]):
     root: List[DrainDeletedResourceEntry]
 
 
-DrainMetadata = DefaultInterfaceMetadata
+DrainMetadata = AttachmentLookupMetadata
+
+
+class RouteLookupSpec(BaseModel):
+    """
+    This workflow is used to look up routes on a set of nodes.
+    It takes an address, and an optional list of nodes (or node selectors - a list of label expressions) to perform the lookup on,
+    and returns the matching route, and the set of egress interfaces that would be used to reach it.
+    """
+
+    address: Annotated[
+        str,
+        Field(
+            description="Address to perform a lookup for.\nThis is a standard IPv4 or IPv6 address, excluding mask or prefix length, e.g. 12.0.0.1.",
+            title="Address",
+        ),
+    ]
+    networkInstance: Annotated[
+        Optional[str],
+        Field(
+            description="Network Instance is the locally named network instance to use for the lookup.\nCan be omitted if the default network instance is to be used.",
+            title="Network Instance",
+        ),
+    ] = None
+    nodeSelectors: Annotated[
+        Optional[List[str]],
+        Field(
+            description='Node Selectors is a list of node label selectors to execute lookups on.\nThis is a list of label expressions, e.g. ["eda.nokia.com/role=leaf", "eda.nokia.com/region=us-west"].',
+            title="Node Selectors",
+        ),
+    ] = None
+    nodes: Annotated[
+        Optional[List[str]],
+        Field(
+            description="Nodes is a list of node names to execute lookups on.",
+            title="Nodes",
+        ),
+    ] = None
+    resolve: Annotated[
+        bool,
+        Field(
+            description="Resolve indicates whether indirect next hops should be resolved.",
+            title="Resolve",
+        ),
+    ]
+
+
+class RouteLookupStatusResultNextHopIndirect(BaseModel):
+    ipPrefix: Optional[str] = None
+    nextHopGroupId: Optional[int] = None
+    resolved: Optional[bool] = None
+    type: Optional[str] = None
+
+
+class RouteLookupStatusResultNextHopInterface(BaseModel):
+    name: Annotated[str, Field(description="Name of the egress interface.")]
+    peerNode: Annotated[
+        Optional[str], Field(description="The node this interface is connected to.")
+    ] = None
+
+
+class RouteLookupStatusResultNextHop(BaseModel):
+    indirect: Optional[RouteLookupStatusResultNextHopIndirect] = None
+    interfaces: Optional[List[RouteLookupStatusResultNextHopInterface]] = None
+    ipAddress: Optional[str] = None
+    nextHopId: Optional[int] = None
+    type: Optional[str] = None
+
+
+class RouteLookupStatusResult(BaseModel):
+    error: Optional[str] = None
+    found: bool
+    networkInstance: Optional[str] = None
+    nextHopGroupId: Optional[int] = None
+    nextHops: Optional[List[RouteLookupStatusResultNextHop]] = None
+    node: Optional[str] = None
+    rawOutput: Optional[str] = None
+    route: Optional[str] = None
+
+
+class RouteLookupStatus(BaseModel):
+    """
+    RouteLookupStatus defines the observed state of RouteLookup
+    """
+
+    found: bool
+    nodesWithRoute: Optional[int] = None
+    results: Optional[List[RouteLookupStatusResult]] = None
+    totalNodes: Optional[int] = None
+
+
+RouteLookupMetadata = AttachmentLookupMetadata
 
 
 class SystemInterfaceSpecBfd(BaseModel):
@@ -737,6 +983,15 @@ class SystemInterfaceSpecBfd(BaseModel):
             title="Receive Interval",
         ),
     ]
+    ttl: Annotated[
+        Optional[int],
+        Field(
+            description="Sets custom IP TTL or Hop Limit for multi-hop BFD sessions packets. Not appllicable to single-hop BFD sessions.",
+            ge=2,
+            le=255,
+            title="IP TTL/Hop Limit",
+        ),
+    ] = None
 
 
 class SystemInterfaceSpec(BaseModel):
@@ -754,6 +1009,12 @@ class SystemInterfaceSpec(BaseModel):
     defaultRouter: Annotated[
         str, Field(description="Reference to a DefaultRouter.", title="Default Router")
     ]
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="The description of the SystemInterface.", title="Description"
+        ),
+    ] = None
     ipv4Address: Annotated[
         Optional[str],
         Field(
@@ -790,7 +1051,7 @@ class SystemInterfaceStatus(BaseModel):
         ),
     ] = None
     lastChange: Annotated[
-        Optional[date],
+        Optional[AwareDatetime],
         Field(
             description="Indicates when this Interface last changed state.",
             title="Last Change",
@@ -814,7 +1075,7 @@ class SystemInterfaceDeletedResources(
     root: List[SystemInterfaceDeletedResourceEntry]
 
 
-SystemInterfaceMetadata = DefaultInterfaceMetadata
+SystemInterfaceMetadata = AttachmentLookupMetadata
 
 
 class AppGroup(BaseModel):
@@ -836,13 +1097,116 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
+class AttachmentLookup(BaseModel):
+    """
+    AttachmentLookup is the Schema for the attachmentlookups API
+    """
+
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^AttachmentLookup$")]
+    metadata: AttachmentLookupMetadata
+    spec: Annotated[
+        AttachmentLookupSpec,
+        Field(
+            description="This workflow is used to look up attachments (where an address is attached in the network) on a set of nodes.\nIt takes an address, and an optional list of nodes (or node selectors - a list of label expressions) to perform the lookup on,\nand returns the matching attachments, including the node,\nnetwork instance, prefix, interface, and next hop group ID.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[AttachmentLookupStatus],
+        Field(
+            description="AttachmentLookupStatus defines the observed state of AttachmentLookup",
+            title="Status",
+        ),
+    ] = None
+
+
+class AttachmentLookupList(BaseModel):
+    """
+    AttachmentLookupList is a list of attachmentlookups
+    """
+
+    apiVersion: str
+    items: Optional[List[AttachmentLookup]] = None
+    kind: str
+
+
 class DefaultInterface(BaseModel):
     """
     DefaultInterface is the Schema for the defaultinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^DefaultInterface$")]
     metadata: DefaultInterfaceMetadata
     spec: Annotated[
         DefaultInterfaceSpec,
@@ -875,8 +1239,8 @@ class DefaultRouter(BaseModel):
     DefaultRouter is the Schema for the defaultrouters API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^DefaultRouter$")]
     metadata: DefaultRouterMetadata
     spec: Annotated[
         DefaultRouterSpec,
@@ -909,8 +1273,8 @@ class Drain(BaseModel):
     Drain is the Schema for the drains API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^Drain$")]
     metadata: DrainMetadata
     spec: Annotated[
         DrainSpec,
@@ -938,13 +1302,47 @@ class DrainList(BaseModel):
     kind: str
 
 
+class RouteLookup(BaseModel):
+    """
+    RouteLookup is the Schema for the routelookups API
+    """
+
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^RouteLookup$")]
+    metadata: RouteLookupMetadata
+    spec: Annotated[
+        RouteLookupSpec,
+        Field(
+            description="This workflow is used to look up routes on a set of nodes.\nIt takes an address, and an optional list of nodes (or node selectors - a list of label expressions) to perform the lookup on,\nand returns the matching route, and the set of egress interfaces that would be used to reach it.",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[RouteLookupStatus],
+        Field(
+            description="RouteLookupStatus defines the observed state of RouteLookup",
+            title="Status",
+        ),
+    ] = None
+
+
+class RouteLookupList(BaseModel):
+    """
+    RouteLookupList is a list of routelookups
+    """
+
+    apiVersion: str
+    items: Optional[List[RouteLookup]] = None
+    kind: str
+
+
 class SystemInterface(BaseModel):
     """
     SystemInterface is the Schema for the systeminterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^routing\\.eda\\.nokia\\.com/v1alpha1$")]
+    kind: Annotated[str, Field(pattern="^SystemInterface$")]
     metadata: SystemInterfaceMetadata
     spec: Annotated[
         SystemInterfaceSpec,
@@ -970,3 +1368,13 @@ class SystemInterfaceList(BaseModel):
     apiVersion: str
     items: Optional[List[SystemInterface]] = None
     kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

@@ -2,9 +2,11 @@
 #   filename:  core.json
 
 from __future__ import annotations
-from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel, SecretStr
+
 from datetime import date
+from typing import Annotated, Any, Dict, List, Literal, Optional
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel, SecretStr
 
 
 class AppGroupVersion(BaseModel):
@@ -36,6 +38,12 @@ class ErrorResponse(BaseModel):
         Optional[Dict[str, Any]],
         Field(
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
+        ),
+    ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
         ),
     ] = None
     errors: Annotated[
@@ -92,7 +100,7 @@ class Resource(BaseModel):
 class ResourceHistoryEntry(BaseModel):
     author: Optional[str] = None
     changeType: Optional[str] = None
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     message: Optional[str] = None
     transactionId: Optional[int] = None
@@ -111,8 +119,83 @@ class StatusDetails(BaseModel):
     name: Optional[str] = None
 
 
+class TopoAttrMetadata(BaseModel):
+    type: Optional[str] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoLinkEndpoint(BaseModel):
+    endpoint: Optional[str] = None
+    node: Optional[str] = None
+    node_key: Optional[str] = None
+
+
+class TopoNodeGrouping(BaseModel):
+    group: Optional[str] = None
+    tier: Optional[int] = None
+
+
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
+
+
 class UIResult(RootModel[str]):
     root: str
+
+
+class WorkflowGetInputsRespElem(BaseModel):
+    ackPrompt: Optional[str] = None
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    schemaPrompt: Optional[Dict[str, Any]] = None
+    version: str
+
+
+class WorkflowId(BaseModel):
+    id: Annotated[
+        Optional[int],
+        Field(
+            description="A workflow identifier; these are assigned by the system to a posted workflow."
+        ),
+    ] = None
+
+
+class WorkflowIdentifier(BaseModel):
+    group: str
+    kind: str
+    name: str
+    namespace: Optional[str] = None
+    version: str
+
+
+class WorkflowInputDataElem(BaseModel):
+    ack: Annotated[
+        Optional[bool], Field(description="acknowledge or reject the input request")
+    ] = None
+    input: Annotated[
+        Optional[Dict[str, Any]],
+        Field(description="provide a json blob to the workflow"),
+    ] = None
+    subflow: Optional[WorkflowIdentifier] = None
 
 
 class ClusterRoleSpecResourceRuleApiGroup(RootModel[str]):
@@ -228,7 +311,7 @@ class ClusterRoleSpec(BaseModel):
 
 
 class ClusterRoleDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     transactionId: Optional[int] = None
@@ -378,7 +461,7 @@ class DeviationActionStatus(BaseModel):
 
 
 class DeviationActionDeletedResourceEntry(BaseModel):
-    commitTime: Optional[str] = None
+    commitTime: Optional[AwareDatetime] = None
     hash: Optional[str] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
@@ -521,6 +604,20 @@ class IPAllocationPoolSpecSegmentReservation(BaseModel):
 
 
 class IPAllocationPoolSpecSegment(BaseModel):
+    allocateBroadcastAddress: Annotated[
+        Optional[bool],
+        Field(
+            description="Permit the allocation of the broadcast address.",
+            title="Allocate Broadcast Address",
+        ),
+    ] = None
+    allocateNetworkAddress: Annotated[
+        Optional[bool],
+        Field(
+            description="Permit the allocation of the network address.",
+            title="Allocate Network Address",
+        ),
+    ] = None
     allocations: Annotated[
         Optional[List[IPAllocationPoolSpecSegmentAllocation]],
         Field(
@@ -583,6 +680,20 @@ IPInSubnetAllocationPoolSpecSegmentReservation = IPAllocationPoolSpecSegmentRese
 
 
 class IPInSubnetAllocationPoolSpecSegment(BaseModel):
+    allocateBroadcastAddress: Annotated[
+        Optional[bool],
+        Field(
+            description="Permit the allocation of the broadcast address.",
+            title="Allocate Broadcast Address",
+        ),
+    ] = None
+    allocateNetworkAddress: Annotated[
+        Optional[bool],
+        Field(
+            description="Permit the allocation of the network address.",
+            title="Allocate Network Address",
+        ),
+    ] = None
     allocations: Annotated[
         Optional[List[IPInSubnetAllocationPoolSpecSegmentAllocation]],
         Field(
@@ -1116,21 +1227,21 @@ class NodeProfileSpec(BaseModel):
         ),
     ]
     onboardingPassword: Annotated[
-        Optional[SecretStr],
+        SecretStr,
         Field(
             description="The password to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
             title="Onboarding Password",
         ),
-    ] = None
+    ]
     onboardingUsername: Annotated[
-        Optional[str],
+        str,
         Field(
             description="The username to use when onboarding TopoNodes referencing this NodeProfile, e.g. admin.",
             title="Onboarding Username",
         ),
-    ] = None
+    ]
     operatingSystem: Annotated[
-        Literal["srl", "sros", "nxos"],
+        Literal["srl", "sros", "eos", "sonic", "ios-xr", "nxos", "linux"],
         Field(
             description="Sets the operating system of this NodeProfile, e.g. srl.",
             title="Operating System",
@@ -1629,6 +1740,7 @@ TopoLinkMetadata = DeviationActionMetadata
 class TopoNodeSpecComponentItem(BaseModel):
     kind: Annotated[
         Literal[
+            "controlCard",
             "lineCard",
             "fabric",
             "mda",
@@ -1732,7 +1844,7 @@ class TopoNodeSpec(BaseModel):
         ),
     ] = False
     operatingSystem: Annotated[
-        Literal["srl", "sros", "nxos"],
+        Literal["srl", "sros", "eos", "sonic", "ios-xr", "nxos", "linux"],
         Field(
             description="Operating system running on this TopoNode, e.g. srl.",
             title="Operating System",
@@ -1762,7 +1874,7 @@ class TopoNodeSpec(BaseModel):
     systemInterface: Annotated[
         Optional[str],
         Field(
-            description="Name of the Interface resource representing the primary loopback on the TopoNode.",
+            description="Deprecated: Name of the Interface resource representing the primary loopback on the TopoNode, this field will be removed in the future version.",
             title="System Interface",
         ),
     ] = None
@@ -1915,6 +2027,38 @@ class UdpProxyDeletedResources(RootModel[List[UdpProxyDeletedResourceEntry]]):
 UdpProxyMetadata = ClusterRoleMetadata
 
 
+class WorkflowSpec(BaseModel):
+    """
+    WorkflowSpec defines the desired state of Flow
+    """
+
+    input: Annotated[
+        Optional[Any],
+        Field(
+            description="Input to this flow, adhering to the JSON schema defined in the referenced WorkflowDefinition.",
+            title="Input",
+        ),
+    ] = None
+    type: Annotated[
+        str,
+        Field(description="Select the WorkflowDefinition to execute.", title="Type"),
+    ]
+
+
+class WorkflowStatus(BaseModel):
+    """
+    WorkflowStatus defines the observed state of Flow
+    """
+
+    output: Annotated[
+        Optional[Any],
+        Field(
+            description="Output from this flow, adhering to the JSON schema defined in the referenced FlowDefinition",
+            title="Output",
+        ),
+    ] = None
+
+
 class WorkflowDefinitionSpecFlowDefinitionResource(BaseModel):
     """
     the resource type to be used for this flow, can only be set if Schema is not set
@@ -1977,6 +2121,13 @@ class WorkflowDefinitionSpec(BaseModel):
             title="Image Pull Secrets",
         ),
     ] = None
+    namespaced: Annotated[
+        Optional[bool],
+        Field(
+            description="If set, resources of this CRD are namespace scoped",
+            title="Namespaced",
+        ),
+    ] = True
 
 
 WorkflowDefinitionDeletedResourceEntry = ClusterRoleDeletedResourceEntry
@@ -1989,6 +2140,9 @@ class WorkflowDefinitionDeletedResources(
 
 
 WorkflowDefinitionMetadata = ClusterRoleMetadata
+
+
+WorkflowMetadata = DeviationActionMetadata
 
 
 class AppGroup(BaseModel):
@@ -2010,13 +2164,82 @@ class Status(BaseModel):
     string: Optional[str] = None
 
 
+class TopoElemMetadata(BaseModel):
+    attributes: Optional[Dict[str, TopoAttrMetadata]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    subtitle: Optional[str] = None
+    subtitle_key: Optional[str] = None
+
+
+class TopoOverlayEndpoint(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayLink(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    cr_name: Optional[str] = None
+    endpoint_a: Optional[TopoLinkEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
+    endpoint_b: Optional[TopoLinkEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class TopoOverlayNode(BaseModel):
+    attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
+    cr_name: Optional[str] = None
+    grouping: Optional[TopoNodeGrouping] = None
+    key: Optional[str] = None
+    labels: Optional[Dict[str, str]] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
+    schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
+    ui_name: Optional[str] = None
+
+
+class Topology(BaseModel):
+    endpoints: Optional[TopoElemMetadata] = None
+    group: Optional[str] = None
+    grouping: Optional[TopoSchema] = None
+    links: Optional[TopoElemMetadata] = None
+    name: Optional[str] = None
+    nodes: Optional[TopoElemMetadata] = None
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+    version: Optional[str] = None
+
+
+class WorkflowInputData(RootModel[List[WorkflowInputDataElem]]):
+    root: List[WorkflowInputDataElem]
+
+
 class ClusterRole(BaseModel):
     """
     ClusterRole is the Schema for the clusterroles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^ClusterRole$")]
     metadata: ClusterRoleMetadata
     spec: Annotated[
         ClusterRoleSpec,
@@ -2048,8 +2271,8 @@ class Deviation(BaseModel):
     Deviation is the Schema for the deviations API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Deviation$")]
     metadata: DeviationMetadata
     spec: Annotated[
         DeviationSpec,
@@ -2072,8 +2295,8 @@ class DeviationAction(BaseModel):
     DeviationAction is the Schema for the deviationactions API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^DeviationAction$")]
     metadata: DeviationActionMetadata
     spec: Annotated[
         DeviationActionSpec,
@@ -2116,8 +2339,8 @@ class EdgeInterface(BaseModel):
     EdgeInterface is the Schema for the edgeinterfaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^EdgeInterface$")]
     metadata: EdgeInterfaceMetadata
     spec: Annotated[
         EdgeInterfaceSpec,
@@ -2150,8 +2373,8 @@ class HttpProxy(BaseModel):
     HttpProxy is the Schema for the httpproxies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^HttpProxy$")]
     metadata: HttpProxyMetadata
     spec: Annotated[
         HttpProxySpec,
@@ -2184,8 +2407,8 @@ class IPAllocationPool(BaseModel):
     IPAllocationPool is the Schema for the ipallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IPAllocationPool$")]
     metadata: IPAllocationPoolMetadata
     spec: Annotated[
         IPAllocationPoolSpec,
@@ -2218,8 +2441,8 @@ class IPInSubnetAllocationPool(BaseModel):
     IPInSubnetAllocationPool is the Schema for the ipinsubnetallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IPInSubnetAllocationPool$")]
     metadata: IPInSubnetAllocationPoolMetadata
     spec: Annotated[
         IPInSubnetAllocationPoolSpec,
@@ -2252,8 +2475,8 @@ class IndexAllocationPool(BaseModel):
     IndexAllocationPool is the Schema for the indexallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^IndexAllocationPool$")]
     metadata: IndexAllocationPoolMetadata
     spec: Annotated[
         IndexAllocationPoolSpec,
@@ -2286,8 +2509,8 @@ class License(BaseModel):
     License is the Schema for the licenses API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^License$")]
     metadata: LicenseMetadata
     spec: Annotated[
         LicenseSpec,
@@ -2317,8 +2540,8 @@ class Namespace(BaseModel):
     Namespace is the Schema for the namespaces API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Namespace$")]
     metadata: NamespaceMetadata
     spec: Annotated[
         NamespaceSpec,
@@ -2351,8 +2574,8 @@ class NodeProfile(BaseModel):
     NodeProfile is the Schema for the nodeprofiles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^NodeProfile$")]
     metadata: NodeProfileMetadata
     spec: Annotated[
         NodeProfileSpec,
@@ -2379,8 +2602,8 @@ class NodeUser(BaseModel):
     NodeUser is the Schema for the nodeusers API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^NodeUser$")]
     metadata: NodeUserMetadata
     spec: Annotated[
         NodeUserSpec,
@@ -2410,8 +2633,8 @@ class Role(BaseModel):
     Role is the Schema for the roles API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Role$")]
     metadata: RoleMetadata
     spec: Annotated[
         RoleSpec,
@@ -2443,8 +2666,8 @@ class SubnetAllocationPool(BaseModel):
     SubnetAllocationPool is the Schema for the subnetallocationpools API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^SubnetAllocationPool$")]
     metadata: SubnetAllocationPoolMetadata
     spec: Annotated[
         SubnetAllocationPoolSpec,
@@ -2477,8 +2700,8 @@ class TopoBreakout(BaseModel):
     TopoBreakout is the Schema for the topobreakouts API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoBreakout$")]
     metadata: TopoBreakoutMetadata
     spec: Annotated[
         TopoBreakoutSpec,
@@ -2511,8 +2734,8 @@ class TopoLink(BaseModel):
     TopoLink is the Schema for the topolinks API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoLink$")]
     metadata: TopoLinkMetadata
     spec: Annotated[
         TopoLinkSpec,
@@ -2545,8 +2768,8 @@ class TopoNode(BaseModel):
     TopoNode is the Schema for the toponodes API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^TopoNode$")]
     metadata: TopoNodeMetadata
     spec: Annotated[
         TopoNodeSpec,
@@ -2579,8 +2802,8 @@ class UdpProxy(BaseModel):
     UdpProxy is the Schema for the udpproxies API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^UdpProxy$")]
     metadata: UdpProxyMetadata
     spec: Annotated[
         UdpProxySpec,
@@ -2608,13 +2831,37 @@ class UdpProxyList(BaseModel):
     kind: str
 
 
+class Workflow(BaseModel):
+    """
+    Workflow is the Schema for the workflows API
+    """
+
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^Workflow$")]
+    metadata: WorkflowMetadata
+    spec: Annotated[
+        WorkflowSpec,
+        Field(
+            description="WorkflowSpec defines the desired state of Flow",
+            title="Specification",
+        ),
+    ]
+    status: Annotated[
+        Optional[WorkflowStatus],
+        Field(
+            description="WorkflowStatus defines the observed state of Flow",
+            title="Status",
+        ),
+    ] = None
+
+
 class WorkflowDefinition(BaseModel):
     """
     WorkflowDefinition is the Schema for the workflowdefinitions API
     """
 
-    apiVersion: str
-    kind: str
+    apiVersion: Annotated[str, Field(pattern="^core\\.eda\\.nokia\\.com/v1$")]
+    kind: Annotated[str, Field(pattern="^WorkflowDefinition$")]
     metadata: WorkflowDefinitionMetadata
     spec: Annotated[
         WorkflowDefinitionSpec,
@@ -2640,3 +2887,23 @@ class WorkflowDefinitionList(BaseModel):
     apiVersion: str
     items: Optional[List[WorkflowDefinition]] = None
     kind: str
+
+
+class WorkflowList(BaseModel):
+    """
+    WorkflowList is a list of workflows
+    """
+
+    apiVersion: str
+    items: Optional[List[Workflow]] = None
+    kind: str
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class ResourceTopology(BaseModel):
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None

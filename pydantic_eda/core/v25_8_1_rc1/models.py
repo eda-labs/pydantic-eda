@@ -2,9 +2,10 @@
 #   filename:  core.json
 
 from __future__ import annotations
+
 from typing import Annotated, Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, RootModel
-from datetime import datetime
+
+from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
 class AlarmData(BaseModel):
@@ -77,7 +78,7 @@ class AlarmData(BaseModel):
     parentAlarms: Annotated[
         Optional[List[str]],
         Field(
-            description="The names of other alarms that is are parents of this alarm. This is used to\nfilter out alarms that are not a root cause."
+            description="The names of other alarms that are parents of this alarm. This may be used to\nfilter out alarms that are not a root cause."
         ),
     ] = None
     probableCause: Annotated[
@@ -273,6 +274,12 @@ class ErrorResponse(BaseModel):
             description='Dictionary/map of associated data/information relevant to the error.\nThe error "message" may contain {{name}} escapes that should be substituted\nwith information from this dictionary.'
         ),
     ] = None
+    domain: Annotated[
+        Optional[str],
+        Field(
+            description='The "domain" for the error.  If empty, it is an EDA\ncore error.  Alternatively it can be an EDA application\n"apiVersion" value (e.g. interfaces.eda.nokia.com/v1alpha1)\nindicating that the error is specific to that application.\nThe domain gives the receiver information that they can use\nto help them interpret the "internal" error code value, or\nto find an internationalization translation for the message.'
+        ),
+    ] = None
     errors: Annotated[
         Optional[List[ErrorItem]],
         Field(
@@ -366,9 +373,21 @@ class GroupIDs(RootModel[List[str]]):
 
 
 class GroupVersionKind(BaseModel):
-    group: Optional[str] = None
-    kind: Optional[str] = None
-    version: Optional[str] = None
+    group: Annotated[Optional[str], Field(description="Name of the API group")] = None
+    kind: Annotated[Optional[str], Field(description="The Kind of the resource")] = None
+    version: Annotated[Optional[str], Field(description="Version of the API group")] = (
+        None
+    )
+
+
+class GroupVersionResource(BaseModel):
+    group: Annotated[Optional[str], Field(description="Name of the API group")] = None
+    resource: Annotated[
+        Optional[str], Field(description="The plural name of the resource")
+    ] = None
+    version: Annotated[Optional[str], Field(description="Version of the API group")] = (
+        None
+    )
 
 
 class HealthServiceStatus(BaseModel):
@@ -379,6 +398,15 @@ class HealthServiceStatus(BaseModel):
         Literal["UP", "DOWN"],
         Field(description="Health status of the given service.  UP or DOWN."),
     ]
+
+
+class Identifier(BaseModel):
+    group: Optional[str] = None
+    id: Optional[int] = None
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    version: Optional[str] = None
 
 
 class K8SPatchOp(BaseModel):
@@ -469,6 +497,11 @@ class QueryCompletionResponse(BaseModel):
     ] = None
 
 
+class QueryFieldAnnotation(BaseModel):
+    end_char: Optional[int] = None
+    start_char: Optional[int] = None
+
+
 class ResourceRule(BaseModel):
     apiGroups: Annotated[
         List[str],
@@ -488,19 +521,54 @@ class ResourceRule(BaseModel):
     ]
 
 
-class StreamResult(BaseModel):
-    details: Annotated[
+class StoreAppInstalledSettings(BaseModel):
+    appId: Annotated[
+        Optional[str], Field(description="The application identifier.")
+    ] = None
+    settings: Annotated[
+        Optional[Dict[str, Dict[str, Any]]],
+        Field(description="The settings for the application as a JSON object."),
+    ] = None
+
+
+class StoreAppVersion(BaseModel):
+    """
+    The information about an application version available from a catalog.
+    At least one of "semVer" or "commitHash" must/will be defined.
+    """
+
+    appId: Annotated[
+        Optional[str], Field(description="The identifier for the application")
+    ] = None
+    catalog: Annotated[
         Optional[str],
+        Field(description="The catalog in which this application version was found"),
+    ] = None
+    commitHash: Annotated[
+        Optional[str], Field(description="The commit hash for the application version.")
+    ] = None
+    semVer: Annotated[
+        Optional[str],
+        Field(description="The semantic version for the application version."),
+    ] = None
+
+
+class StoreAppVersionMetadata(BaseModel):
+    publishedTime: Annotated[
+        Optional[AwareDatetime],
         Field(
-            description="The details for the streaming request; e.g. the query string in the corresponding GET request."
+            description="The date and time when the application version was published."
         ),
     ] = None
-    stream: Annotated[
-        Optional[str],
-        Field(
-            description="The stream identifier specified in the corresponding streaming GET request."
-        ),
-    ] = None
+
+
+class StoreAppVersionWithMetadata(BaseModel):
+    metadata: Optional[StoreAppVersionMetadata] = None
+    version: Optional[StoreAppVersion] = None
+
+
+class StoreCategoryList(RootModel[List[str]]):
+    root: List[str]
 
 
 class TableRule(BaseModel):
@@ -542,6 +610,18 @@ class TopoNodeGrouping(BaseModel):
     tier: Optional[int] = None
 
 
+class TopoOverlayAttrMetadata(BaseModel):
+    ui_description: Optional[str] = None
+    ui_description_key: Optional[str] = None
+    ui_name: Optional[str] = None
+    ui_name_key: Optional[str] = None
+
+
+class TopoOverlayAttrQuery(BaseModel):
+    attributes: Optional[Dict[str, TopoOverlayAttrMetadata]] = None
+    query: Optional[str] = None
+
+
 class TopoOverlayBadgeMetadata(BaseModel):
     badge_name: Optional[str] = None
     badge_path: Optional[str] = None
@@ -553,6 +633,18 @@ class TopoOverlayBadgeMetadata(BaseModel):
     value: Optional[int] = None
 
 
+class TopoOverlayEndpointState(BaseModel):
+    state: Optional[int] = None
+
+
+TopoOverlayLinkState = TopoOverlayEndpointState
+
+
+class TopoOverlayNodeState(BaseModel):
+    badges: Optional[List[int]] = None
+    state: Optional[int] = None
+
+
 class TopoOverlayStateMetadata(BaseModel):
     color: Optional[str] = None
     ui_description: Optional[str] = None
@@ -562,12 +654,10 @@ class TopoOverlayStateMetadata(BaseModel):
     value: Optional[int] = None
 
 
-class TopoOverlayStateRequest(BaseModel):
-    badge: Optional[str] = None
-    status: Optional[str] = None
-
-
-TopoSchema = GroupVersionKind
+class TopoSchema(BaseModel):
+    group: Optional[str] = None
+    kind: Optional[str] = None
+    version: Optional[str] = None
 
 
 class TopologyStateGroupSelector(BaseModel):
@@ -647,13 +737,6 @@ class TransactionPatch(BaseModel):
     target: NsCrGvkName
 
 
-class TransactionPoolAllocation(BaseModel):
-    key: Optional[str] = None
-    poolName: Optional[str] = None
-    poolTemplate: Optional[str] = None
-    value: Optional[str] = None
-
-
 class TransactionResultInputResources(BaseModel):
     inputCrs: Annotated[
         Optional[List[TransactionInputResource]],
@@ -673,7 +756,6 @@ class TransactionResultObjectString(BaseModel):
 
 class TransactionScriptResults(BaseModel):
     executionTime: Optional[int] = None
-    output: Optional[str] = None
 
 
 class TransactionState(BaseModel):
@@ -782,7 +864,7 @@ class UserStorageOutDirEntry(BaseModel):
     """
 
     modification_time: Annotated[
-        Optional[datetime],
+        Optional[AwareDatetime],
         Field(
             alias="modification-time",
             description="modification type of the item, if a file",
@@ -809,7 +891,7 @@ class UserStorageOutFileContent(BaseModel):
     ] = None
     file_name: Annotated[str, Field(alias="file-name", description="name of the file")]
     modification_time: Annotated[
-        Optional[datetime],
+        Optional[AwareDatetime],
         Field(
             alias="modification-time",
             description="UTC modification time of the file, as an RFC 3339 date/time.\nNot valid if file-deleted is true (in a streamed response)",
@@ -922,6 +1004,81 @@ class AuthProviderGroupSupport(BaseModel):
     ] = None
 
 
+class StoreAppRequirementsGraphItemInstalledAppVersion(BaseModel):
+    """
+    The application version installed in the cluster, if installed.
+    """
+
+    appId: Annotated[
+        Optional[str], Field(description="The identifier for the application")
+    ] = None
+    catalog: Annotated[
+        Optional[str],
+        Field(description="The catalog in which this application version was found"),
+    ] = None
+    commitHash: Annotated[
+        Optional[str], Field(description="The commit hash for the application version.")
+    ] = None
+    semVer: Annotated[
+        Optional[str],
+        Field(description="The semantic version for the application version."),
+    ] = None
+
+
+class StoreAppRequirementsGraphItemTargetAppVersion(BaseModel):
+    """
+    This graph item instance contains the dependencies for this particular application version.
+    """
+
+    appId: Annotated[
+        Optional[str], Field(description="The identifier for the application")
+    ] = None
+    catalog: Annotated[
+        Optional[str],
+        Field(description="The catalog in which this application version was found"),
+    ] = None
+    commitHash: Annotated[
+        Optional[str], Field(description="The commit hash for the application version.")
+    ] = None
+    semVer: Annotated[
+        Optional[str],
+        Field(description="The semantic version for the application version."),
+    ] = None
+
+
+class AccessQuery(BaseModel):
+    gvk: Optional[GroupVersionKind] = None
+    gvr: Optional[GroupVersionResource] = None
+    namespace: Annotated[
+        Optional[str],
+        Field(
+            description="The namespace to check. Empty string (or omit) to check for cluster-wide access"
+        ),
+    ] = None
+    path: Annotated[
+        Optional[str],
+        Field(
+            description="Target url or table of the access check. Provided when type is table or url"
+        ),
+    ] = None
+    permissions: Annotated[
+        Optional[Literal["read", "readWrite"]],
+        Field(description="The permissions for the requested resource/url/table."),
+    ] = None
+    type: Annotated[
+        Literal["gvk", "gvr", "url", "table"],
+        Field(description="The type of rule to check for"),
+    ]
+
+
+class AccessResult(BaseModel):
+    access: Annotated[
+        Optional[bool],
+        Field(description="Indicates if the user can access the requested resource"),
+    ] = None
+    error: Optional[ErrorResponse] = None
+
+
 class AuthProvider(BaseModel):
     auth: Optional[AuthProviderAuth] = None
     enabled: Annotated[
@@ -1026,10 +1183,13 @@ class AuthProvider(BaseModel):
 
 class AuthProviderTestParams(BaseModel):
     action: Annotated[
-        Optional[Literal["connection", "authentication"]],
+        Literal["connection", "authentication"],
         Field(description="The test action to take."),
-    ] = None
+    ]
     auth: Optional[ProviderAuth] = None
+    name: Annotated[
+        Optional[str], Field(description="The name of the provider to test")
+    ] = None
     timeout: Annotated[
         Optional[int], Field(description="LDAP connection timeout in milliseconds")
     ] = None
@@ -1037,9 +1197,7 @@ class AuthProviderTestParams(BaseModel):
         Optional[bool],
         Field(description="If true, encrypts the connection to LDAP using STARTTLS"),
     ] = None
-    url: Annotated[
-        Optional[str], Field(description="Connection URL to your LDAP server")
-    ] = None
+    url: Annotated[str, Field(description="Connection URL to your LDAP server")]
 
 
 class AuthProviders(RootModel[List[AuthProvider]]):
@@ -1138,6 +1296,22 @@ class AuthUsers(RootModel[List[AuthUser]]):
     root: List[AuthUser]
 
 
+class CheckAccessRequest(RootModel[Optional[Dict[str, AccessQuery]]]):
+    """
+    Body of a checkAccess request. Contains a key and AccessQuery for each resource/url/table to be checked for user access
+    """
+
+    root: Optional[Dict[str, AccessQuery]] = None
+
+
+class CheckAccessResponse(RootModel[Optional[Dict[str, AccessResult]]]):
+    """
+    Body of a access check response. Contains an AccessResult for each of the keys provided in the request
+    """
+
+    root: Optional[Dict[str, AccessResult]] = None
+
+
 class CrAnnotation(BaseModel):
     cr: Optional[NsCrGvkName] = None
     lines: Optional[List[LineSegment]] = None
@@ -1220,7 +1394,7 @@ class Health(BaseModel):
         Field(description="Overall health status of the EDA cluster."),
     ]
     timestamp: Annotated[
-        datetime, Field(description="Time that the health report was generated.")
+        AwareDatetime, Field(description="Time that the health report was generated.")
     ]
 
 
@@ -1235,12 +1409,21 @@ class NodeConfigResponse(BaseModel):
 
 
 class Overlay(BaseModel):
+    endpoint_attr_queries: Optional[List[TopoOverlayAttrQuery]] = None
     endpoint_state: Optional[List[TopoOverlayStateMetadata]] = None
+    endpoint_state_heading: Optional[str] = None
+    endpoint_state_heading_key: Optional[str] = None
     group: Optional[str] = None
+    link_attr_queries: Optional[List[TopoOverlayAttrQuery]] = None
     link_state: Optional[List[TopoOverlayStateMetadata]] = None
+    link_state_heading: Optional[str] = None
+    link_state_heading_key: Optional[str] = None
     name: Optional[str] = None
+    node_attr_queries: Optional[List[TopoOverlayAttrQuery]] = None
     node_badge: Optional[List[TopoOverlayBadgeMetadata]] = None
     node_state: Optional[List[TopoOverlayStateMetadata]] = None
+    node_state_heading: Optional[str] = None
+    node_state_heading_key: Optional[str] = None
     ui_description: Optional[str] = None
     ui_description_key: Optional[str] = None
     ui_name: Optional[str] = None
@@ -1252,6 +1435,94 @@ class Overlays(RootModel[List[Overlay]]):
     root: List[Overlay]
 
 
+class QueryField(BaseModel):
+    alias: Optional[bool] = None
+    annotations: Optional[List[QueryFieldAnnotation]] = None
+    display_name: Optional[str] = None
+    name: Optional[str] = None
+    type: Optional[str] = None
+
+
+class QuerySchema(BaseModel):
+    fields: Optional[List[QueryField]] = None
+
+
+class StoreAppManifest(BaseModel):
+    manifest: Annotated[
+        Optional[Dict[str, Dict[str, Any]]],
+        Field(description="The application manifest as JSON"),
+    ] = None
+    metadata: Optional[StoreAppVersionMetadata] = None
+    version: Optional[StoreAppVersion] = None
+
+
+class StoreAppRequirementsGraphItem(BaseModel):
+    appId: Annotated[
+        str,
+        Field(
+            description="The application identifier to which the 'requires' elements of graph items will refer."
+        ),
+    ]
+    installedAppVersion: Optional[StoreAppRequirementsGraphItemInstalledAppVersion] = (
+        None
+    )
+    requires: Annotated[
+        Optional[List[str]],
+        Field(
+            description="The identifiers for the applications on which this application version depends."
+        ),
+    ] = None
+    targetAppVersion: StoreAppRequirementsGraphItemTargetAppVersion
+
+
+class StoreAppSummary(BaseModel):
+    appId: Annotated[
+        Optional[str], Field(description="Unique ID identifying this application")
+    ] = None
+    catalogs: Annotated[
+        Optional[List[str]], Field(description="Catalogs where this app was found")
+    ] = None
+    categories: Annotated[
+        Optional[List[str]], Field(description="Application categories.")
+    ] = None
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="Application description that can be used for user display purposes"
+        ),
+    ] = None
+    infoVersion: Optional[StoreAppVersion] = None
+    infoVersionMetadata: Optional[StoreAppVersionMetadata] = None
+    installed: Annotated[
+        Optional[bool], Field(description='"true" if the app is installed')
+    ] = None
+    installedVersion: Optional[StoreAppVersion] = None
+    installedVersionMetadata: Optional[StoreAppVersionMetadata] = None
+    latestVersion: Optional[StoreAppVersion] = None
+    latestVersionMetadata: Optional[StoreAppVersionMetadata] = None
+    supportedEndpoints: Annotated[
+        Optional[List[str]], Field(description="Application supported endpoints.")
+    ] = None
+    title: Annotated[
+        Optional[str],
+        Field(
+            description="Application title that can be used for user display purposes"
+        ),
+    ] = None
+    upgradable: Annotated[
+        Optional[bool],
+        Field(description='"true" if there is a new version that can be installed'),
+    ] = None
+
+
+class StoreAppSummaryList(RootModel[List[StoreAppSummary]]):
+    root: List[StoreAppSummary]
+
+
+class StoreAppVersionList(RootModel[List[StoreAppVersionWithMetadata]]):
+    root: List[StoreAppVersionWithMetadata]
+
+
 class TopoElemMetadata(BaseModel):
     attributes: Optional[Dict[str, TopoAttrMetadata]] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
@@ -1259,40 +1530,47 @@ class TopoElemMetadata(BaseModel):
     subtitle_key: Optional[str] = None
 
 
-class TopoEndpoint(BaseModel):
+class TopoOverlayEndpoint(BaseModel):
     attributes: Optional[Dict[str, Dict[str, Any]]] = None
     cr_name: Optional[str] = None
     labels: Optional[Dict[str, str]] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayEndpointState]] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
     ui_name: Optional[str] = None
 
 
-class TopoLink(BaseModel):
+class TopoOverlayLink(BaseModel):
     attributes: Optional[Dict[str, Dict[str, Any]]] = None
     cr_name: Optional[str] = None
     endpoint_a: Optional[TopoLinkEndpoint] = None
-    endpoint_a_details: Optional[TopoEndpoint] = None
+    endpoint_a_details: Optional[TopoOverlayEndpoint] = None
     endpoint_b: Optional[TopoLinkEndpoint] = None
-    endpoint_b_details: Optional[TopoEndpoint] = None
+    endpoint_b_details: Optional[TopoOverlayEndpoint] = None
     key: Optional[str] = None
     labels: Optional[Dict[str, str]] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayLinkState]] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
     ui_name: Optional[str] = None
 
 
-class TopoNode(BaseModel):
+class TopoOverlayNode(BaseModel):
     attributes: Optional[Dict[str, Dict[str, Any]]] = None
+    badges: Optional[List[int]] = None
     cr_name: Optional[str] = None
     grouping: Optional[TopoNodeGrouping] = None
     key: Optional[str] = None
     labels: Optional[Dict[str, str]] = None
     name: Optional[str] = None
     namespace: Optional[str] = None
+    overlays: Optional[Dict[str, TopoOverlayNodeState]] = None
     schema_: Annotated[Optional[TopoSchema], Field(alias="schema")] = None
+    state: Optional[int] = None
     ui_name: Optional[str] = None
 
 
@@ -1308,11 +1586,6 @@ class Topology(BaseModel):
     ui_name: Optional[str] = None
     ui_name_key: Optional[str] = None
     version: Optional[str] = None
-
-
-class TopologyState(BaseModel):
-    links: Optional[Dict[str, TopoLink]] = None
-    nodes: Optional[Dict[str, TopoNode]] = None
 
 
 class TopologyStateGroupingBase(BaseModel):
@@ -1368,7 +1641,6 @@ class TransactionIntentResult(BaseModel):
     errors: Optional[List[TransactionAppError]] = None
     intentName: Optional[NsCrGvkName] = None
     outputCrs: Optional[List[NsCrGvkName]] = None
-    poolAllocation: Optional[List[TransactionPoolAllocation]] = None
     script: Optional[TransactionScriptResults] = None
 
 
@@ -1413,6 +1685,54 @@ class WorkflowResult(BaseModel):
     success: Optional[bool] = None
 
 
+class WorkflowStatusSummary(BaseModel):
+    creationTime: Optional[str] = None
+    group: Optional[str] = None
+    id: Optional[int] = None
+    kind: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    name: Optional[str] = None
+    namespace: Optional[str] = None
+    parent: Optional[Identifier] = None
+    rootWorkflow: Optional[Identifier] = None
+    state: Optional[WorkflowResult] = None
+    username: Optional[str] = None
+    version: Optional[str] = None
+
+
+class OverlayState(BaseModel):
+    links: Optional[Dict[str, TopoOverlayLink]] = None
+    nodes: Optional[Dict[str, TopoOverlayNode]] = None
+
+
+class QueryResponse(BaseModel):
+    """
+    The response for a non-streaming query request
+    """
+
+    data: Optional[List[Dict[str, Any]]] = None
+    jsonSchema: Annotated[
+        Optional[Dict[str, Dict[str, Any]]],
+        Field(
+            description="The JSON schema definition for the query data being returned."
+        ),
+    ] = None
+    schema_: Annotated[Optional[QuerySchema], Field(alias="schema")] = None
+
+
+class StoreAppRequirementsGraph(BaseModel):
+    graphItems: Annotated[
+        Optional[List[StoreAppRequirementsGraphItem]],
+        Field(
+            description="The items in the requirements graph resulting from the request.  Only present if the state is FINISHED."
+        ),
+    ] = None
+    state: Annotated[
+        Optional[Literal["UNKNOWN", "RUNNING", "FINISHED", "FAILED"]],
+        Field(description="The state of the requirements graph generation request."),
+    ] = None
+
+
 class TopoGroupingStateRequest(BaseModel):
     name: Optional[str] = None
     spec: Optional[TopologyStateGroupingBase] = None
@@ -1421,7 +1741,7 @@ class TopoGroupingStateRequest(BaseModel):
 class TopoStateRequest(BaseModel):
     grouping: Optional[TopoGroupingStateRequest] = None
     namespace: Optional[str] = None
-    overlays: Optional[TopoOverlayStateRequest] = None
+    overlays: Optional[List[str]] = None
 
 
 class Topologies(RootModel[List[Topology]]):
@@ -1430,40 +1750,6 @@ class Topologies(RootModel[List[Topology]]):
 
 class TransactionCr(BaseModel):
     type: Optional[TransactionType] = None
-
-
-class TransactionDetails(BaseModel):
-    changedCrs: Annotated[
-        Optional[List[TransactionNsCrGvkNames]],
-        Field(description="List of changed CRs as part of the transaction"),
-    ] = None
-    dryRun: Annotated[
-        Optional[bool], Field(description="True if the transaction was not committed")
-    ] = None
-    generalErrors: Annotated[
-        Optional[List[str]],
-        Field(description="List of general errors while running the transaction"),
-    ] = None
-    inputCrs: Annotated[
-        Optional[List[TransactionInputResource]],
-        Field(description="List of input CRs from the transaction"),
-    ] = None
-    intentsRun: Annotated[
-        Optional[List[TransactionIntentResult]],
-        Field(description="List of intents which ran as part of the transaction"),
-    ] = None
-    nodesWithConfigChanges: Annotated[
-        Optional[List[TransactionNodeResult]],
-        Field(
-            description="List of nodes with configuration changes from the transaction"
-        ),
-    ] = None
-    state: Annotated[
-        Optional[str], Field(description="The state of the transaction")
-    ] = None
-    success: Annotated[
-        Optional[bool], Field(description="True if the CR was successfully applied")
-    ] = None
 
 
 class TransactionExecutionResult(BaseModel):
@@ -1489,6 +1775,18 @@ class TransactionExecutionResult(BaseModel):
             description="List of nodes with configuration changes from the transaction"
         ),
     ] = None
+    topologySupported: Annotated[
+        Optional[bool],
+        Field(
+            description="Whether a topology representation of this transaction is supported"
+        ),
+    ] = None
+
+
+class TransactionTopologyResult(BaseModel):
+    overlayMetadata: Optional[Overlay] = None
+    topology: Optional[OverlayState] = None
+    topologyMetadata: Optional[Topology] = None
 
 
 class Transaction(BaseModel):

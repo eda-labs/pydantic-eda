@@ -3,6 +3,7 @@
 import argparse
 import json
 import logging
+import os
 import shutil
 import subprocess
 import sys
@@ -95,7 +96,7 @@ class Generator:
             api_name = "core"
             # core api has a v0.0.1 in the spec but that will change
             # for now use the version provided by a user from the cmd
-            api_version = self.version.replace(".", "_")
+            api_version = self.version.replace(".", "_").replace("-", "_")
             logger.debug(f"API name: {api_name}, API version: {api_version}")
             self.sanitize_schema_objects(spec_file, api_name, api_version)
             self.generate_classes_for_spec(spec_file, api_name, api_version)
@@ -135,8 +136,9 @@ class Generator:
             "schemas",
             "--output-model-type",
             "pydantic_v2.BaseModel",
-            "--formatters",
-            "ruff-format",
+            # we will format manually using ruff in the venv
+            # "--formatters",
+            # "ruff-format",
             "--use-annotated",
             "--parent-scoped-naming",
             "--collapse-root-models",
@@ -159,7 +161,23 @@ class Generator:
 
         try:
             logger.info(f"Generating models for {spec_file}...")
-            subprocess.run(cmd, check=True)
+
+            # Create environment with explicit path to virtual env binaries
+            env = os.environ.copy()
+            venv_path = os.environ.get("VIRTUAL_ENV", ".venv")
+            venv_bin = Path(venv_path) / "bin"
+
+            # Prepend venv bin directory to PATH
+            current_path = env.get("PATH", "")
+            env["PATH"] = f"{venv_bin}:{current_path}"
+
+            subprocess.run(cmd, check=True, env=env)
+
+            # Format the generated file with ruff
+            logger.debug(f"Formatting {dest_file} with ruff...")
+            ruff_cmd = ["ruff", "format", str(dest_file)]
+            subprocess.run(ruff_cmd, check=True, env=env)
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Error generating models for {spec_file}: {e}")
 
